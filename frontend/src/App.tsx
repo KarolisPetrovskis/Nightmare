@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
+import { Routes, Route } from 'react-router-dom'
+import NavBar from './components/NavBar'
+import Home from './pages/Home'
+import Forecast from './pages/Forecast'
 
-interface WeatherForecast {
+export interface WeatherForecast {
   date: string;
   temperatureC: number;
   summary: string;
@@ -17,16 +21,15 @@ export default function App() {
   }, []);
 
   return (
-    <div>
-      <h2>Weather Forecast</h2>
-      <ul>
-        {data.map((item, index) => (
-          <li key={index}>
-            <strong>{item.date}</strong> — {item.temperatureC}°C —{' '}
-            {item.summary}
-          </li>
-        ))}
-      </ul>
-    </div>
+    <>
+
+      <NavBar />
+      <div style={{ padding: 16 }}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/forecast" element={<Forecast />} />
+        </Routes>
+      </div>
+    </>
   );
 }
