@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Routes, Route } from 'react-router-dom'
-import NavBar from './components/NavBar'
+import Navbar from './components/Navbar'
 import Home from './pages/Home'
 import Forecast from './pages/Forecast'
+import MenuManagement from './pages/MenuManagement';
 
 export interface WeatherForecast {
   date: string;
@@ -22,13 +23,19 @@ export default function App() {
 
   return (
     <>
-
-      <NavBar />
-      <div style={{ padding: 16 }}>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/forecast" element={<Forecast />} />
-        </Routes>
+      <div className="root-container">
+        <Navbar />
+        <div className="content-wrapper">
+          <div className="side-container" />
+          <main className="page-container">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/forecast" element={<Forecast />} />
+              <Route path="/menu-management" element={<MenuManagement />} />
+            </Routes>
+          </main>
+          <div className="side-container" />
+        </div>
       </div>
     </>
   );

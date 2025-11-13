@@ -1,0 +1,26 @@
+.menu-management {
+    display: flex;
+  flex: 1;
+  width: 100%;
+}
+
+.dish-list-container {
+  flex-grow: 2;
+  background-color: #1a1a1a;
+  margin: 10px;
+  padding: 10px;
+}
+
+.info-container {
+  flex-grow: 5;
+  background-color: #1a1a1a;
+  margin: 10px;
+  padding: 10px;
+}
+
+.option-container {
+  flex-grow: 2;
+  background-color: #1a1a1a;
+  margin: 10px;
+  padding: 10px;
+}

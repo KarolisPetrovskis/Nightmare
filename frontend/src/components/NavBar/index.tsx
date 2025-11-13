@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
-import styles from './NavBar.module.css';
+import styles from './Navbar.module.css';
 
-const NavBar = () => {
+const Navbar = () => {
   return (
     <nav className={styles.navbar}>
       <ul className={styles.navList}>
@@ -11,9 +11,12 @@ const NavBar = () => {
         <li className={styles.navItem}>
           <Link to="/forecast">Forecast</Link>
         </li>
+        <li className={styles.navItem}>
+          <Link to="/menu-management">Menu Management</Link>
+        </li>
       </ul>
     </nav>
   );
 };
 
-export default NavBar;
+export default Navbar;
