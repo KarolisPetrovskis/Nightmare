@@ -1,34 +1,40 @@
-.navbar {
-  background-color: #282c34;
-  padding: 1rem;
-  position: sticky;
-  top: 0;
-  display: flex;
+.appBar {
+  background-color: #1a1a1a !important;
+  box-shadow: none !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.toolbar {
+  display: flex !important;
+  justify-content: flex-start !important;
+  padding: 0 2rem !important;
 }
 
 .navList {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0;
-  padding: 0 2rem;
-  list-style: none;
   display: flex;
-  justify-content: flex-start;
-  gap: 2rem;
+  gap: 1.5rem;
 }
 
-.navItem {
-  color: white;
-}
-
-.navItem a {
+.navLink {
   text-decoration: none;
-  color: white;
-  padding: 0.5rem 1rem;
-  transition: background-color 0.3s;
 }
 
-.navItem a:hover {
-  background-color: #61dafb;
-  border-radius: 5px;
+.navButton {
+  color: rgba(255, 255, 255, 0.87) !important;
+  text-transform: none !important;
+  font-weight: 500 !important;
+  font-size: 1rem !important;
+  border-radius: 6px !important;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif !important;
+}
+
+.navButton:hover {
+  background-color: #3e44b3 !important;
+  color: #fff !important;
+}
+
+.active .navButton {
+  background-color: #646cff !important;
+  color: #fff !important;
 }
