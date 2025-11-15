@@ -1,0 +1,10 @@
+namespace NightMare.Backend.Data;
+public class ServiceUpdateDTO
+{
+    public required string Name { get; set; }
+    public required decimal Price { get; set; }
+    // In minutes
+    public required int TimeMin { get; set; }
+    public required decimal Discount { get; set; }
+    public required long VatId { get; set; }
+}
