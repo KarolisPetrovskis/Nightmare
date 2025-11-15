@@ -1,4 +1,4 @@
-namespace Database_objects;
+namespace NightMare.Backend.Data;
 public class OrderDetailAddOn
 {
     [Key]
