@@ -7,8 +7,10 @@ type Dish = {
   name: string;
   price: number;
   discount: number;
+  discountExpiration: string;
   vat: string;
 };
+
 
 export default function MenuManagement() {
   const [deleteMode, setDeleteMode] = useState(false);
@@ -21,47 +23,45 @@ export default function MenuManagement() {
     setDeleteMode((prev) => !prev);
   };
 
-const handleNewDish = () => {
-  const emptyDish: Dish = {
-    id: -1,
-    name: "",
-    price: 0,
-    discount: 0,
-    vat: "standard"
+  const handleNewDish = () => {
+    const emptyDish: Dish = {
+      id: -1,
+      name: "",
+      price: 0,
+      discount: 0,
+      discountExpiration: "",
+      vat: "standard"
+    };
+
+    setSelectedDish(emptyDish);
+    setEditableDish(emptyDish);
+    setIsDirty(false);
   };
-
-  setSelectedDish(emptyDish);
-  setEditableDish(emptyDish);
-  setIsDirty(false);
-};
-
-
 
 
   const dishes: Dish[] = [
-    { id: 1, name: 'Spaghetti Carbonara', price: 12.50, discount: 0, vat: 'standard' },
-    { id: 2, name: 'Caesar Salad', price: 8.90, discount: 10, vat: 'reduced' },
-    { id: 3, name: 'Margherita Pizza', price: 10.00, discount: 0, vat: 'standard' },
-    { id: 4, name: 'Grilled Salmon', price: 18.50, discount: 5, vat: 'standard' },
-    { id: 5, name: 'Beef Tacos', price: 9.40, discount: 0, vat: 'standard' },
-    { id: 6, name: 'Chicken Curry', price: 13.20, discount: 15, vat: 'reduced' },
-    { id: 7, name: 'Veggie Burger', price: 11.00, discount: 0, vat: 'reduced' },
-    { id: 8, name: 'Sushi Platter', price: 22.00, discount: 5, vat: 'standard' },
-    // { id: 9, name: 'French Fries', price: 4.50, discount: 0, vat: 'reduced' },
-    // { id: 10, name: 'Chocolate Cake', price: 6.00, discount: 0, vat: 'standard' },
+    { id: 1, name: 'Spaghetti Carbonara', price: 12.50, discount: 0, discountExpiration: "", vat: 'standard' },
+    { id: 2, name: 'Caesar Salad', price: 8.90, discount: 10, discountExpiration: "2025-01-10", vat: 'reduced' },
+    { id: 3, name: 'Margherita Pizza', price: 10.00, discount: 0, discountExpiration: "", vat: 'standard' },
+    { id: 4, name: 'Grilled Salmon', price: 18.50, discount: 5, discountExpiration: "2025-02-20", vat: 'standard' },
+    { id: 5, name: 'Beef Tacos', price: 9.40, discount: 0, discountExpiration: "", vat: 'standard' },
+    { id: 6, name: 'Chicken Curry', price: 13.20, discount: 15, discountExpiration: "2025-05-03", vat: 'reduced' },
+    { id: 7, name: 'Veggie Burger', price: 11.00, discount: 0, discountExpiration: "", vat: 'reduced' },
+    { id: 8, name: 'Sushi Platter', price: 22.00, discount: 5, discountExpiration: "2025-04-19", vat: 'standard' },
   ];
 
-useEffect(() => {
-  if (!editableDish || !selectedDish) return;
-  
-  const isChanged =
-    editableDish.name !== selectedDish.name ||
-    editableDish.price !== selectedDish.price ||
-    editableDish.discount !== selectedDish.discount ||
-    editableDish.vat !== selectedDish.vat;
 
-  setIsDirty(isChanged);
-}, [editableDish, selectedDish]);
+  useEffect(() => {
+    if (!editableDish || !selectedDish) return;
+
+    const isChanged =
+      editableDish.name !== selectedDish.name ||
+      editableDish.price !== selectedDish.price ||
+      editableDish.discount !== selectedDish.discount ||
+      editableDish.vat !== selectedDish.vat;
+
+    setIsDirty(isChanged);
+  }, [editableDish, selectedDish]);
 
 
 
@@ -69,7 +69,7 @@ useEffect(() => {
   const handleDishClick = (dish: Dish) => {
     if (!deleteMode) {
       setSelectedDish(dish);
-      setEditableDish({ ...dish });   // copy for editing
+      setEditableDish({ ...dish });   
       setIsDirty(false);
     }
   };
@@ -88,12 +88,11 @@ useEffect(() => {
   return (
     <div className="menu-management">
 
-      {/* DISH LIST */}
       <div className="dish-list-container">
         <div className="dish-actions">
           <Button className="dish-action-button new-dish" onClick={handleNewDish}>
-  New Dish
-</Button>
+            New Dish
+          </Button>
 
           <Button
             className={`dish-action-button delete-dish ${deleteMode ? 'active' : ''}`}
@@ -119,7 +118,6 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* INFO Container */}
       <div className="info-container">
         <h2 className="section-title">Dish Information</h2>
 
@@ -154,7 +152,12 @@ useEffect(() => {
             />
 
             <label className="small-label">Expiration Date</label>
-            <input type="date" />
+            <input
+              type="date"
+              value={editableDish?.discountExpiration || ""}
+              onChange={(e) => updateField("discountExpiration", e.target.value)}
+            />
+
           </div>
 
           <div className="info-box">
