@@ -15,12 +15,19 @@
   border-radius: 8px;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
-
-
 
 .info-container {
   flex-grow: 5;
+  background-color: #1a1a1a;
+  margin: 10px;
+  padding: 16px;
+  border-radius: 8px;
+}
+
+.option-container {
+  flex-grow: 2;
   background-color: #1a1a1a;
   margin: 10px;
   padding: 16px;
@@ -34,60 +41,55 @@
   font-weight: 600;
 }
 
-.dish-card {
-  position: relative;
-  padding: 12px 16px;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  background: white;
-  transition: background 0.2s;
-}
-
-/* X icon overlay */
-.delete-x {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  
-  cursor: pointer;
-  font-size: 18px;
-  color: #ff5b5b;
-
-  border-radius: 50%;
-  padding: 2px 6px;
-
-  pointer-events: auto; /* important */
-}
-
-/* hover effect */
-.delete-x:hover {
-  color: white;
-}
-
-
-/* Highlight Delete button ON */
-.delete-dish.active {
-  background-color: #b33e3e !important;
-  color: #fff !important;
-}
-
-.option-container {
-  flex-grow: 2;
-  background-color: #1a1a1a;
-  margin: 10px;
-  padding: 16px;
-  border-radius: 8px;
-}
-
-
-
-
 .dish-actions {
   display: flex;
   gap: 1rem;
   margin-bottom: 1.5rem;
   width: 100%;
+}
+
+.dish-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.dish-card {
+  position: relative;
+  background-color: #2e2e2e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.dish-card:hover {
+  background-color: #3b3b3b;
+  border-color: #646cff;
+}
+
+.dish-card.selected {
+  border-color: #646cff;
+  background-color: #3b3b3b;
+}
+
+.delete-x {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  font-size: 18px;
+  color: #ff5b5b;
+  border-radius: 50%;
+  padding: 2px 6px;
+  pointer-events: auto;
+}
+
+.delete-x:hover {
+  color: white;
 }
 
 .dish-action-button {
@@ -106,6 +108,7 @@
 .new-dish {
   background-color: #2d2d2d !important;
 }
+
 .new-dish:hover {
   background-color: #3e44b3 !important;
   color: #fff !important;
@@ -114,42 +117,42 @@
 .delete-dish {
   background-color: #2d2d2d !important;
 }
+
 .delete-dish:hover {
   background-color: #b33e3e !important;
   color: #fff !important;
 }
 
-.dish-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  overflow-y: auto;
+.delete-dish.active {
+  background-color: #b33e3e !important;
+  color: #fff !important;
 }
 
-.dish-card {
-  background-color: #2e2e2e;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.save-button {
+  width: 100%;
+  padding: 14px;
   border-radius: 8px;
-  padding: 1rem;
-  font-weight: 500;
+  font-size: 1.1rem;
+  font-weight: 600;
+  background-color: #3a3a3a;
+  color: #777;
+  cursor: not-allowed;
+  transition: background 0.2s, color 0.2s;
+}
+
+.save-button.active {
+  background-color: #3e44b3;
+  color: white;
   cursor: pointer;
-  transition: background-color 0.2s, border-color 0.2s;
+  margin-top: 16px;
 }
 
-.dish-card:hover {
-  background-color: #3b3b3b;
-  border-color: #646cff;
-}
-
-
-/* Title inside info-container */
 .section-title {
   font-size: 1.3rem;
   margin-bottom: 1rem;
   font-weight: 600;
 }
 
-/* 2×2 grid layout for the boxes */
 .info-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -157,24 +160,25 @@
   margin-top: 10px;
 }
 
-/* The 4 boxes */
 .info-box {
+  border: 1px solid rgba(255, 255, 255, 0.1);
   background-color: #2b2b2b;
   padding: 16px;
   border-radius: 8px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-
 }
 
-/* Labels */
 .info-box label {
   font-size: 0.9rem;
   color: #bdbdbd;
 }
 
-/* Inputs + select */
+.small-label {
+  margin-top: 8px;
+}
+
 .info-box input,
 .info-box select {
   padding: 8px;
@@ -185,6 +189,21 @@
   font-size: 1rem;
 }
 
-.small-label {
-  margin-top: 8px;
+.info-box input:focus,
+.info-box select:focus {
+  outline: none;
+  background-color: #262626;
+}
+
+.info-box:focus-within {
+  border: 1px solid #646cff;
+  background-color: #333333;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+
+@media (max-width: 1200px) {
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
 }
