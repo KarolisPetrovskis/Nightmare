@@ -230,6 +230,7 @@
   background-color: #2b2b2b;
   border-radius: 8px;
   padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 
@@ -320,4 +321,25 @@
   background-color: #333 !important;
   color: white !important;
   width: 100%;
+}
+
+/* Make option tree boxes react to click like dish info */
+.option-tree-box:focus-within {
+  border: 1px solid #646cff;
+  background-color: #333333;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+/* Remove white borders on option inputs */
+.option-tree-box input:focus,
+.option-row input:focus,
+.option-tree-header input:focus {
+  outline: none;
+  background-color: #262626;
+}
+
+
+.option-tree-box:focus-within .add-option {
+  background-color: #3e44b3 !important; /* or any accent color */
+  color: white !important;
 }
