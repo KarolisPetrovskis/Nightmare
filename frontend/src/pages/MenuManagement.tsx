@@ -57,7 +57,7 @@ export default function MenuManagement() {
   };
 
 
-  const dishes: Dish[] = [
+  const [dishes, setDishes] = useState<Dish[]>([
     {
       id: 1,
       name: 'Spaghetti Carbonara',
@@ -130,7 +130,7 @@ export default function MenuManagement() {
         }
       ]
     }
-  ];
+  ]);
 
 
 
@@ -150,6 +150,25 @@ export default function MenuManagement() {
   }, [editableDish, selectedDish]);
 
 
+  const handleSave = () => {
+    if (!editableDish) return;
+
+    if (editableDish.id === -1) {
+      // Create a new ID
+      const newDish = { ...editableDish, id: Date.now() };
+
+      setDishes(prev => [...prev, newDish]);
+      setSelectedDish(newDish);
+    } else {
+      // Editing an existing dish
+      setDishes(prev =>
+        prev.map(d => d.id === editableDish.id ? editableDish : d)
+      );
+    }
+
+    setDishDirty(false);
+    setOptionsDirty(false);
+  };
 
 
   const handleDishClick = (dish: Dish) => {
@@ -159,7 +178,9 @@ export default function MenuManagement() {
       setDishDirty(false);
     }
   };
+  
 
+  
 
   const updateField = (key: keyof Dish, value: string | number) => {
     setEditableDish(prev => prev ? { ...prev, [key]: value } : prev);
@@ -265,9 +286,11 @@ export default function MenuManagement() {
             <Button
               className={`save-button ${dishDirty || optionsDirty ? "active" : ""}`}
               disabled={!(dishDirty || optionsDirty)}
+              onClick={handleSave}
             >
               Save
             </Button>
+
           </>
         )}
       </div>
