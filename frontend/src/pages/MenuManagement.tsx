@@ -31,7 +31,9 @@ export default function MenuManagement() {
   const [deleteMode, setDeleteMode] = useState(false);
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
   const [editableDish, setEditableDish] = useState<Dish | null>(null);
-  const [isDirty, setIsDirty] = useState(false);
+  const [dishDirty, setDishDirty] = useState(false);
+  const [optionsDirty, setOptionsDirty] = useState(false);
+
 
 
   const toggleDeleteMode = () => {
@@ -51,7 +53,7 @@ export default function MenuManagement() {
 
     setSelectedDish(emptyDish);
     setEditableDish(emptyDish);
-    setIsDirty(false);
+    setDishDirty(false);
   };
 
 
@@ -144,7 +146,7 @@ export default function MenuManagement() {
 
     const treesChanged = JSON.stringify(editableDish.optionTrees) !== JSON.stringify(selectedDish.optionTrees);
 
-    setIsDirty(simpleChanged || treesChanged);
+    setDishDirty(simpleChanged || treesChanged);
   }, [editableDish, selectedDish]);
 
 
@@ -154,7 +156,7 @@ export default function MenuManagement() {
     if (!deleteMode) {
       setSelectedDish(dish);
       setEditableDish({ ...dish });
-      setIsDirty(false);
+      setDishDirty(false);
     }
   };
 
@@ -164,7 +166,7 @@ export default function MenuManagement() {
 
     if (selectedDish && editableDish) {
       const changed = value !== (selectedDish as any)[key];
-      if (changed) setIsDirty(true);
+      if (changed) setDishDirty(true);
     }
   };
 
@@ -261,8 +263,8 @@ export default function MenuManagement() {
             </div>
 
             <Button
-              className={`save-button ${isDirty ? "active" : ""}`}
-              disabled={!isDirty}
+              className={`save-button ${dishDirty || optionsDirty ? "active" : ""}`}
+              disabled={!(dishDirty || optionsDirty)}
             >
               Save
             </Button>
@@ -286,7 +288,7 @@ export default function MenuManagement() {
                 setEditableDish(prev =>
                   prev ? { ...prev, optionTrees: [...prev.optionTrees, newTree] } : prev
                 );
-                setIsDirty(true);
+                setOptionsDirty(true);
               }}
             >
               + Add Option Tree
@@ -312,7 +314,7 @@ export default function MenuManagement() {
                         const updated = [...editableDish.optionTrees];
                         updated[treeIndex].name = e.target.value;
                         setEditableDish(prev => prev ? { ...prev, optionTrees: updated } : prev);
-                        setIsDirty(true);
+                        setOptionsDirty(true);
                       }}
                     />
                     <button
@@ -320,7 +322,7 @@ export default function MenuManagement() {
                       onClick={() => {
                         const updated = editableDish.optionTrees.filter(t => t.id !== tree.id);
                         setEditableDish(prev => prev ? { ...prev, optionTrees: updated } : prev);
-                        setIsDirty(true);
+                        setOptionsDirty(true);
                       }}
                     >
                       ✖
@@ -338,7 +340,7 @@ export default function MenuManagement() {
                             const updated = [...editableDish.optionTrees];
                             updated[treeIndex].options[optIndex].name = e.target.value;
                             setEditableDish(prev => prev ? { ...prev, optionTrees: updated } : prev);
-                            setIsDirty(true);
+                            setOptionsDirty(true);
                           }}
                         />
 
@@ -350,7 +352,7 @@ export default function MenuManagement() {
                             const updated = [...editableDish.optionTrees];
                             updated[treeIndex].options[optIndex].price = parseFloat(e.target.value);
                             setEditableDish(prev => prev ? { ...prev, optionTrees: updated } : prev);
-                            setIsDirty(true);
+                            setOptionsDirty(true);
                           }}
                         />
 
@@ -360,7 +362,7 @@ export default function MenuManagement() {
                             const updated = [...editableDish.optionTrees];
                             updated[treeIndex].options = updated[treeIndex].options.filter(o => o.id !== opt.id);
                             setEditableDish(prev => prev ? { ...prev, optionTrees: updated } : prev);
-                            setIsDirty(true);
+                            setOptionsDirty(true);
                           }}
                         >
                           ✖
@@ -379,7 +381,7 @@ export default function MenuManagement() {
                         const updated = [...editableDish.optionTrees];
                         updated[treeIndex].options.push(newOption);
                         setEditableDish(prev => prev ? { ...prev, optionTrees: updated } : prev);
-                        setIsDirty(true);
+                        setOptionsDirty(true);
                       }}
                     >
                       + Add Option
