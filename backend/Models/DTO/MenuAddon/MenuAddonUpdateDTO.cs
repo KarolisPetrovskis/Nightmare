@@ -1,5 +1,5 @@
 namespace NightMare.Backend.Data;
-public class MEnuAddonUpdateDTO
+public class MenuAddonUpdateDTO
 {
     public string Name { get; set; }
     public long ItemId { get; set; }
