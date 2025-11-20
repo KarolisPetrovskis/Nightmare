@@ -13,7 +13,9 @@ public class Appointment
     public DateTime AppointmentDate { get; set; }
     public DateTime AppointmentStart { get; set; }
     public DateTime AppointmentEnd { get; set; }
-    public string CustomerCode { get; set; }
+    // is this server related, if so maybe we dont use null?
+    public string? CustomerCode { get; set; }
+    // Based on BDR laws if they ask data to be remove will we have to remove name?
     public string CustomerName { get; set; }
-    public string CustomerNumber { get; set; }
+    public string? CustomerNumber { get; set; }
 }
