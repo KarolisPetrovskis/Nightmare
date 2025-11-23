@@ -1,0 +1,56 @@
+.service-top-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.service-description {
+  margin-top: 12px;
+  background-color: #2b2b2b;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.service-description h3 {
+  margin: 0 0 8px 0;
+  font-weight: 600;
+}
+
+.service-description textarea {
+  width: 100%;
+  min-height: 140px;
+  background-color: #1f1f1f;
+  color: white;
+  border: none;
+  padding: 8px;
+  border-radius: 6px;
+  resize: vertical;
+}
+
+@media (max-width: 1000px) {
+  .service-top-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* reuse existing Management.css .info-box styles for smaller boxes */
+.info-box input[type="number"], .info-box input[type="date"], .info-box input[type="text"] {
+  padding: 8px;
+  border-radius: 6px;
+  border: none;
+  background-color: #1f1f1f;
+  color: white;
+}
+
+/* To ensure the layout of divs like in the wireframe */
+/* 4th item: service time */
+.service-top-grid .info-box:nth-child(4) {
+  grid-column: 1; /* left side */
+}
+
+/* 5th item: discount expiration */
+.service-top-grid .info-box:nth-child(5) {
+  grid-column: 3; /* right side */
+}

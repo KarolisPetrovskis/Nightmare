@@ -3,10 +3,9 @@ import { NavLink } from 'react-router-dom';
 import styles from './Navbar.module.css';
 
 const links = [
-  { to: '/', label: 'Home' },
-  { to: '/forecast', label: 'Forecast' },
   { to: '/menu-management', label: 'Menu Management' },
   { to: '/order-management', label: 'Order Management' },
+  { to: '/service-management', label: 'Service Management' },
 ];
 
 export default function Navbar() {

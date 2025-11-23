@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Routes, Route } from 'react-router-dom'
-import Navbar from './components/Navbar'
+import Navbar from './components/NavBar'
 import Home from './pages/Home'
 import Forecast from './pages/Forecast'
 import MenuManagement from './pages/MenuManagement';
 import OrderManagement from './pages/OrderManagement';
+import ServiceManagement from './pages/ServiceManagement';
 
 export interface WeatherForecast {
   date: string;
@@ -13,7 +14,7 @@ export interface WeatherForecast {
 }
 
 export default function App() {
-  const [data, setData] = useState<WeatherForecast[]>([]);
+  const [_data, setData] = useState<WeatherForecast[]>([]);
 
   useEffect(() => {
     fetch('/api/weatherforecast')
@@ -34,6 +35,7 @@ export default function App() {
               <Route path="/forecast" element={<Forecast />} />
               <Route path="/menu-management" element={<MenuManagement />} />
               <Route path="/order-management" element={<OrderManagement />} />
+              <Route path="/service-management" element={<ServiceManagement />} />
             </Routes>
           </main>
           <div className="side-container" />
