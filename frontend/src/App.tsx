@@ -4,6 +4,7 @@ import Navbar from './components/Navbar'
 import Home from './pages/Home'
 import Forecast from './pages/Forecast'
 import MenuManagement from './pages/MenuManagement';
+import OrderManagement from './pages/OrderManagement';
 
 export interface WeatherForecast {
   date: string;
@@ -32,6 +33,7 @@ export default function App() {
               <Route path="/" element={<Home />} />
               <Route path="/forecast" element={<Forecast />} />
               <Route path="/menu-management" element={<MenuManagement />} />
+              <Route path="/order-management" element={<OrderManagement />} />
             </Routes>
           </main>
           <div className="side-container" />

@@ -1,4 +1,4 @@
-import './MenuManagement.css';
+import './Management.css';
 import Button from '@mui/material/Button';
 import { useState, useEffect } from "react";
 import dishesData from './dishesData.json';
@@ -110,7 +110,7 @@ const [deleteMode, setDeleteMode] = useState(false);
 
 
   return (
-    <div className="menu-management">
+    <div className="management">
 
       <div className="item-list-container">
         <div className="item-actions">
@@ -311,7 +311,7 @@ const [deleteMode, setDeleteMode] = useState(false);
                     ))}
 
                     <Button
-                      className="dish-action-button new-dish add-option"
+                      className="item-action-button new-item add-option"
                       onClick={() => {
                         const newOption = {
                           id: Date.now(),
