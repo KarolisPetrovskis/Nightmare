@@ -7,7 +7,7 @@
   color: rgba(255, 255, 255, 0.87);
 }
 
-.dish-list-container {
+.item-list-container {
   flex-grow: 2;
   background-color: #1a1a1a;
   margin: 10px;
@@ -34,27 +34,27 @@
   border-radius: 8px;
 }
 
-.dish-list-label {
+.item-list-label {
   font-size: 1.2rem;
   margin-bottom: 1rem;
   margin-top: 0;
   font-weight: 600;
 }
 
-.dish-actions {
+.item-actions {
   display: flex;
   gap: 1rem;
   margin-bottom: 16px;
   width: 100%;
 }
 
-.dish-list {
+.item-list {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-.dish-card {
+.item-card {
   position: relative;
   background-color: #2e2e2e;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -65,12 +65,12 @@
   transition: background-color 0.2s, border-color 0.2s;
 }
 
-.dish-card:hover {
+.item-card:hover {
   background-color: #3b3b3b;
   border-color: #646cff;
 }
 
-.dish-card.selected {
+.item-card.selected {
   border-color: #646cff;
   background-color: #3b3b3b;
 }
@@ -92,7 +92,7 @@
   color: white;
 }
 
-.dish-action-button {
+.item-action-button {
   flex: 1; 
   color: rgba(255, 255, 255, 0.87) !important;
   text-transform: none !important;
@@ -105,25 +105,25 @@
   border: none !important;
 }
 
-.new-dish {
+.new-item {
   background-color: #2d2d2d !important;
 }
 
-.new-dish:hover {
+.new-item:hover {
   background-color: #3e44b3 !important;
   color: #fff !important;
 }
 
-.delete-dish {
+.delete-item {
   background-color: #2d2d2d !important;
 }
 
-.delete-dish:hover {
+.delete-item:hover {
   background-color: #b33e3e !important;
   color: #fff !important;
 }
 
-.delete-dish.active {
+.delete-item.active {
   background-color: #b33e3e !important;
   color: #fff !important;
 }
@@ -315,22 +315,18 @@
 }
 
 
-
-
 .add-option {
   background-color: #333 !important;
   color: white !important;
   width: 100%;
 }
 
-/* Make option tree boxes react to click like dish info */
 .option-tree-box:focus-within {
   border: 1px solid #646cff;
   background-color: #333333;
   transition: border-color 0.2s, background-color 0.2s;
 }
 
-/* Remove white borders on option inputs */
 .option-tree-box input:focus,
 .option-row input:focus,
 .option-tree-header input:focus {
@@ -340,6 +336,6 @@
 
 
 .option-tree-box:focus-within .add-option {
-  background-color: #3e44b3 !important; /* or any accent color */
+  background-color: #3e44b3 !important; 
   color: white !important;
 }
