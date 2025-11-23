@@ -6,6 +6,7 @@ import Forecast from './pages/Forecast'
 import MenuManagement from './pages/MenuManagement';
 import OrderManagement from './pages/OrderManagement';
 import ServiceManagement from './pages/ServiceManagement';
+import ScheduleManagement from './pages/ScheduleManagement';
 
 export interface WeatherForecast {
   date: string;
@@ -36,6 +37,7 @@ export default function App() {
               <Route path="/menu-management" element={<MenuManagement />} />
               <Route path="/order-management" element={<OrderManagement />} />
               <Route path="/service-management" element={<ServiceManagement />} />
+              <Route path="/schedule-management" element={<ScheduleManagement />} />
             </Routes>
           </main>
           <div className="side-container" />

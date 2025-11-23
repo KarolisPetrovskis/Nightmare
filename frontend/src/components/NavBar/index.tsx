@@ -6,6 +6,7 @@ const links = [
   { to: '/menu-management', label: 'Menu Management' },
   { to: '/order-management', label: 'Order Management' },
   { to: '/service-management', label: 'Service Management' },
+  { to: '/schedule-management', label: 'Schedule Management' },
 ];
 
 export default function Navbar() {
