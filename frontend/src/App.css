@@ -36,6 +36,7 @@
 
 .page-container {
   flex-grow: 20;
+  flex-basis: 0;
   padding: 2rem;
   display: flex;
   flex-direction: column;
