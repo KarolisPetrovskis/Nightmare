@@ -175,7 +175,7 @@ export default function OrderManagement() {
 
             {/* INFORMATION CONTAINER */}
             <div className="info-container">
-                <h2 className="section-title">Order Information</h2>
+                <h2 className="section-title" >Order Information</h2>
 
                 {!selectedOrder ? (
                     <p style={{ opacity: 0.5 }}>Select or create an order.</p>
@@ -234,13 +234,25 @@ export default function OrderManagement() {
                                 <div key={it.id} className="option-tree-box">
                                     <div className="option-row">
                                         <span>{it.dish.name}</span>
-                                        <span>€ {it.dish.price.toFixed(2)}</span>
+                                        <input type="text" value={`€ ${it.dish.price.toFixed(2)}`} readOnly />
 
                                         <Button className="details-button">Details</Button>
 
                                         <div className="quantity-box">
-                                            <button onClick={() => updateQuantity(it.id, -1)}>-</button>
-                                            <span>{it.quantity}</span>
+                                            <button onClick={() => updateQuantity(it.id, -1)}>−</button>
+                                            <input 
+                                              type="number" 
+                                              value={it.quantity} 
+                                              onChange={(e) => setSelectedOrder(prev => prev ? {
+                                                ...prev,
+                                                items: prev.items.map(item => 
+                                                  item.id === it.id 
+                                                    ? { ...item, quantity: Math.max(1, parseInt(e.target.value) || 1) }
+                                                    : item
+                                                )
+                                              } : prev)}
+                                              min="1"
+                                            />
                                             <button onClick={() => updateQuantity(it.id, +1)}>+</button>
                                         </div>
                                         <span className="delete-dish" onClick={() => removeDishFromOrder(it.id)}>
