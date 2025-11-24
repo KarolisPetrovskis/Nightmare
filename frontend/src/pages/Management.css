@@ -339,3 +339,7 @@
   background-color: #3e44b3 !important; 
   color: white !important;
 }
+
+.save-button:disabled {
+  visibility: hidden;
+}
