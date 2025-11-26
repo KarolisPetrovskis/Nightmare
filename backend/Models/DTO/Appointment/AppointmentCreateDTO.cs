@@ -1,7 +1,6 @@
 namespace NightMare.Backend.Data;
 public class AppointmentCreateDTO
 {
-    // i think this should be Code, yaml is unclear?
     public required string Name { get; set; }
     public required long BusinessId { get; set; }
     public required long ServiceId { get; set; }

@@ -13,9 +13,10 @@ public class Appointment
     public DateTime AppointmentDate { get; set; }
     public DateTime AppointmentStart { get; set; }
     public DateTime AppointmentEnd { get; set; }
-    // is this server related, if so maybe we dont use null?
+    // CustomerCode is the code customer receives when registering, and is used later to authenticate on arrival.
     public string? CustomerCode { get; set; }
-    // Based on BDR laws if they ask data to be remove will we have to remove name?
-    public string CustomerName { get; set; }
+    // CustomerName is Customer name
+    public string? CustomerName { get; set; }
+    // CustomerNumber is phone number
     public string? CustomerNumber { get; set; }
 }
