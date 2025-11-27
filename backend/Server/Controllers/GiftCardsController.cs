@@ -29,18 +29,18 @@ namespace backend.Server.Controllers
             return Ok("Gift card created successfully.");
         } 
 
-        [HttpGet("{id}")]
-        public IActionResult GetGiftCardById(long id)
+        [HttpGet("{nid}")]
+        public IActionResult GetGiftCardBynid(long nid)
         {
             _giftCardsService.placeholderMethod();
-            return Ok($"Gift card {id} fetched successfully.");
+            return Ok($"Gift card {nid} fetched successfully.");
         }
 
-        [HttpDelete("{id}")]
-        public IActionResult DeleteGiftCard(long id)
+        [HttpDelete("{nid}")]
+        public IActionResult DeleteGiftCard(long nid)
         {
             _giftCardsService.placeholderMethod();
-            return Ok($"Gift card {id} deleted successfully.");
+            return Ok($"Gift card {nid} deleted successfully.");
         }
     }
 }

@@ -29,25 +29,25 @@ namespace backend.Server.Controllers
             return Ok("Menu addon created successfully.");
         }
 
-        [HttpGet("{id}")]
-        public IActionResult GetMenuAddonById(long id)
+        [HttpGet("{nid}")]
+        public IActionResult GetMenuAddonBynid(long nid)
         {
             _menuAddonsService.placeholderMethod();
-            return Ok($"Menu addon {id} fetched successfully.");
+            return Ok($"Menu addon {nid} fetched successfully.");
         }
 
-        [HttpPut("{id}")]
-        public IActionResult UpdateMenuAddon([FromBody] MenuAddonUpdateDTO request, long id)
+        [HttpPut("{nid}")]
+        public IActionResult UpdateMenuAddon([FromBody] MenuAddonUpdateDTO request, long nid)
         {
             _menuAddonsService.placeholderMethod();
-            return Ok($"Menu addon {id} updated successfully.");
+            return Ok($"Menu addon {nid} updated successfully.");
         }
 
-        [HttpDelete("{id}")]
-        public IActionResult DeleteMenuAddon(long id)
+        [HttpDelete("{nid}")]
+        public IActionResult DeleteMenuAddon(long nid)
         {
             _menuAddonsService.placeholderMethod();
-            return Ok($"Menu addon {id} deleted successfully.");
+            return Ok($"Menu addon {nid} deleted successfully.");
         }
     }
 }

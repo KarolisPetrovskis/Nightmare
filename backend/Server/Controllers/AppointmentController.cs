@@ -29,25 +29,25 @@ namespace backend.Server.Controllers
             return Ok("Appointment created successfully.");
         }
 
-        [HttpGet("{id}")]
-        public IActionResult GetAppointmentById(long id)
+        [HttpGet("{nid}")]
+        public IActionResult GetAppointmentBynId(long nid)
         {
             _appointmentsService.placeholderMethod();
-            return Ok($"Appointment {id} fetched successfully.");
+            return Ok($"Appointment {nid} fetched successfully.");
         }
 
-        [HttpPut("{id}")]
-        public IActionResult UpdateAppointment([FromBody] AppointmentUpdateDTO request, long id)
+        [HttpPut("{nid}")]
+        public IActionResult UpdateAppointment([FromBody] AppointmentUpdateDTO request, long nid)
         {
             _appointmentsService.placeholderMethod();
-            return Ok($"Appointment {id} updated successfully.");
+            return Ok($"Appointment {nid} updated successfully.");
         }
 
-        [HttpDelete("{id}")]
-        public IActionResult DeleteAppointment(long id)
+        [HttpDelete("{nid}")]
+        public IActionResult DeleteAppointment(long nid)
         {
             _appointmentsService.placeholderMethod();
-            return Ok($"Appointment {id} deleted successfully.");
+            return Ok($"Appointment {nid} deleted successfully.");
         }
     }
 }

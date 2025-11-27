@@ -29,11 +29,11 @@ namespace backend.Server.Controllers
             return Ok("Receipt created successfully.");
         }
 
-        [HttpGet("{id}")]
-        public IActionResult GetReceiptById(long id)
+        [HttpGet("{nid}")]
+        public IActionResult GetReceiptBynid(long nid)
         {
             _receiptsService.placeholderMethod();
-            return Ok($"Receipt {id} fetched successfully.");
+            return Ok($"Receipt {nid} fetched successfully.");
         }
     }
 }

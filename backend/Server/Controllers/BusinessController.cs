@@ -29,25 +29,25 @@ namespace backend.Server.Controllers
             return Ok("Business created successfully.");
         }
 
-        [HttpGet("{id}")]
-        public IActionResult GetBusinessById(long id)
+        [HttpGet("{nid}")]
+        public IActionResult GetBusinessBynid(long nid)
         {
             _businessService.placeholderMethod();
-            return Ok($"Business {id} fetched successfully.");
+            return Ok($"Business {nid} fetched successfully.");
         }
 
-        [HttpPut("{id}")]
-        public IActionResult UpdateBusiness([FromBody] BusinessUpdateDTO request, long id)
+        [HttpPut("{nid}")]
+        public IActionResult UpdateBusiness([FromBody] BusinessUpdateDTO request, long nid)
         {
             _businessService.placeholderMethod();
-            return Ok($"Business {id} updated successfully.");
+            return Ok($"Business {nid} updated successfully.");
         }
 
-        [HttpDelete("{id}")]
-        public IActionResult DeleteBusiness(long id)
+        [HttpDelete("{nid}")]
+        public IActionResult DeleteBusiness(long nid)
         {
             _businessService.placeholderMethod();
-            return Ok($"Business {id} deleted successfully.");
+            return Ok($"Business {nid} deleted successfully.");
         }
     }
 }

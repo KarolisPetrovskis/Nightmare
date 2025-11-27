@@ -29,25 +29,25 @@ namespace backend.Server.Controllers
             return Ok("Employee created successfully.");
         }
 
-        [HttpGet("{id}")]
-        public IActionResult GetEmployeeById(long id)
+        [HttpGet("{nid}")]
+        public IActionResult GetEmployeeBynid(long nid)
         {
             _employeesService.placeholderMethod();
-            return Ok($"Employee {id} fetched successfully.");
+            return Ok($"Employee {nid} fetched successfully.");
         }
 
-        [HttpPut("{id}")]
-        public IActionResult UpdateEmployee([FromBody] UserUpdateDTO request, long id)
+        [HttpPut("{nid}")]
+        public IActionResult UpdateEmployee([FromBody] UserUpdateDTO request, long nid)
         {
             _employeesService.placeholderMethod();
-            return Ok($"Employee {id} updated successfully.");
+            return Ok($"Employee {nid} updated successfully.");
         }
 
-        [HttpDelete("{id}")]
-        public IActionResult DeleteEmployee(long id)
+        [HttpDelete("{nid}")]
+        public IActionResult DeleteEmployee(long nid)
         {
             _employeesService.placeholderMethod();
-            return Ok($"Employee {id} deleted successfully.");
+            return Ok($"Employee {nid} deleted successfully.");
         }
     }
 }
