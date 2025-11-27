@@ -37,21 +37,21 @@ namespace backend.Server.Controllers
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetOrderById(int id)
+        public IActionResult GetOrderById(long id)
         {
             _ordersService.placeholderMethod();
             return Ok($"Order {id} fetched successfully.");
         }
 
         [HttpDelete("{id}")]
-        public IActionResult DeleteOrder(int id)         //Different from YAML, but DELETE with body is not a good practice
+        public IActionResult DeleteOrder(long id)         //Different from YAML, but DELETE with body is not a good practice
         {
             _ordersService.placeholderMethod();
             return Ok("Order deleted successfully.");
         }
 
         [HttpGet("business/{businessId}")]
-        public IActionResult GetOrdersByBusinessId(int businessId)
+        public IActionResult GetOrdersByBusinessId(long businessId)
         {
             _ordersService.placeholderMethod();
             return Ok($"Orders for business {businessId} fetched successfully.");

@@ -37,14 +37,14 @@ namespace backend.Server.Controllers
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetVATRateById(int id)
+        public IActionResult GetVATRateById(long id)
         {
             _vatService.placeholderMethod();
             return Ok($"VAT rate {id} fetched successfully.");
         }
 
         [HttpDelete("{id}")]
-        public IActionResult DeleteVATRate(int id)         //Different from YAML, but DELETE with body is not a good practice
+        public IActionResult DeleteVATRate(long id)         //Different from YAML, but DELETE with body is not a good practice
         {
             _vatService.placeholderMethod();
             return Ok("VAT rate deleted successfully.");

@@ -30,7 +30,7 @@ namespace backend.Server.Controllers
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetReceiptById(int id)
+        public IActionResult GetReceiptById(long id)
         {
             _receiptsService.placeholderMethod();
             return Ok($"Receipt {id} fetched successfully.");

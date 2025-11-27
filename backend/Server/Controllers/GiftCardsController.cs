@@ -30,14 +30,14 @@ namespace backend.Server.Controllers
         } 
 
         [HttpGet("{id}")]
-        public IActionResult GetGiftCardById(int id)
+        public IActionResult GetGiftCardById(long id)
         {
             _giftCardsService.placeholderMethod();
             return Ok($"Gift card {id} fetched successfully.");
         }
 
         [HttpDelete("{id}")]
-        public IActionResult DeleteGiftCard(int id)
+        public IActionResult DeleteGiftCard(long id)
         {
             _giftCardsService.placeholderMethod();
             return Ok($"Gift card {id} deleted successfully.");

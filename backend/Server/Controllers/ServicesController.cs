@@ -37,14 +37,14 @@ namespace backend.Server.Controllers
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetServiceById(int id)
+        public IActionResult GetServiceById(long id)
         {
             _servicesService.placeholderMethod();
             return Ok($"Service {id} fetched successfully.");
         }
 
         [HttpDelete("{id}")]
-        public IActionResult DeleteService(int id)         //Different from YAML, but DELETE with body is not a good practice
+        public IActionResult DeleteService(long id)         //Different from YAML, but DELETE with body is not a good practice
         {
             _servicesService.placeholderMethod();
             return Ok("Service deleted successfully.");

@@ -30,21 +30,21 @@ namespace backend.Server.Controllers
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetEmployeeById(int id)
+        public IActionResult GetEmployeeById(long id)
         {
             _employeesService.placeholderMethod();
             return Ok($"Employee {id} fetched successfully.");
         }
 
         [HttpPut("{id}")]
-        public IActionResult UpdateEmployee([FromBody] UserUpdateDTO request, int id)
+        public IActionResult UpdateEmployee([FromBody] UserUpdateDTO request, long id)
         {
             _employeesService.placeholderMethod();
             return Ok($"Employee {id} updated successfully.");
         }
 
         [HttpDelete("{id}")]
-        public IActionResult DeleteEmployee(int id)
+        public IActionResult DeleteEmployee(long id)
         {
             _employeesService.placeholderMethod();
             return Ok($"Employee {id} deleted successfully.");

@@ -30,21 +30,21 @@ namespace backend.Server.Controllers
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetAppointmentById(int id)
+        public IActionResult GetAppointmentById(long id)
         {
             _appointmentsService.placeholderMethod();
             return Ok($"Appointment {id} fetched successfully.");
         }
 
         [HttpPut("{id}")]
-        public IActionResult UpdateAppointment([FromBody] AppointmentUpdateDTO request, int id)
+        public IActionResult UpdateAppointment([FromBody] AppointmentUpdateDTO request, long id)
         {
             _appointmentsService.placeholderMethod();
             return Ok($"Appointment {id} updated successfully.");
         }
 
         [HttpDelete("{id}")]
-        public IActionResult DeleteAppointment(int id)
+        public IActionResult DeleteAppointment(long id)
         {
             _appointmentsService.placeholderMethod();
             return Ok($"Appointment {id} deleted successfully.");

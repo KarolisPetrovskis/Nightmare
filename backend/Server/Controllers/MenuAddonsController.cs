@@ -30,21 +30,21 @@ namespace backend.Server.Controllers
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetMenuAddonById(int id)
+        public IActionResult GetMenuAddonById(long id)
         {
             _menuAddonsService.placeholderMethod();
             return Ok($"Menu addon {id} fetched successfully.");
         }
 
         [HttpPut("{id}")]
-        public IActionResult UpdateMenuAddon([FromBody] MenuAddonUpdateDTO request, int id)
+        public IActionResult UpdateMenuAddon([FromBody] MenuAddonUpdateDTO request, long id)
         {
             _menuAddonsService.placeholderMethod();
             return Ok($"Menu addon {id} updated successfully.");
         }
 
         [HttpDelete("{id}")]
-        public IActionResult DeleteMenuAddon(int id)
+        public IActionResult DeleteMenuAddon(long id)
         {
             _menuAddonsService.placeholderMethod();
             return Ok($"Menu addon {id} deleted successfully.");
