@@ -1,4 +1,5 @@
 using backend.Server.Interfaces;
+using backend.Server.Models.DTOs.User;
 using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Server.Controllers
@@ -12,6 +13,41 @@ namespace backend.Server.Controllers
         public EmployeesController(IEmployeesService employeesService)
         {
             _employeesService = employeesService;
+        }
+
+        [HttpGet]
+        public IActionResult GetEmployees([FromBody] UserGetAllDTO request)
+        {
+            _employeesService.placeholderMethod();
+            return Ok("Employees fetched successfully.");
+        }
+
+        [HttpPost]
+        public IActionResult CreateEmployee([FromBody] UserCreateDTO request)
+        {
+            _employeesService.placeholderMethod();
+            return Ok("Employee created successfully.");
+        }
+
+        [HttpGet("{id}")]
+        public IActionResult GetEmployeeById(int id)
+        {
+            _employeesService.placeholderMethod();
+            return Ok($"Employee {id} fetched successfully.");
+        }
+
+        [HttpPut("{id}")]
+        public IActionResult UpdateEmployee([FromBody] UserUpdateDTO request, int id)
+        {
+            _employeesService.placeholderMethod();
+            return Ok($"Employee {id} updated successfully.");
+        }
+
+        [HttpDelete("{id}")]
+        public IActionResult DeleteEmployee(int id)
+        {
+            _employeesService.placeholderMethod();
+            return Ok($"Employee {id} deleted successfully.");
         }
     }
 }

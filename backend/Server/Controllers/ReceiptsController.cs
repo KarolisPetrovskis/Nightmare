@@ -1,4 +1,5 @@
 using backend.Server.Interfaces;
+using backend.Server.Models.DTOs.Receipt;
 using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Server.Controllers
@@ -12,6 +13,27 @@ namespace backend.Server.Controllers
         public ReceiptsController(IReceiptsService receiptsService)
         {
             _receiptsService = receiptsService;
+        }
+
+        [HttpGet]
+        public IActionResult GetReceipts([FromBody] ReceiptGetAllDTO request)
+        {
+            _receiptsService.placeholderMethod();
+            return Ok("Receipts fetched successfully.");
+        }
+
+        [HttpPost]
+        public IActionResult CreateReceipt([FromBody] ReceiptGenerateDTO request)
+        {
+            _receiptsService.placeholderMethod();
+            return Ok("Receipt created successfully.");
+        }
+
+        [HttpGet("{id}")]
+        public IActionResult GetReceiptById(int id)
+        {
+            _receiptsService.placeholderMethod();
+            return Ok($"Receipt {id} fetched successfully.");
         }
     }
 }

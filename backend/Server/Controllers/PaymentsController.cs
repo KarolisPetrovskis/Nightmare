@@ -1,4 +1,5 @@
 using backend.Server.Interfaces;
+using backend.Server.Models.DTOs.Payment;
 using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Server.Controllers
@@ -14,5 +15,18 @@ namespace backend.Server.Controllers
             _paymentsService = paymentsService;
         }
 
+        [HttpPost("process")]
+        public IActionResult ProcessPayment([FromBody] ProcessPaymentDTO request)
+        {
+            _paymentsService.placeholderMethod();
+            return Ok("Payment processed successfully.");
+        }
+
+        [HttpPost("refund")]
+        public IActionResult RefundPayment([FromBody] RefundDTO request)
+        {
+            _paymentsService.placeholderMethod();
+            return Ok("Payment refunded successfully.");
+        }
     }
 }
