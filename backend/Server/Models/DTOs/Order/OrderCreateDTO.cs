@@ -11,3 +11,8 @@ public class OrderCreateDTO
     // do we have null or pottentially empty, or do we not have it at all?
     public required List<OrderDetailRequest> OrderDetails { get; set; } = new List<OrderDetailRequest>();
 }
+
+public class OrderDetailRequest
+{
+    // Placeholder for now, we can extend it later
+}
