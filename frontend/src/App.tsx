@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Routes, Route } from 'react-router-dom'
-import Navbar from './components/NavBar'
+import Navbar from './components/Navbar/Navbar'
 import Home from './pages/Home'
 import Forecast from './pages/Forecast'
-import MenuManagement from './pages/MenuManagement';
-import OrderManagement from './pages/OrderManagement';
-import ServiceManagement from './pages/ServiceManagement';
-import ScheduleManagement from './pages/ScheduleManagement';
+import MenuManagement from './pages/MenuManagement/MenuManagement';
+import OrderManagement from './pages/OrderManagement/OrderManagement';
+import ServiceManagement from './pages/ServiceManagement/ServiceManagement';
+import ScheduleManagement from './pages/ScheduleManagement/ScheduleManagement';
 
 export interface WeatherForecast {
   date: string;

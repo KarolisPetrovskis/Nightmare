@@ -1,8 +1,8 @@
 import "./OrderManagement.css";
-import "./Management.css";
+import "../Management.css";
 import Button from "@mui/material/Button";
 import { useState } from "react";
-import dishesData from "./dishesData.json";
+import dishesData from "../dishesData.json";
 
 type Option = {
     id: number;

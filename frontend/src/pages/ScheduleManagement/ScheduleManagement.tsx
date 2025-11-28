@@ -1,5 +1,5 @@
 import "./ScheduleManagement.css";
-import "../App.css";
+import "../../App.css";
 import { useState } from "react";
 
 function getMonthMatrix(year: number, month: number) {

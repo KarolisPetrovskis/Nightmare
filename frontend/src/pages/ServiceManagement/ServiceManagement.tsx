@@ -1,5 +1,5 @@
 import "./ServiceManagement.css";
-import "./Management.css";
+import "../Management.css";
 import Button from "@mui/material/Button";
 import { useState } from "react";
 
