@@ -400,16 +400,6 @@
   flex-shrink: 0;
 }
 
-.modal-actions .cancel-button {
-  order: 0;
-  background-color: #2d2d2d !important;
-}
-
-.modal-actions .save-button-modal {
-  order: 1;
-  background-color: #3e44b3 !important;
-  color: #fff !important;
-}
 
 .modal-content input[type="radio"] {
   accent-color: #646cff;

@@ -151,7 +151,17 @@ export default function OrderManagement() {
     };
 
     const toggleSelectOption = (treeId: number, optionId: number) => {
-        setModalSelections(prev => ({ ...prev, [treeId]: optionId }));
+        setModalSelections(prev => {
+            // if already selected → unselect it
+            if (prev[treeId] === optionId) {
+                const updated = { ...prev };
+                delete updated[treeId];
+                return updated;
+            }
+
+            // otherwise select normally
+            return { ...prev, [treeId]: optionId };
+        });
     };
 
     const saveModal = () => {
@@ -166,18 +176,18 @@ export default function OrderManagement() {
         closeModal();
     };
 
-const totalPrice = selectedOrder
-  ? selectedOrder.items.reduce((sum, it) => {
-      const base = it.dish.price * it.quantity;
-      // treat missing optionTrees as empty array to avoid "possibly undefined"
-      const optionsTotal = (it.dish.optionTrees || []).reduce((optSum, tree) => {
-        const selId = it.selectedOptions ? it.selectedOptions[tree.id] : undefined;
-        const sel = tree.options.find((o) => o.id === selId);
-        return optSum + (sel ? sel.price * it.quantity : 0);
-      }, 0);
-      return sum + base + optionsTotal;
-    }, 0)
-  : 0;
+    const totalPrice = selectedOrder
+        ? selectedOrder.items.reduce((sum, it) => {
+            const base = it.dish.price * it.quantity;
+            // treat missing optionTrees as empty array to avoid "possibly undefined"
+            const optionsTotal = (it.dish.optionTrees || []).reduce((optSum, tree) => {
+                const selId = it.selectedOptions ? it.selectedOptions[tree.id] : undefined;
+                const sel = tree.options.find((o) => o.id === selId);
+                return optSum + (sel ? sel.price * it.quantity : 0);
+            }, 0);
+            return sum + base + optionsTotal;
+        }, 0)
+        : 0;
 
     return (
         <div className="management">
@@ -294,18 +304,18 @@ const totalPrice = selectedOrder
 
                                         <div className="quantity-box">
                                             <button onClick={() => updateQuantity(it.id, -1)}>−</button>
-                                            <input 
-                                              type="number" 
-                                              value={it.quantity} 
-                                              onChange={(e) => setSelectedOrder(prev => prev ? {
-                                                ...prev,
-                                                items: prev.items.map(item => 
-                                                  item.id === it.id 
-                                                    ? { ...item, quantity: Math.max(1, parseInt(e.target.value) || 1) }
-                                                    : item
-                                                )
-                                              } : prev)}
-                                              min="1"
+                                            <input
+                                                type="number"
+                                                value={it.quantity}
+                                                onChange={(e) => setSelectedOrder(prev => prev ? {
+                                                    ...prev,
+                                                    items: prev.items.map(item =>
+                                                        item.id === it.id
+                                                            ? { ...item, quantity: Math.max(1, parseInt(e.target.value) || 1) }
+                                                            : item
+                                                    )
+                                                } : prev)}
+                                                min="1"
                                             />
                                             <button onClick={() => updateQuantity(it.id, +1)}>+</button>
                                         </div>
@@ -368,9 +378,16 @@ const totalPrice = selectedOrder
                         </div>
 
                         <div className="modal-actions">
-                            <Button className="item-action-button delete-item cancel-button" onClick={closeModal}>
+                            <Button
+                                className="item-action-button delete-item cancel-button"
+                                onClick={() => {
+                                    setModalSelections({});
+                                    closeModal();
+                                }}
+                            >
                                 Cancel
                             </Button>
+
                             <Button className="item-action-button new-item save-button-modal" onClick={saveModal}>
                                 Save
                             </Button>
