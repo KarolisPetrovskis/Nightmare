@@ -4,16 +4,30 @@ import Button from "@mui/material/Button";
 import { useState } from "react";
 import dishesData from "./dishesData.json";
 
+type Option = {
+    id: number;
+    name: string;
+    price: number;
+};
+
+type OptionTree = {
+    id: number;
+    name: string;
+    options: Option[];
+};
+
 type Dish = {
     id: number;
     name: string;
     price: number;
+    optionTrees?: OptionTree[]; // <-- include option trees
 };
 
 type OrderDish = {
     id: number;
     dish: Dish;
     quantity: number;
+    selectedOptions?: Record<number, number>; // treeId -> optionId
 };
 
 type Order = {
@@ -28,6 +42,11 @@ export default function OrderManagement() {
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [orderDirty, setOrderDirty] = useState(false);
     const [cancelMode, setCancelMode] = useState(false);
+
+    // modal state
+    const [modalOpen, setModalOpen] = useState(false);
+    const [modalItem, setModalItem] = useState<OrderDish | null>(null);
+    const [modalSelections, setModalSelections] = useState<Record<number, number>>({});
 
     const staffList = ["Alice", "Bob", "Charlie", "Diana"];
 
@@ -75,6 +94,7 @@ export default function OrderManagement() {
             id: Date.now(),
             dish: firstDish,
             quantity: 1,
+            selectedOptions: {},
         };
 
         setSelectedOrder({
@@ -117,13 +137,47 @@ export default function OrderManagement() {
         setOrderDirty(true);
     };
 
+    // open details modal for an order item
+    const openDetails = (item: OrderDish) => {
+        setModalItem(item);
+        setModalSelections(item.selectedOptions ? { ...item.selectedOptions } : {});
+        setModalOpen(true);
+    };
 
-    const totalPrice = selectedOrder
-        ? selectedOrder.items.reduce(
-            (sum, it) => sum + it.dish.price * it.quantity,
-            0
-        )
-        : 0;
+    const closeModal = () => {
+        setModalOpen(false);
+        setModalItem(null);
+        setModalSelections({});
+    };
+
+    const toggleSelectOption = (treeId: number, optionId: number) => {
+        setModalSelections(prev => ({ ...prev, [treeId]: optionId }));
+    };
+
+    const saveModal = () => {
+        if (!selectedOrder || !modalItem) return;
+
+        const updatedItems = selectedOrder.items.map(it =>
+            it.id === modalItem.id ? { ...it, selectedOptions: { ...modalSelections } } : it
+        );
+
+        setSelectedOrder({ ...selectedOrder, items: updatedItems });
+        setOrderDirty(true);
+        closeModal();
+    };
+
+const totalPrice = selectedOrder
+  ? selectedOrder.items.reduce((sum, it) => {
+      const base = it.dish.price * it.quantity;
+      // treat missing optionTrees as empty array to avoid "possibly undefined"
+      const optionsTotal = (it.dish.optionTrees || []).reduce((optSum, tree) => {
+        const selId = it.selectedOptions ? it.selectedOptions[tree.id] : undefined;
+        const sel = tree.options.find((o) => o.id === selId);
+        return optSum + (sel ? sel.price * it.quantity : 0);
+      }, 0);
+      return sum + base + optionsTotal;
+    }, 0)
+  : 0;
 
     return (
         <div className="management">
@@ -236,7 +290,7 @@ export default function OrderManagement() {
                                         <span>{it.dish.name}</span>
                                         <input type="text" value={`€ ${it.dish.price.toFixed(2)}`} readOnly />
 
-                                        <Button className="details-button">Details</Button>
+                                        <Button className="details-button" onClick={() => openDetails(it)}>Details</Button>
 
                                         <div className="quantity-box">
                                             <button onClick={() => updateQuantity(it.id, -1)}>−</button>
@@ -260,12 +314,71 @@ export default function OrderManagement() {
                                         </span>
 
                                     </div>
+
+                                    {/* show small summary of selected options */}
+                                    {it.selectedOptions && Object.keys(it.selectedOptions).length > 0 && (
+                                        <div style={{ marginTop: 8, color: '#cfcfcf', fontSize: '0.9rem' }}>
+                                            {it.dish.optionTrees?.map(tree => {
+                                                const sel = it.selectedOptions ? it.selectedOptions[tree.id] : undefined;
+                                                const selOpt = tree.options.find(o => o.id === sel);
+                                                return selOpt ? <div key={tree.id}>{tree.name}: {selOpt.name}</div> : null;
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
                     </>
                 )}
             </div>
+
+
+            {/* Modal */}
+            {modalOpen && modalItem && (
+                <div className="modal-overlay" onClick={closeModal}>
+                    <div className="modal-content option-tree-box" onClick={(e) => e.stopPropagation()}>
+                        <div className="option-tree-header" style={{ marginBottom: 8 }}>
+                            <input value={modalItem.dish.name} readOnly />
+                            <button className="delete-tree modal-close" onClick={closeModal}>✖</button>
+                        </div>
+
+                        <div className="option-list">
+                            {(modalItem.dish.optionTrees || []).map((tree) => (
+                                <div key={tree.id} className="option-tree-box" style={{ padding: 10 }}>
+                                    <div style={{ fontWeight: 600, marginBottom: 6 }}>{tree.name}</div>
+                                    <div className="option-list" style={{ gap: 6 }}>
+                                        {tree.options.map(opt => {
+                                            const selected = modalSelections[tree.id] === opt.id;
+                                            return (
+                                                <label key={opt.id} className="option-row" style={{ alignItems: 'center' }}>
+                                                    <input
+                                                        type="radio"
+                                                        name={`tree-${tree.id}`}
+                                                        checked={selected}
+                                                        onChange={() => toggleSelectOption(tree.id, opt.id)}
+                                                    />
+                                                    <span style={{ marginLeft: 8 }}>{opt.name}</span>
+                                                    <input type="text" value={`€ ${opt.price.toFixed(2)}`} readOnly style={{ width: 90, textAlign: 'right' }} />
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="modal-actions">
+                            <Button className="item-action-button delete-item cancel-button" onClick={closeModal}>
+                                Cancel
+                            </Button>
+                            <Button className="item-action-button new-item save-button-modal" onClick={saveModal}>
+                                Save
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 }
