@@ -2,6 +2,7 @@ import '../Management.css';
 import Button from '@mui/material/Button';
 import { useState, useEffect } from "react";
 import dishesData from '../dishesData.json';
+import Pagination from '@mui/material/Pagination';
 
 type Option = {
   id: number;
@@ -27,13 +28,15 @@ type Item = {
 
 
 export default function MenuManagement() {
-const [items, setItems] = useState<Item[]>(dishesData.dishes);
-const [selectedItem, setSelectedItem] = useState<Item | null>(null);
-const [editableItem, setEditableItem] = useState<Item | null>(null);
-const [itemDirty, setItemDirty] = useState(false);
-const [optionsDirty, setOptionsDirty] = useState(false);
-const [deleteMode, setDeleteMode] = useState(false);
+  const [items, setItems] = useState<Item[]>(dishesData.dishes);
+  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
+  const [editableItem, setEditableItem] = useState<Item | null>(null);
+  const [itemDirty, setItemDirty] = useState(false);
+  const [optionsDirty, setOptionsDirty] = useState(false);
+  const [deleteMode, setDeleteMode] = useState(false);
 
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 7;
 
   const toggleDeleteMode = () => {
     setDeleteMode((prev) => !prev);
@@ -97,7 +100,7 @@ const [deleteMode, setDeleteMode] = useState(false);
       setItemDirty(false);
     }
   };
-    
+
 
   const updateField = (key: keyof Item, value: string | number) => {
     setEditableItem(prev => prev ? { ...prev, [key]: value } : prev);
@@ -127,19 +130,31 @@ const [deleteMode, setDeleteMode] = useState(false);
         </div>
 
         <h3 className="item-list-label">Dish List</h3>
-
         <div className="item-list">
-          {items.map((item) => (
-            <div
-              key={item.id}
-              className={`item-card ${selectedItem?.id === item.id ? "selected" : ""}`}
-              onClick={() => handleItemClick(item)}
-            >
-              {item.name}
-              {deleteMode && <span className="delete-x">✖</span>}
-            </div>
-          ))}
+          {items
+            .slice((page - 1) * itemsPerPage, page * itemsPerPage)
+            .map((item) => (
+              <div
+                key={item.id}
+                className={`item-card ${selectedItem?.id === item.id ? "selected" : ""}`}
+                onClick={() => handleItemClick(item)}
+              >
+                {item.name}
+                {deleteMode && <span className="delete-x">✖</span>}
+              </div>
+            ))}
         </div>
+        <div className="item-list-pagination">
+          <Pagination
+            count={Math.ceil(items.length / itemsPerPage)}
+            page={page}
+            onChange={(e, value) => setPage(value)}
+            variant="outlined"
+            color="secondary"
+            className="dish-pagination"
+          />
+        </div>
+
       </div>
 
       <div className="info-container">

@@ -424,3 +424,31 @@
 body.modal-open {
   overflow: hidden;
 }
+
+
+.dish-pagination .MuiPaginationItem-root {
+  color: white;
+  border-color: rgba(255,255,255,0.4);
+}
+
+.dish-pagination .MuiPaginationItem-root:hover {
+  border-color: #646cff;
+}
+
+.dish-pagination .Mui-selected {
+  color: #646cff !important;
+  border-color: #646cff !important;
+}
+
+
+.item-list-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.item-list-pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: auto;
+  padding-top: 12px;
+}

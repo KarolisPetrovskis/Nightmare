@@ -3,6 +3,7 @@ import "../Management.css";
 import Button from "@mui/material/Button";
 import { useState } from "react";
 import dishesData from "../dishesData.json";
+import Pagination from '@mui/material/Pagination';
 
 type Option = {
     id: number;
@@ -47,6 +48,13 @@ export default function OrderManagement() {
     const [modalOpen, setModalOpen] = useState(false);
     const [modalItem, setModalItem] = useState<OrderDish | null>(null);
     const [modalSelections, setModalSelections] = useState<Record<number, number>>({});
+
+    const [page, setPage] = useState(1);
+    const itemsPerPage = 7;
+
+    const start = (page - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    const paginatedOrders = orders.slice(start, end);
 
     const staffList = ["Alice", "Bob", "Charlie", "Diana"];
 
@@ -213,7 +221,7 @@ export default function OrderManagement() {
                 <h3 className="item-list-label">Order List</h3>
 
                 <div className="item-list">
-                    {orders.map((order) => (
+    {paginatedOrders.map((order) => (
                         <div
                             key={order.id}
                             className={`item-card ${selectedOrder?.id === order.id ? "selected" : ""
@@ -235,6 +243,17 @@ export default function OrderManagement() {
                         </div>
                     ))}
                 </div>
+
+                        <div className="item-list-pagination">
+                          <Pagination
+                            count={Math.ceil(orders.length / itemsPerPage)}
+                            page={page}
+                            onChange={(e, value) => setPage(value)}
+                            variant="outlined"
+                            color="secondary"
+                            className="dish-pagination"
+                          />
+                        </div>
             </div>
 
             {/* INFORMATION CONTAINER */}
