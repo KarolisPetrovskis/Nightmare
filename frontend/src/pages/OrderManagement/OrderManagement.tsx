@@ -52,6 +52,10 @@ export default function OrderManagement() {
     const [page, setPage] = useState(1);
     const itemsPerPage = 7;
 
+    const [dishPage, setDishPage] = useState(1);
+    const dishesPerPage = 6; // adjust as needed
+
+
     const start = (page - 1) * itemsPerPage;
     const end = start + itemsPerPage;
     const paginatedOrders = orders.slice(start, end);
@@ -221,7 +225,7 @@ export default function OrderManagement() {
                 <h3 className="item-list-label">Order List</h3>
 
                 <div className="item-list">
-    {paginatedOrders.map((order) => (
+                    {paginatedOrders.map((order) => (
                         <div
                             key={order.id}
                             className={`item-card ${selectedOrder?.id === order.id ? "selected" : ""
@@ -244,16 +248,16 @@ export default function OrderManagement() {
                     ))}
                 </div>
 
-                        <div className="item-list-pagination">
-                          <Pagination
-                            count={Math.ceil(orders.length / itemsPerPage)}
-                            page={page}
-                            onChange={(e, value) => setPage(value)}
-                            variant="outlined"
-                            color="secondary"
-                            className="dish-pagination"
-                          />
-                        </div>
+                <div className="item-list-pagination">
+                    <Pagination
+                        count={Math.ceil(orders.length / itemsPerPage)}
+                        page={page}
+                        onChange={(e, value) => setPage(value)}
+                        variant="outlined"
+                        color="secondary"
+                        className="dish-pagination"
+                    />
+                </div>
             </div>
 
             {/* INFORMATION CONTAINER */}
@@ -313,52 +317,65 @@ export default function OrderManagement() {
                         <h2 className="section-title">Dishes in Order</h2>
 
                         <div className="option-tree-list">
-                            {selectedOrder.items.map((it) => (
-                                <div key={it.id} className="option-tree-box">
-                                    <div className="option-row">
-                                        <span>{it.dish.name}</span>
-                                        <input type="text" value={`€ ${it.dish.price.toFixed(2)}`} readOnly />
+                            {selectedOrder.items
+                                .slice((dishPage - 1) * dishesPerPage, dishPage * dishesPerPage)
+                                .map((it) => (
+                                    <div key={it.id} className="option-tree-box">
+                                        <div className="option-row">
+                                            <span>{it.dish.name}</span>
+                                            <input type="text" value={`€ ${it.dish.price.toFixed(2)}`} readOnly />
 
-                                        <Button className="details-button" onClick={() => openDetails(it)}>Details</Button>
+                                            <Button className="details-button" onClick={() => openDetails(it)}>Details</Button>
 
-                                        <div className="quantity-box">
-                                            <button onClick={() => updateQuantity(it.id, -1)}>−</button>
-                                            <input
-                                                type="number"
-                                                value={it.quantity}
-                                                onChange={(e) => setSelectedOrder(prev => prev ? {
-                                                    ...prev,
-                                                    items: prev.items.map(item =>
-                                                        item.id === it.id
-                                                            ? { ...item, quantity: Math.max(1, parseInt(e.target.value) || 1) }
-                                                            : item
-                                                    )
-                                                } : prev)}
-                                                min="1"
-                                            />
-                                            <button onClick={() => updateQuantity(it.id, +1)}>+</button>
+                                            <div className="quantity-box">
+                                                <button onClick={() => updateQuantity(it.id, -1)}>−</button>
+                                                <input
+                                                    type="number"
+                                                    value={it.quantity}
+                                                    onChange={(e) => setSelectedOrder(prev => prev ? {
+                                                        ...prev,
+                                                        items: prev.items.map(item =>
+                                                            item.id === it.id
+                                                                ? { ...item, quantity: Math.max(1, parseInt(e.target.value) || 1) }
+                                                                : item
+                                                        )
+                                                    } : prev)}
+                                                    min="1"
+                                                />
+                                                <button onClick={() => updateQuantity(it.id, +1)}>+</button>
+                                            </div>
+                                            <span className="delete-dish" onClick={() => removeDishFromOrder(it.id)}>
+                                                ✖
+                                            </span>
+
                                         </div>
-                                        <span className="delete-dish" onClick={() => removeDishFromOrder(it.id)}>
-                                            ✖
-                                        </span>
 
+                                        {/* show small summary of selected options */}
+                                        {it.selectedOptions && Object.keys(it.selectedOptions).length > 0 && (
+                                            <div style={{ marginTop: 8, color: '#cfcfcf', fontSize: '0.9rem' }}>
+                                                {it.dish.optionTrees?.map(tree => {
+                                                    const sel = it.selectedOptions ? it.selectedOptions[tree.id] : undefined;
+                                                    const selOpt = tree.options.find(o => o.id === sel);
+                                                    return selOpt ? <div key={tree.id}>{tree.name}: {selOpt.name}</div> : null;
+                                                })}
+                                            </div>
+                                        )}
                                     </div>
-
-                                    {/* show small summary of selected options */}
-                                    {it.selectedOptions && Object.keys(it.selectedOptions).length > 0 && (
-                                        <div style={{ marginTop: 8, color: '#cfcfcf', fontSize: '0.9rem' }}>
-                                            {it.dish.optionTrees?.map(tree => {
-                                                const sel = it.selectedOptions ? it.selectedOptions[tree.id] : undefined;
-                                                const selOpt = tree.options.find(o => o.id === sel);
-                                                return selOpt ? <div key={tree.id}>{tree.name}: {selOpt.name}</div> : null;
-                                            })}
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
+                                ))}
                         </div>
                     </>
                 )}
+                <div className="option-tree-pagination">
+                    <Pagination
+                        count={Math.ceil((selectedOrder?.items.length || 0) / dishesPerPage)}
+                        page={dishPage}
+                        onChange={(e, value) => setDishPage(value)}
+                        variant="outlined"
+                        color="secondary"
+                        className='dish-pagination'
+                    />
+                </div>
+
             </div>
 
 

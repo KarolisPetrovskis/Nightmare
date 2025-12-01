@@ -452,3 +452,23 @@ body.modal-open {
   margin-top: auto;
   padding-top: 12px;
 }
+
+.option-container {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 2;
+  flex-basis: 0;
+  background-color: #1a1a1a;
+  margin: 10px;
+  padding: 16px;
+  border-radius: 8px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.option-tree-pagination {
+  margin-top: auto;
+  padding-top: 12px;
+  display: flex;
+  justify-content: center;
+}
