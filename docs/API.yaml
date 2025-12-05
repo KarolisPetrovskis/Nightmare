@@ -1,0 +1,1845 @@
+openapi: 3.0.3
+info:
+  title: Business Management API
+  version: 1.0.0
+  description: >
+    Backend API for managing authentication, payments, discounts, tax, giftcards, appointments, and services.
+components:
+   securitySchemes:
+      bearerAuth:
+         type: http
+         scheme: bearer
+         bearerFormat: JWT
+servers:
+- url: https://api.example.com
+  description: Production server
+
+paths:
+  ##############################################################
+  # AUTHENTICATION MODULE
+  ##############################################################
+
+  /auth/login:
+    post:
+      summary: Log in a user
+      tags: [ Authentication ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ email, password ]
+              properties:
+                email: { type: string, format: email, example: "john@example.com" }
+                password: { type: string, example: "secret123" }
+      responses:
+        "200":
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+                  userId: { type: number }
+                  role: { type: string }
+        "401": { description: Invalid credentials }
+        "500": { description: Internal server error }
+
+  /auth/register:
+    post:
+      summary: Register a new user
+      tags: [ Authentication ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ name, surname, email, password, user_type ]
+              properties:
+                name: { type: string }
+                surname: { type: string }
+                email: { type: string, format: email }
+                password: { type: string }
+                user_type: { type: number, description: "ID from User_type table" }
+                address: { type: string }
+                telephone: { type: string }
+                plan_id: { type: number, description: "ID from Plans table" }
+                bank_account: { type: string, example: "LT123456789012345678" }
+      responses:
+        "201": { description: User registered successfully }
+        "400": { description: Missing or invalid fields }
+        "409": { description: Email already exists }
+        
+  /auth/logout:
+      post:
+         summary: Log out a user
+         tags: [ Authentication ]
+         security:
+            - bearerAuth: []
+         responses:
+            "200": { description: User logged out successfully }
+            "401": { description: Unauthorized – invalid or expired token }
+            "500": { description: Internal server error }
+
+  ##############################################################
+  # PAYMENT SYSTEM
+  ##############################################################
+
+  /payments/process:
+    post:
+      summary: Process a payment for an order or service via Stripe
+      tags: [ Payments ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+                - currency
+                - orderId
+                - payment_method
+              properties:
+                amount:
+                  type: number
+                  example: 42.50
+                  description: Total amount to be charged
+                currency:
+                  type: string
+                  example: "eur"
+                  description: Currency code (ISO 4217 format)
+                orderId:
+                  type: integer
+                  example: 123
+                  description: ID of the order being paid for
+                payment_method:
+                  type: string
+                  enum: [ card, cash, giftcard ]
+                  example: "card"
+                  description: Type of payment used
+                stripe_payment_method_id:
+                  type: string
+                  example: "pm_1QabcDeFgHiJKlMn"
+                  description: Stripe payment method ID (required for card payments)
+                customer_email:
+                  type: string
+                  example: "customer@example.com"
+                  description: Customer email for Stripe receipt
+      responses:
+        "200":
+          description: Payment processed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payment_id:
+                    type: string
+                    example: "pi_1QWxyzAbCdEfGh"
+                    description: Stripe payment intent ID
+                  amount:
+                    type: number
+                    example: 42.50
+                  currency:
+                    type: string
+                    example: "eur"
+                  status:
+                    type: string
+                    example: "succeeded"
+                  receipt_url:
+                    type: string
+                    example: "https://dashboard.stripe.com/payments/pi_1QWxyzAbCdEfGh"
+        "400":
+          description: Invalid payment request data
+        "402":
+          description: Payment declined or requires authentication
+        "500":
+          description: Stripe payment processing error
+
+  /payments/refund:
+    post:
+      summary: Refund a previous Stripe payment
+      tags: [ Payments ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - payment_id
+                - amount
+                - reason
+              properties:
+                payment_id:
+                  type: string
+                  example: "pi_1QWxyzAbCdEfGh"
+                  description: Stripe payment intent ID to refund
+                amount:
+                  type: number
+                  example: 20.00
+                  description: Amount to refund (partial or full)
+                reason:
+                  type: string
+                  example: "Customer cancellation"
+                  description: Reason for refund
+      responses:
+        "200":
+          description: Refund processed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  refund_id:
+                    type: string
+                    example: "re_1QabcDxyzEfGhIj"
+                    description: Stripe refund ID
+                  amount_refunded:
+                    type: number
+                    example: 20.00
+                  status:
+                    type: string
+                    example: "succeeded"
+        "400":
+          description: Invalid payment or refund data
+        "404":
+          description: Payment not found
+        "500":
+          description: Stripe refund processing error
+
+
+ 
+  ##############################################################
+  # GIFTCARD SYSTEM
+  ##############################################################
+
+  /giftcards:
+    get:
+       summary: Get all gift cards for a specific business
+       tags: [ Gift Cards ]
+       parameters:
+          - in: query
+            name: business_id
+            required: true
+            schema: { type: number }
+            description: The ID of the business whose gift cards to retrieve
+          - in: query
+            name: page
+            required: false
+            schema: { type: integer, example: 1 }
+            description: Page number for pagination
+          - in: query
+            name: per_page
+            required: false
+            schema: { type: integer, example: 10 }
+            description: Number of gift cards per page
+       responses:
+          "200":
+             description: Gift cards retrieved successfully
+             content:
+                application/json:
+                   schema:
+                      type: object
+                      properties:
+                         page: { type: integer, example: 1 }
+                         per_page: { type: integer, example: 10 }
+                         total: { type: integer, example: 25 }
+                         giftcards:
+                            type: array
+                            items:
+                               type: object
+                               properties:
+                                  nid: { type: number, example: 101 }
+                                  code: { type: string, example: "GC123456" }
+                                  value: { type: number, format: decimal, example: 50.00 }
+                                  date_created: { type: string, format: date-time, example: "2025-10-19T14:22:00Z" }
+                                  business_id: { type: number, example: 4 }
+          "404": { description: No gift cards found for this business }
+          "500": { description: Internal server error }
+
+    post:
+         summary: Create a new gift card
+         tags: [ Gift Cards ]
+         requestBody:
+            required: true
+            content:
+               application/json:
+                  schema:
+                     type: object
+                     required: [ code, value, business_id ]
+                     properties:
+                        code: { type: string, example: "GC123456" }
+                        value: { type: number, format: decimal, example: 50.00 }
+                        business_id: { type: number }
+         responses:
+            "201": { description: Gift card created successfully }
+            "400": { description: Invalid request data }
+            "409": { description: Gift card code already exists }
+            "500": { description: Internal server error }
+
+  /giftcards/{nid}:
+    get:
+       summary: Get a specific gift card by ID
+       tags: [ Gift Cards ]
+       parameters:
+          - in: path
+            name: nid
+            required: true
+            schema: { type: number }
+            description: The ID of the gift card to retrieve
+       responses:
+          "200":
+             description: Gift card retrieved successfully
+             content:
+                application/json:
+                   schema:
+                    type: object
+                    properties:
+                         nid: { type: number, example: 101 }
+                         code: { type: string, example: "GC123456" }
+                         value: { type: number, format: decimal, example: 50.00 }
+                         date_created: { type: string, format: date-time, example: "2025-10-19T14:22:00Z" }
+                         business_id: { type: number, example: 4 }
+          "404": { description: Gift card not found }
+          "500": { description: Internal server error }
+
+    delete:
+       summary: Redeem a gift card (deletes it)
+       tags: [ Gift Cards ]
+       parameters:
+          - in: path
+            name: nid
+            required: true
+            schema: { type: number }
+            description: The ID of the gift card to redeem/delete
+       responses:
+          "200": { description: Gift card redeemed and deleted successfully }
+          "404": { description: Gift card not found }
+          "500": { description: Internal server error }
+
+
+  ##############################################################
+  # APPOINTMENTS CRUD
+  ##############################################################
+
+  /appointments:
+    get:
+      summary: Retrieve all appointments or filter by date or worker
+      tags: [ Appointments ]
+      parameters:
+         - in: query
+           name: appointment_date
+           required: false
+           schema: { type: string, format: date }
+           description: Filter appointments by date
+         - in: query
+           name: employee_id
+           required: false
+           schema: { type: number }
+           description: Filter appointments by employee
+         - in: query
+           name: page
+           required: false
+           schema: { type: integer, example: 1 }
+           description: Page number for pagination
+         - in: query
+           name: per_page
+           required: false
+           schema: { type: integer, example: 10 }
+           description: Number of appointments per page
+      responses:
+         '200':
+            description: Appointments retrieved successfully
+            content:
+               application/json:
+                  schema:
+                     type: object
+                     properties:
+                        page:
+                           type: integer
+                           example: 1
+                        per_page:
+                           type: integer
+                           example: 10
+                        total:
+                           type: integer
+                           example: 25
+                        appointments:
+                           type: array
+                           items:
+                              type: object
+                              properties:
+                                 nid: { type: number, example: 101 }
+                                 name: { type: string, example: "Haircut Appointment" }
+                                 business_id: { type: number, example: 4 }
+                                 service_id: { type: number, example: 8 }
+                                 employee_id: { type: number, example: 12 }
+                                 appointment_date: { type: string, format: date, example: "2025-10-20" }
+                                 appointment_start: { type: string, example: "10:00" }
+                                 appointment_end: { type: string, example: "11:00" }
+                                 total: { type: number, example: 25.50 }
+                                 status_id: { type: number, example: 1 }
+                                 customer_code: { type: string, example: "CUST12345" }
+                                 customer_name: { type: string, example: "Jane Doe" }
+                                 customer_number: { type: string, example: "+37060000000" }
+         '404': { description: No appointments found matching criteria }
+         '500': { description: Internal server error }
+
+    post:
+      summary: Create a new appointment
+      tags: [ Appointments ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ name, business_id, service_id, employee_id, appointment_date, appointment_start, appointment_end ]
+              properties:
+                name: { type: string }
+                business_id: { type: number }
+                service_id: { type: number }
+                employee_id: { type: number }
+                appointment_date: { type: string, format: date }
+                appointment_start: { type: string, example: "10:00" }
+                appointment_end: { type: string, example: "11:00" }
+                total: { type: number, example: 25.50 }
+                status_id: { type: number, example: 1 }
+                customer_code: { type: string, example: "CUST12345" }
+                customer_name: { type: string, example: "Jane Doe" }
+                customer_number: { type: string, example: "+37060000000" }
+      responses:
+        "201": { description: Appointment created successfully }
+        "400": { description: Invalid appointment data }
+        "409": { description: Appointment conflict }
+        "500": { description: Internal server error }
+
+  /appointments/{nid}:
+    parameters:
+      - in: path
+        name: nid
+        required: true
+        schema: { type: number }
+        description: ID of the appointment
+
+    get:
+      summary: Retrieve a specific appointment by ID
+      tags: [ Appointments ]
+      responses:
+        "200":
+          description: Appointment retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  nid: { type: number }
+                  name: { type: string }
+                  business_id: { type: number }
+                  service_id: { type: number }
+                  employee_id: { type: number }
+                  appointment_date: { type: string, format: date }
+                  appointment_start: { type: string }
+                  appointment_end: { type: string }
+                  total: { type: number, example: 25.50 }
+                  status_id: { type: number, example: 1 }
+                  customer_code: { type: string, example: "CUST12345" }
+                  customer_name: { type: string, example: "Jane Doe" }
+                  customer_number: { type: string, example: "+37060000000" }
+        "404": { description: Appointment not found }
+        "500": { description: Internal server error }
+
+    put:
+      summary: Update appointment details
+      tags: [ Appointments ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                employee_id: { type: number }
+                service_id: { type: number }
+                appointment_date: { type: string, format: date }
+                appointment_start: { type: string }
+                appointment_end: { type: string }
+                total: { type: number}
+                status_id: { type: number }
+                customer_code: { type: string }
+                customer_name: { type: string }
+                customer_number: { type: string }
+      responses:
+        "200": { description: Appointment updated successfully }
+        "400": { description: Invalid data }
+        "404": { description: Appointment not found }
+        "500": { description: Internal server error }
+
+    delete:
+      summary: Delete an appointment
+      tags: [ Appointments ]
+      responses:
+        "200": { description: Appointment deleted successfully }
+        "404": { description: Appointment not found }
+        "500": { description: Internal server error }
+
+  ##############################################################
+  # SERVICES CRUD
+  ##############################################################
+
+  /services:
+      get:
+         summary: Retrieve all services by business ID
+         tags: [ Services ]
+         parameters:
+            - in: query
+              name: business_id
+              required: true
+              schema:
+                 type: integer
+                 example: 5
+              description: The ID of the business whose services to retrieve
+            - in: query
+              name: page
+              required: false
+              schema:
+                 type: integer
+                 example: 1
+              description: Page number for pagination
+            - in: query
+              name: per_page
+              required: false
+              schema:
+                 type: integer
+                 example: 10
+              description: Number of services per page
+         responses:
+            "200":
+               description: Services retrieved successfully
+               content:
+                  application/json:
+                     schema:
+                        type: object
+                        properties:
+                           page:
+                              type: integer
+                              example: 1
+                           per_page:
+                              type: integer
+                              example: 10
+                           total:
+                              type: integer
+                              example: 25
+                           services:
+                              type: array
+                              items:
+                                 type: object
+                                 properties:
+                                    nid:
+                                       type: integer
+                                       example: 7
+                                    name:
+                                       type: string
+                                       example: "Haircut"
+                                    price:
+                                       type: number
+                                       example: 25.00
+                                    time_min:
+                                       type: integer
+                                       example: 45
+                                    discount:
+                                       type: number
+                                       example: 10.0
+                                    vat_id:
+                                       type: integer
+                                       example: 2
+                                    business_id:
+                                       type: integer
+                                       example: 5
+            "404":
+               description: No services found for this business
+            "400":
+               description: Invalid business ID format
+            "500":
+               description: Internal server error
+
+      post:
+         summary: Create a new service
+         tags: [ Services ]
+         requestBody:
+            required: true
+            content:
+               application/json:
+                  schema:
+                     type: object
+                     required: [ name, price, time_min, discount, vat_id, business_id ]
+                     properties:
+                        name: { type: string }
+                        price: { type: number }
+                        time_min: { type: number, description: "Duration in minutes" }
+                        discount: { type: number }
+                        vat_id: { type: number }
+                        business_id: { type: number }
+         responses:
+            "201": { description: Service created successfully }
+            "400": { description: Invalid service data }
+            "409": { description: Service already exists }
+            "500": { description: Internal server error }
+
+      put:
+         summary: Update service details
+         tags: [ Services ]
+         parameters:
+            - in: query
+              name: id
+              required: true
+              schema: { type: number }
+              description: The ID of the service to update
+         requestBody:
+            content:
+               application/json:
+                  schema:
+                     type: object
+                     properties:
+                        name: { type: string }
+                        price: { type: number }
+                        time_min: { type: number }
+                        discount: { type: number }
+                        vat_id: { type: number }
+         responses:
+            "200": { description: Service updated successfully }
+            "400": { description: Invalid data }
+            "404": { description: Service not found }
+            "500": { description: Internal server error }
+
+      delete:
+         summary: Delete a service
+         tags: [ Services ]
+         parameters:
+            - in: query
+              name: id
+              required: true
+              schema: { type: number }
+              description: The ID of the service to delete
+         responses:
+            "200": { description: Service deleted successfully }
+            "404": { description: Service not found }
+            "500": { description: Internal server error }
+
+  /services/{id}:
+      get:
+         summary: Retrieve a specific service by ID
+         tags: [ Services ]
+         parameters:
+            - in: path
+              name: id
+              required: true
+              schema:
+                 type: integer
+              description: The ID of the service to retrieve
+         responses:
+            "200":
+               description: Service retrieved successfully
+               content:
+                  application/json:
+                     schema:
+                        type: object
+                        properties:
+                           nid:
+                              type: integer
+                              example: 7
+                           name:
+                              type: string
+                              example: "Haircut"
+                           price:
+                              type: number
+                              example: 25.00
+                           time_min:
+                              type: integer
+                              example: 45
+                           discount:
+                              type: number
+                              example: 10.0
+                           vat_id:
+                              type: integer
+                              example: 2
+                           business_id:
+                              type: integer
+                              example: 5
+            "404":
+               description: Service not found
+            "400":
+               description: Invalid service ID format
+            "500":
+               description: Internal server error
+
+
+  ##############################################################
+
+  /businesses:
+    get:
+      summary: Retrieve all businesses of the current owner
+      tags: [ Businesses ]
+      parameters:
+        - in: query
+          name: owner_id
+          required: true
+          schema: { type: number }
+          description: ID of the owner to list businesses for
+      responses:
+        "200": 
+          description: Businesses retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    nid: { type: number }
+                    name: { type: string }
+                    type: { type: number }
+                    owner_id: { type: number }
+                    address: { type: string }
+                    phone: { type: string }
+                    email: { type: string }
+                    
+        "404": { description: No businesses found }
+        "500": { description: Internal server error }
+
+    post:
+      summary: Create a new business
+      tags: [ Businesses ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ name, type, owner_id ]
+              properties:
+                name: { type: string }
+                type: { type: number, description: "ID from Business_type_names table" }
+                owner_id: { type: number, description: "ID from User table" }
+                address: { type: string, example: "123 Main St" }
+                phone: { type: string, example: "+37060000000" }
+                email: { type: string, format: email, example: "info@business.com" }
+      responses:
+        "201": { description: Business created successfully }
+        "400": { description: Invalid data }
+        "409": { description: Business already exists }
+        "500": { description: Internal server error }
+
+  /businesses/{nid}:
+    parameters:
+      - in: path
+        name: nid
+        required: true
+        schema: { type: number }
+        description: ID of the business
+
+    get:
+      summary: Retrieve a specific business by ID
+      tags: [ Businesses ]
+      responses:
+        "200":
+          description: Business retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  nid: { type: number }
+                  name: { type: string }
+                  type: { type: number }
+                  owner_id: { type: number }
+                  address: { type: string }
+                  phone: { type: string }
+                  email: { type: string }
+        "404": { description: Business not found }
+        "500": { description: Internal server error }
+
+    put:
+      summary: Update an existing business
+      tags: [ Businesses ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                type: { type: number }
+                owner_id: { type: number }
+                address: { type: string }
+                phone: { type: string }
+                email: { type: string }
+      responses:
+        "200": { description: Business updated successfully }
+        "400": { description: Invalid data }
+        "404": { description: Business not found }
+        "500": { description: Internal server error }
+
+    delete:
+      summary: Delete a business
+      tags: [ Businesses ]
+      responses:
+        "200": { description: Business deleted successfully }
+        "404": { description: Business not found }
+        "500": { description: Internal server error }
+
+  ##############################################################
+  # EMPLOYEES CRUD
+  ##############################################################
+
+  /employees:
+    get:
+      summary: Retrieve all employees of a company
+      tags: [ Employees ]
+      parameters:
+         - in: query
+           name: business_id
+           required: true
+           schema: 
+              type: number
+              example: 4
+           description: ID of the business to list employees for
+         - in: query
+           name: page
+           required: false
+           schema:
+              type: integer
+              example: 1
+           description: Page number for pagination
+         - in: query
+           name: per_page
+           required: false
+           schema:
+              type: integer
+              example: 10
+           description: Number of employees per page
+      responses:
+         '200':
+            description: Employees retrieved successfully
+            content:
+               application/json:
+                  schema:
+                     type: object
+                     properties:
+                        page:
+                           type: integer
+                           example: 1
+                        per_page:
+                           type: integer
+                           example: 10
+                        total:
+                           type: integer
+                           example: 25
+                        employees:
+                           type: array
+                           items:
+                              type: object
+                              properties:
+                                 nid: { type: number, example: 12 }
+                                 name: { type: string, example: "John" }
+                                 surname: { type: string, example: "Doe" }
+                                 email: { type: string, example: "john.doe@example.com" }
+                                 user_type: { type: number, example: 2 }
+                                 address: { type: string, example: "123 Main St" }
+                                 telephone: { type: string, example: "+37060000000" }
+                                 plan_id: { type: number, example: 1 }
+                                 salary: { type: number, example: 2500.00 }
+                                 boss_id: { type: number, example: 5 }
+                                 work_start: { type: string, example: "09:00" }
+                                 work_end: { type: string, example: "17:00" }
+         '404': { description: No employees found for this business }
+         '400': { description: Invalid business ID format }
+         '500': { description: Internal server error }
+
+
+    post:
+      summary: Create a new employee
+      tags: [ Employees ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ name, surname, email, user_type, boss_id ]
+              properties:
+                name: { type: string }
+                surname: { type: string }
+                email: { type: string, format: email }
+                password: { type: string }
+                user_type: { type: number }
+                address: { type: string }
+                telephone: { type: string }
+                plan_id: { type: number }
+                salary: { type: number }
+                boss_id: { type: number }
+                work_start: { type: string, example: "09:00" }
+                work_end: { type: string, example: "17:00" }
+      responses:
+        "201": { description: Employee created successfully }
+        "400": { description: Invalid data }
+        "409": { description: Employee already exists }
+        "500": { description: Internal server error }
+
+  /employees/{nid}:
+    parameters:
+      - in: path
+        name: nid
+        required: true
+        schema: { type: number }
+        description: ID of the employee
+
+    get:
+      summary: Retrieve a specific employee by ID
+      tags: [ Employees ]
+      responses:
+        "200":
+          description: Employee retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  nid: { type: number }
+                  name: { type: string }
+                  surname: { type: string }
+                  email: { type: string }
+                  user_type: { type: number }
+                  address: { type: string }
+                  telephone: { type: string }
+                  plan_id: { type: number }
+                  salary: { type: number }
+                  boss_id: { type: number }
+                  work_start: { type: string }
+                  work_end: { type: string }
+        "404": { description: Employee not found }
+        "500": { description: Internal server error }
+
+    put:
+      summary: Update an existing employee
+      tags: [ Employees ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                surname: { type: string }
+                email: { type: string, format: email }
+                user_type: { type: number }
+                address: { type: string }
+                telephone: { type: string }
+                plan_id: { type: number }
+                salary: { type: number }
+                boss_id: { type: number }
+                work_start: { type: string }
+                work_end: { type: string }
+      responses:
+        "200": { description: Employee updated successfully }
+        "400": { description: Invalid data }
+        "404": { description: Employee not found }
+        "500": { description: Internal server error }
+
+    delete:
+      summary: Delete an employee
+      tags: [ Employees ]
+      responses:
+        "200": { description: Employee deleted successfully }
+        "404": { description: Employee not found }
+        "500": { description: Internal server error }
+
+  ##############################################################
+  # MENU CRUD
+  ##############################################################
+
+  /menu:
+    get:
+      summary: Retrieve all menu items for a specific business
+      tags: [ Menu ]
+      parameters:
+         - in: query
+           name: business_id
+           required: true
+           schema:
+              type: number
+              example: 4
+           description: The ID of the business whose menu items you want to retrieve
+         - in: query
+           name: page
+           required: false
+           schema:
+              type: integer
+              example: 1
+           description: Page number for pagination
+         - in: query
+           name: per_page
+           required: false
+           schema:
+              type: integer
+              example: 10
+           description: Number of menu items per page
+      responses:
+         '200':
+            description: Menu items retrieved successfully
+            content:
+               application/json:
+                  schema:
+                     type: object
+                     properties:
+                        page:
+                           type: integer
+                           example: 1
+                        per_page:
+                           type: integer
+                           example: 10
+                        total:
+                           type: integer
+                           example: 25
+                        menu_items:
+                           type: array
+                           items:
+                              type: object
+                              properties:
+                                 nid: { type: number, example: 12 }
+                                 name: { type: string, example: "Margherita Pizza" }
+                                 business_id: { type: number, example: 4 }
+                                 price: { type: number, example: 12.50 }
+                                 discount: { type: number, example: 0.0 }
+                                 vat_id: { type: number, example: 2 }
+                                 discount_time: { type: string, format: date, example: "2025-10-20" }
+
+    post:
+      summary: Create a new menu item
+      tags: [ Menu ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ name, business_id, price, vat_id ]
+              properties:
+                name: { type: string, example: "Margherita Pizza" }
+                business_id: { type: number, example: 4 }
+                price: { type: number, example: 12.50 }
+                discount: { type: number, example: 0.0 }
+                vat_id: { type: number, example: 2 }
+                discount_time: { type: string, format: date, example: "2025-10-20" }
+      responses:
+        "201": { description: Menu item created successfully }
+        "400": { description: Invalid data }
+        "409": { description: Duplicate menu item }
+        "500": { description: Internal server error }
+
+  /menu/{nid}:
+    parameters:
+      - in: path
+        name: nid
+        required: true
+        schema: { type: number }
+        description: ID of the menu item
+
+    get:
+      summary: Retrieve a single menu item by ID
+      tags: [ Menu ]
+      responses:
+        "200":
+          description: Menu item retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  nid: { type: number }
+                  name: { type: string }
+                  business_id: { type: number }
+                  price: { type: number }
+                  discount: { type: number }
+                  vat_id: { type: number }
+                  discount_time: { type: string }
+        "404": { description: Menu item not found }
+        "500": { description: Internal server error }
+
+    put:
+      summary: Update menu item details
+      tags: [ Menu ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                price: { type: number }
+                discount: { type: number }
+                vat_id: { type: number }
+                discount_time: { type: string }
+      responses:
+        "200": { description: Menu item updated successfully }
+        "400": { description: Invalid data }
+        "404": { description: Menu item not found }
+        "500": { description: Internal server error }
+
+    delete:
+      summary: Delete a menu item
+      tags: [ Menu ]
+      responses:
+        "200": { description: Menu item deleted successfully }
+        "404": { description: Menu item not found }
+        "500": { description: Internal server error }
+
+
+
+
+  /menu/addons:
+    get:
+      summary: Retrieve all menu addons (ingredients)
+      tags: [ Menu Addons ]
+      parameters:
+         - in: query
+           name: page
+           required: false
+           schema:
+              type: integer
+              example: 1
+           description: Page number for pagination
+         - in: query
+           name: per_page
+           required: false
+           schema:
+              type: integer
+              example: 10
+           description: Number of addons per page
+      responses:
+         '200':
+            description: Menu addons retrieved successfully
+            content:
+               application/json:
+                  schema:
+                     type: object
+                     properties:
+                        page:
+                           type: integer
+                           example: 1
+                        per_page:
+                           type: integer
+                           example: 10
+                        total:
+                           type: integer
+                           example: 25
+                        addons:
+                           type: array
+                           items:
+                              type: object
+                              properties:
+                                 nid: { type: number, example: 3 }
+                                 name: { type: string, example: "Extra cheese" }
+                                 item_id: { type: number, example: 12 }
+                                 price: { type: number, example: 1.50 }
+         '404': { description: No addons found }
+         '500': { description: Internal server error }
+
+
+    post:
+      summary: Create a new menu addon
+      tags: [ Menu Addons ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ name, item_id, price ]
+              properties:
+                name: { type: string, example: "Extra cheese" }
+                item_id: { type: number, example: 12 }
+                price: { type: number, example: 1.50 }
+      responses:
+        '201': { description: Menu addon created successfully }
+        '400': { description: Invalid request data }
+        '409': { description: Addon with the same name already exists for this item }
+        '500': { description: Internal server error }
+
+  /menu/addons/{nid}:
+    parameters:
+      - in: path
+        name: nid
+        required: true
+        schema: { type: number }
+        description: ID of the menu addon
+    get:
+      summary: Retrieve a single menu addon by its ID
+      tags: [ Menu Addons ]
+      responses:
+        '200':
+          description: Menu addon retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  nid: { type: number }
+                  name: { type: string }
+                  item_id: { type: number }
+                  price: { type: number }
+        '404': { description: Menu addon not found }
+        '400': { description: Invalid addon ID }
+        '500': { description: Internal server error }
+
+    put:
+      summary: Update an existing menu addon
+      tags: [ Menu Addons ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                item_id: { type: number }
+                price: { type: number }
+      responses:
+        '200': { description: Menu addon updated successfully }
+        '400': { description: Invalid request data }
+        '404': { description: Addon not found }
+        '500': { description: Internal server error }
+
+    delete:
+      summary: Delete a menu addon
+      tags: [ Menu Addons ]
+      responses:
+        '200': { description: Menu addon deleted successfully }
+        '404': { description: Addon not found }
+        '500': { description: Internal server error }
+
+
+   ##############################################################
+  # ORDERS CRUD
+  ##############################################################
+
+  /orders:
+    post:
+      summary: Create a new order with details and add-ons
+      tags: [ Orders ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ name, vat_id, status_id, business_id, worker_id, order_details ]
+              properties:
+                code: { type: string, example: "Order #A152" }
+                vat_id: { type: number, example: 2 }
+                status_id: { type: number, example: 1 }
+                total: { type: number, example: 39.99 }
+                business_id: { type: number, example: 4 }
+                worker_id: { type: number, example: 12 }
+                order_details:
+                  type: array
+                  items:
+                    type: object
+                    required: [ item_id, price_wo_vat, price_w_vat ]
+                    properties:
+                      item_id: { type: number, example: 8 }
+                      price_wo_vat: { type: number, example: 10.00 }
+                      price_w_vat: { type: number, example: 12.10 }
+                      add_ons:
+                        type: array
+                        items:
+                          type: object
+                          required: [ ingredient_id, price_wo_vat ]
+                          properties:
+                            ingredient_id: { type: number, example: 3 }
+                            price_wo_vat: { type: number, example: 1.20 }
+      responses:
+        '201':
+          description: Order created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "Order created successfully" }
+                  order_id: { type: number, example: 101 }
+        '400': { description: Invalid order data (missing or invalid fields) }
+        '404': { description: Related entity not found (VAT or Business or Worker) }
+        '409': { description: Order with same name already exists }
+        '500': { description: Internal server error }
+
+    put:
+      summary: Update existing order (status or totals)
+      tags: [ Orders ]
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema: { type: number }
+          description: The ID of the order to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status_id: { type: number, example: 2 }
+                total: { type: number, example: 59.99 }
+      responses:
+        '200':
+          description: Order updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "Order updated successfully" }
+                  updated_fields:
+                    type: array
+                    items: { type: string }
+        '400': { description: Invalid update data }
+        '404': { description: Order not found }
+        '500': { description: Internal server error }
+
+    delete:
+      summary: Delete an existing order and its related details
+      tags: [ Orders ]
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema: { type: number }
+          description: The ID of the order to delete
+      responses:
+        '200':
+          description: Order deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "Order deleted successfully" }
+                  deleted_details: { type: integer, example: 4 }
+                  deleted_addons: { type: integer, example: 2 }
+        '404': { description: Order not found }
+        '409': { description: Order cannot be deleted (linked to invoices or receipts) }
+        '500': { description: Internal server error }
+
+  /orders/{id}:
+    get:
+      summary: Retrieve a specific order by ID
+      tags: [ Orders ]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: number }
+          description: The ID of the order to retrieve
+      responses:
+        '200':
+          description: Order retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  nid: { type: number, example: 101 }
+                  code: { type: string, example: "Order #A152" }
+                  vat_id: { type: number, example: 2 }
+                  status_id: { type: number, example: 1 }
+                  total: { type: number, example: 39.99 }
+                  date_created: { type: string, format: date-time, example: "2025-10-19T12:30:00Z" }
+                  business_id: { type: number, example: 4 }
+                  worker_id: { type: number, example: 12 }
+                  order_details:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        item_id: { type: number, example: 8 }
+                        price_wo_vat: { type: number, example: 10.00 }
+                        price_w_vat: { type: number, example: 12.10 }
+                        add_ons:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              ingredient_id: { type: number, example: 3 }
+                              price_wo_vat: { type: number, example: 1.20 }
+        '400': { description: Invalid order ID format }
+        '404': { description: Order not found }
+        '500': { description: Internal server error }
+
+
+##############################################################
+# RECEIPT SYSTEM 
+##############################################################
+
+  /receipts:
+    get:
+      summary: Retrieve all generated receipts for a specific business
+      tags: [ Receipts ]
+      parameters:
+        - in: query
+          name: business_id
+          required: true
+          schema:
+            type: integer
+            example: 3
+          description: ID of the business whose receipts to retrieve
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            example: 1
+          description: Page number for pagination
+        - in: query
+          name: per_page
+          required: false
+          schema:
+            type: integer
+            example: 10
+          description: Number of receipts per page
+      responses:
+        "200":
+          description: Receipts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                    example: 1
+                  per_page:
+                    type: integer
+                    example: 10
+                  total:
+                    type: integer
+                    example: 25
+                  receipts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        nid:
+                          type: integer
+                          example: 1
+                        order_id:
+                          type: integer
+                          example: 12
+                        business_id:
+                          type: integer
+                          example: 3
+                        date_created:
+                          type: string
+                          format: date-time
+                          example: "2025-10-19T14:22:00Z"
+        "404":
+          description: No receipts found for this business
+        "400":
+          description: Invalid business ID format
+        "500":
+          description: Internal server error
+
+
+    post:
+      summary: Generate a receipt for a specific order
+      description: |
+        Generates a detailed receipt from an existing order (from the Orders table),
+        including its related order details (Order_details) and add-ons (Order_detail_add_on).
+      tags: [ Receipts ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ order_id ]
+              properties:
+                order_id:
+                  type: number
+                  description: The ID of the order to generate a receipt for
+                  example: 12
+      responses:
+        "201":
+          description: Receipt generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order_id: { type: number, example: 12 }
+                  business_id: { type: number, example: 5 }
+                  worker_id: { type: number, example: 7 }
+                  total: { type: number, format: decimal, example: 59.90 }
+                  vat_id: { type: number, example: 2 }
+                  vat_percentage: { type: number, example: 21 }
+                  date_created: { type: string, format: date-time, example: "2025-10-19T14:22:00Z" }
+                  order_details:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        nid: { type: number, example: 33 }
+                        order_id: { type: number, example: 12 }
+                        item_id: { type: number, example: 45 }
+                        price_wo_vat: { type: number, format: decimal, example: 8.00 }
+                        price_w_vat: { type: number, format: decimal, example: 9.68 }
+                        add_ons:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              nid: { type: number, example: 120 }
+                              detail_id: { type: number, example: 33 }
+                              ingredient_id: { type: number, example: 304 }
+                              price_wo_vat: { type: number, format: decimal, example: 1.50 }
+        "400": { description: Invalid or missing order ID }
+        "404": { description: Order not found or has no details }
+        "409": { description: Receipt already exists for this order }
+        "500": { description: Failed to generate receipt due to server error }
+
+  /receipts/{id}:
+    get:
+      summary: Retrieve a specific receipt by Order ID
+      description: Get detailed receipt information for a specific order.
+      tags: [ Receipts ]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: number }
+          description: The Order ID to retrieve a receipt for
+      responses:
+        "200":
+          description: Receipt retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order_id: { type: number, example: 12 }
+                  business_id: { type: number, example: 5 }
+                  worker_id: { type: number, example: 7 }
+                  total: { type: number, format: decimal, example: 59.90 }
+                  vat_id: { type: number, example: 2 }
+                  vat_percentage: { type: number, example: 21 }
+                  date_created: { type: string, format: date-time, example: "2025-10-19T14:22:00Z" }
+                  order_details:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        nid: { type: number, example: 33 }
+                        order_id: { type: number, example: 12 }
+                        item_id: { type: number, example: 45 }
+                        price_wo_vat: { type: number, format: decimal, example: 8.00 }
+                        price_w_vat: { type: number, format: decimal, example: 9.68 }
+                        add_ons:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              nid: { type: number, example: 120 }
+                              detail_id: { type: number, example: 33 }
+                              ingredient_id: { type: number, example: 304 }
+                              price_wo_vat: { type: number, format: decimal, example: 1.50 }
+        "400": { description: Invalid ID format }
+        "404": { description: Receipt not found }
+        "500": { description: Internal server error }
+        
+  /orders/business/{business_id}:
+    get:
+      summary: Retrieve all orders for a specific business
+      tags: [ Orders ]
+      parameters:
+         - in: path
+           name: business_id
+           required: true
+           schema: { type: number }
+           description: The ID of the business whose orders you want to retrieve
+         - in: query
+           name: page
+           required: false
+           schema:
+              type: integer
+              example: 1
+           description: Page number for pagination
+         - in: query
+           name: per_page
+           required: false
+           schema:
+              type: integer
+              example: 10
+           description: Number of orders per page
+      responses:
+         '200':
+            description: Orders for the business retrieved successfully
+            content:
+               application/json:
+                  schema:
+                     type: object
+                     properties:
+                        page:
+                           type: integer
+                           example: 1
+                        per_page:
+                           type: integer
+                           example: 10
+                        total:
+                           type: integer
+                           example: 25
+                        orders:
+                           type: array
+                           items:
+                              type: object
+                              properties:
+                                 nid: { type: number, example: 101 }
+                                 name: { type: string, example: "Order #A152" }
+                                 vat_id: { type: number, example: 2 }
+                                 status_id: { type: number, example: 1 }
+                                 total: { type: number, example: 39.99 }
+                                 date_created: { type: string, format: date-time, example: "2025-10-19T12:30:00Z" }
+                                 business_id: { type: number, example: 4 }
+                                 worker_id: { type: number, example: 12 }
+                                 order_details:
+                                    type: array
+                                    items:
+                                       type: object
+                                       properties:
+                                          item_id: { type: number, example: 8 }
+                                          price_wo_vat: { type: number, example: 10.00 }
+                                          price_w_vat: { type: number, example: 12.10 }
+                                          add_ons:
+                                             type: array
+                                             items:
+                                                type: object
+                                                properties:
+                                                   ingredient_id: { type: number, example: 3 }
+                                                   price_wo_vat: { type: number, example: 1.20 }
+         '404': { description: No orders found for this business }
+         '400': { description: Invalid business ID format }
+         '500': { description: Internal server error }
+
+
+
+ ##############################################################
+# VAT SYSTEM
+##############################################################
+
+  /vat:
+   get:
+      summary: Retrieve all VAT entries
+      tags: [ VAT ]
+      parameters:
+         - in: query
+           name: page
+           required: false
+           schema:
+              type: integer
+              example: 1
+           description: Page number for pagination
+         - in: query
+           name: per_page
+           required: false
+           schema:
+              type: integer
+              example: 10
+           description: Number of entries per page
+      responses:
+         '200':
+            description: VAT entries retrieved successfully
+            content:
+               application/json:
+                  schema:
+                     type: object
+                     properties:
+                        page:
+                           type: integer
+                           example: 1
+                        per_page:
+                           type: integer
+                           example: 10
+                        total:
+                           type: integer
+                           example: 25
+                        vat_entries:
+                           type: array
+                           items:
+                              type: object
+                              properties:
+                                 nid:
+                                    type: integer
+                                    example: 1
+                                 name:
+                                    type: string
+                                    example: "Standard VAT"
+                                 percentage:
+                                    type: number
+                                    example: 21.0
+                                 date_created:
+                                    type: string
+                                    format: date-time
+                                    example: "2025-10-19T14:22:00Z"
+         '404':
+            description: No VAT entries found
+         '500':
+            description: Internal server error
+
+   post:
+      summary: Create a new VAT entry
+      tags: [ VAT ]
+      requestBody:
+         required: true
+         content:
+            application/json:
+               schema:
+                  type: object
+                  required:
+                     - name
+                     - percentage
+                  properties:
+                     name:
+                        type: string
+                        description: The display name of the VAT type
+                        example: "Reduced VAT"
+                     percentage:
+                        type: number
+                        description: VAT percentage rate
+                        example: 9.0
+      responses:
+         '201':
+            description: VAT entry created successfully
+            content:
+               application/json:
+                  schema:
+                     type: object
+                     properties:
+                        nid:
+                           type: integer
+                           example: 3
+                        name:
+                           type: string
+                           example: "Reduced VAT"
+                        percentage:
+                           type: number
+                           example: 9.0
+                        date_created:
+                           type: string
+                           format: date-time
+                           example: "2025-10-19T14:22:00Z"
+         '400':
+            description: Invalid request data
+         '409':
+            description: VAT entry with this name already exists
+         '500':
+            description: Internal server error
+
+   put:
+      summary: Update an existing VAT entry
+      tags: [ VAT ]
+      parameters:
+         - in: query
+           name: nid
+           required: true
+           schema:
+              type: integer
+           description: The ID of the VAT entry to update
+      requestBody:
+         required: true
+         content:
+            application/json:
+               schema:
+                  type: object
+                  properties:
+                     name:
+                        type: string
+                        description: Updated VAT name
+                        example: "Standard VAT"
+                     percentage:
+                        type: number
+                        description: Updated VAT percentage
+                        example: 21.0
+      responses:
+         '200':
+            description: VAT entry updated successfully
+         '400':
+            description: Invalid request data
+         '404':
+            description: VAT entry not found
+         '500':
+            description: Internal server error
+
+   delete:
+      summary: Delete a VAT entry
+      tags: [ VAT ]
+      parameters:
+         - in: query
+           name: nid
+           required: true
+           schema:
+              type: integer
+           description: The ID of the VAT entry to delete
+      responses:
+         '200':
+            description: VAT entry deleted successfully
+         '404':
+            description: VAT entry not found
+         '500':
+            description: Internal server error
+
+  /vat/{id}:
+   get:
+      summary: Retrieve a specific VAT entry
+      tags: [ VAT ]
+      parameters:
+         - in: path
+           name: id
+           required: true
+           schema:
+              type: integer
+           description: The ID of the VAT entry to retrieve
+      responses:
+         '200':
+            description: VAT entry retrieved successfully
+            content:
+               application/json:
+                  schema:
+                     type: object
+                     properties:
+                        nid:
+                           type: integer
+                           example: 2
+                        name:
+                           type: string
+                           example: "Reduced VAT"
+                        percentage:
+                           type: number
+                           example: 9.0
+                        date_created:
+                           type: string
+                           format: date-time
+                           example: "2025-10-19T14:22:00Z"
+         '400':
+            description: Invalid VAT ID format
+         '404':
+            description: VAT entry not found
+         '500':
+            description: Internal server error
