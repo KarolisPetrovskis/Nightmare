@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 
 namespace backend.Server.Models.DatabaseObjects;
-public class Statuses
+public class Status
 {
     [Key]
     public long Nid { get; set; }
