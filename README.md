@@ -22,3 +22,22 @@ All project documentation is located in the [`/docs`](docs/) directory:
 - [**CHANGELOG.md**](docs/CHANGELOG.md) — a log of architectural decisions, deviations, and clarifications made during implementation.
 
 ---
+
+# Database Setup
+
+The project uses **PostgreSQL** for data storage. Follow the steps below to set up the database locally:
+
+1. **Install PostgreSQL**  
+   Download PostgreSQL from [the official site](https://www.postgresql.org/download/) and follow the installation wizard.
+
+2. **Create a `.env` file**  
+   Copy the provided `.env.example` file to `.env` and update the values with your local configuration.
+
+3. **Apply Database Migrations**
+    Open the **Package Manager Console** (located at `Tools -> NuGet Package Manager -> Package Manager Console`) then run the following command:
+
+    ```powershell
+    Update-Database
+    ```
+
+   ---
