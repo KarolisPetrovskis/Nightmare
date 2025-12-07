@@ -20,27 +20,41 @@ namespace backend.Server.Middleware
             catch (ApiException ex)
             {
                 _logger.LogWarning(ex, "Handled ApiException");
-                httpContext.Response.ContentType = "application/problem+json";
-                httpContext.Response.StatusCode = ex.StatusCode;
-                var problem = new ProblemDetails
+                if (!httpContext.Response.HasStarted)
                 {
-                    Title = ex.Message,
-                    Status = ex.StatusCode,
-                    Detail = ex.Errors?.ToString()
-                };
-                await httpContext.Response.WriteAsJsonAsync(problem);
+                    httpContext.Response.ContentType = "application/problem+json";
+                    httpContext.Response.StatusCode = ex.StatusCode;
+                    var problem = new ProblemDetails
+                    {
+                        Title = ex.Message,
+                        Status = ex.StatusCode,
+                        Detail = ex.Errors?.ToString()
+                    };
+                    await httpContext.Response.WriteAsJsonAsync(problem);
+                }
+                else
+                {
+                    _logger.LogWarning("The response has already started, the error handling middleware will not modify the response.");
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unhandled exception");
-                httpContext.Response.ContentType = "application/problem+json";
-                httpContext.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                var problem = new ProblemDetails
+                if (!httpContext.Response.HasStarted)
                 {
-                    Title = "An unexpected error occurred",
-                    Status = (int)HttpStatusCode.InternalServerError
-                };
-                await httpContext.Response.WriteAsJsonAsync(problem);
+                    httpContext.Response.ContentType = "application/problem+json";
+                    httpContext.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                    var problem = new ProblemDetails
+                    {
+                        Title = "An unexpected error occurred",
+                        Status = (int)HttpStatusCode.InternalServerError
+                    };
+                    await httpContext.Response.WriteAsJsonAsync(problem);
+                }
+                else
+                {
+                    _logger.LogError("The response has already started, the error handling middleware will not modify the response.");
+                }
             }
         }
     }
