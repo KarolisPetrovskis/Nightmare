@@ -11,6 +11,14 @@ namespace backend.Server.Services
         private readonly ApplicationDbContext _context = context;
         public async Task<List<MenuItemIngredient>> GetAllMenuAddonsAsync(int page, int perPage)
         {
+            if (page <= 0)
+            {
+                throw new ApiException(400, "Page number must be greater than zero");
+            }
+            if (perPage <= 0)
+            {
+                throw new ApiException(400, "PerPage value must be greater than zero");
+            }
             var result = await _context.MenuItemIngredients
                 .Skip((page - 1) * perPage)
                 .Take(perPage)
