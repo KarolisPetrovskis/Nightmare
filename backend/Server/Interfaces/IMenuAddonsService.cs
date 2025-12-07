@@ -4,11 +4,10 @@ namespace backend.Server.Interfaces
 {
     public interface IMenuAddonsService
     {
-        Task<List<MenuItemIngredient>> GetAllMenuAddonsAsync();
+        Task<List<MenuItemIngredient>> GetAllMenuAddonsAsync(int page, int perPage);
         Task CreateMenuAddonAsync(MenuItemIngredient menuAddon);
-        Task<MenuItemIngredient> GetMenuAddonByIdAsync(long id);
+        Task<MenuItemIngredient> GetMenuAddonByIdAsync(long nid);
         Task UpdateMenuAddonAsync(MenuItemIngredient menuAddon);
-        Task DeleteMenuAddonAsync(long id);
-        void placeholderMethod();
+        Task DeleteMenuAddonAsync(long nid);
     }
 }
