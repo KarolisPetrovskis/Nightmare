@@ -49,9 +49,18 @@ namespace backend.Server.Controllers
         {
             var menuAddon = await _menuAddonsService.GetMenuAddonByIdAsync(nid);
 
-            menuAddon.Name = request.Name;
-            menuAddon.ItemId = request.ItemId;
-            menuAddon.Price = request.Price;
+            if (!string.IsNullOrWhiteSpace(request.Name))
+            {
+                menuAddon.Name = request.Name;
+            }
+            if (request.ItemId != default)
+            {
+                menuAddon.ItemId = request.ItemId;
+            }
+            if (request.Price != default)
+            {
+                menuAddon.Price = request.Price;
+            }
 
             await _menuAddonsService.UpdateMenuAddonAsync(menuAddon);
 
