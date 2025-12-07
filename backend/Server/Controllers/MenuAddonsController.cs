@@ -59,7 +59,7 @@ namespace backend.Server.Controllers
         public async Task<IActionResult> DeleteMenuAddon(long nid)
         {
             await _menuAddonsService.DeleteMenuAddonAsync(nid);
-            return Ok();
+            return NoContent();
         }
     }
 }
