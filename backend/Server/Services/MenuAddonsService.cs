@@ -16,10 +16,6 @@ namespace backend.Server.Services
                 .Take(perPage)
                 .ToListAsync();
 
-            if (result == null)
-            {
-                throw new ApiException(500, "Failed to retrieve menu addons");
-            }
             
             if (result.Count == 0)
             {
