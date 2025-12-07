@@ -1,6 +1,7 @@
 using backend.Server.Database;
 using backend.Server.Interfaces;
 using backend.Server.Services;
+using backend.Server.Middleware;
 using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
 
@@ -64,6 +65,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 app.UseHttpsRedirection();
+
+// Exception handling middleware should run early so API errors are mapped consistently
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+
 app.UseAuthorization();
 app.UseCors("AllowFrontend");
 app.MapControllers();

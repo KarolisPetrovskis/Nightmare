@@ -17,7 +17,7 @@ namespace backend.Server.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<MenuGetAllResponseDTO>> GetMenu([FromBody] MenuGetAllDTO request)
+        public async Task<ActionResult<List<MenuItem>>> GetMenu([FromQuery] MenuGetAllDTO request)
         {
             var result = await _menuService.GetMenusAsync(request.BusinessId, request.Page, request.PerPage);
 
@@ -42,46 +42,22 @@ namespace backend.Server.Controllers
                 DiscountTime = request.DiscountTime
             };
 
-            try
-            {
-                _menuService.CreateMenuItemAsync(menuItem).Wait();
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
+            await _menuService.CreateMenuItemAsync(menuItem);
 
-            return Ok("Menu item created successfully.");
+            return CreatedAtAction(nameof(GetItemBynid), new { nid = menuItem.Nid }, menuItem);
         }
 
         [HttpGet("{nid}")]
-        public IActionResult GetItemBynid(long nid)
+        public async Task<ActionResult<MenuItem>> GetItemBynid(long nid)
         {
-            MenuItem menuItem;
-            try
-            {
-                menuItem = _menuService.GetMenuItemByNidAsync(nid).Result;
-            }
-            catch (Exception e)
-            {
-                return NotFound(e.Message);
-            }
-
+            var menuItem = await _menuService.GetMenuItemByNidAsync(nid);
             return Ok(menuItem);
         }
 
         [HttpPut("{nid}")]
-        public IActionResult UpdateItem([FromBody] MenuUpdateDTO request, long nid)
+        public async Task<IActionResult> UpdateItem(long nid, [FromBody] MenuUpdateDTO request)
         {
-            MenuItem menuItem;
-            try
-            {
-                menuItem = _menuService.GetMenuItemByNidAsync(nid).Result;
-            }
-            catch (Exception e)
-            {
-                return NotFound(e.Message);
-            }
+            var menuItem = await _menuService.GetMenuItemByNidAsync(nid);
 
             menuItem.Name = request.Name;
             menuItem.Price = request.Price;
@@ -89,30 +65,15 @@ namespace backend.Server.Controllers
             menuItem.VatId = request.VatId;
             menuItem.DiscountTime = request.DiscountTime;
 
-            try
-            {
-                _menuService.UpdateMenuItemAsync(menuItem).Wait();
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
+            await _menuService.UpdateMenuItemAsync(menuItem);
 
             return Ok($"Menu item {nid} updated successfully.");
         }
 
         [HttpDelete("{nid}")]
-        public IActionResult DeleteItem(long nid)
+        public async Task<IActionResult> DeleteItem(long nid)
         {
-            try
-            {
-                _menuService.DeleteMenuItemAsync(nid).Wait();
-            }
-            catch (Exception e)
-            {
-                return NotFound(e.Message);
-            }
-
+            await _menuService.DeleteMenuItemAsync(nid);
             return Ok($"Menu item {nid} deleted successfully.");
         }
     }
