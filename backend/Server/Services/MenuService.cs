@@ -6,14 +6,9 @@ using backend.Server.Exceptions;
 
 namespace backend.Server.Services
 {
-    public class MenuService : IMenuService
+    public class MenuService(ApplicationDbContext context) : IMenuService
     {
-        private readonly ApplicationDbContext _context;
-
-        public MenuService(ApplicationDbContext context)
-        {
-            _context = context;
-        }
+        private readonly ApplicationDbContext _context = context;
 
         public async Task<List<MenuItem>> GetMenusAsync(long businessId, int page, int perPage)
         {

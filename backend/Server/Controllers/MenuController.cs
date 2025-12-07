@@ -7,14 +7,9 @@ namespace backend.Server.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class MenuController : ControllerBase
+    public class MenuController(IMenuService menuService) : ControllerBase
     {
-        private readonly IMenuService _menuService;
-
-        public MenuController(IMenuService menuService)
-        {
-            _menuService = menuService;
-        }
+        private readonly IMenuService _menuService = menuService;
 
         [HttpGet]
         public async Task<ActionResult<List<MenuItem>>> GetMenu([FromQuery] MenuGetAllDTO request)
