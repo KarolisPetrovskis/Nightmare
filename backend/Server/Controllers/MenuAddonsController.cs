@@ -6,14 +6,9 @@ namespace backend.Server.Controllers
 {
     [ApiController]
     [Route("api/menu/addons")]
-    public class MenuAddonsController : ControllerBase
+    public class MenuAddonsController(IMenuAddonsService menuAddonsService) : ControllerBase
     {
-        private readonly IMenuAddonsService _menuAddonsService;
-
-        public MenuAddonsController(IMenuAddonsService menuAddonsService)
-        {
-            _menuAddonsService = menuAddonsService;
-        }
+        private readonly IMenuAddonsService _menuAddonsService = menuAddonsService;
 
         [HttpGet]
         public IActionResult GetMenuAddons([FromBody] MenuAddonsGetAllDTO request)
