@@ -6,7 +6,7 @@ namespace backend.Server.Interfaces
     {
         Task<List<MenuItemIngredient>> GetAllMenuAddonsAsync(int page, int perPage);
         Task CreateMenuAddonAsync(MenuItemIngredient menuAddon);
-        Task<MenuItemIngredient> GetMenuAddonByIdAsync(long nid);
+        Task<MenuItemIngredient> GetMenuAddonByNidAsync(long nid);
         Task UpdateMenuAddonAsync(MenuItemIngredient menuAddon);
         Task DeleteMenuAddonAsync(long nid);
     }

@@ -55,7 +55,7 @@ namespace backend.Server.Services
             }
         }
 
-        public async Task<MenuItemIngredient> GetMenuAddonByIdAsync(long nid)
+        public async Task<MenuItemIngredient> GetMenuAddonByNidAsync(long nid)
         {
             if (nid <= 0)
             {

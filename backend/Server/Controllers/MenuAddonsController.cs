@@ -32,22 +32,22 @@ namespace backend.Server.Controllers
             await _menuAddonsService.CreateMenuAddonAsync(menuAddon);
 
             // Reload the entity to ensure Nid is populated
-            var createdMenuAddon = await _menuAddonsService.GetMenuAddonByIdAsync(menuAddon.Nid);
+            var createdMenuAddon = await _menuAddonsService.GetMenuAddonByNidAsync(menuAddon.Nid);
 
-            return CreatedAtAction(nameof(GetMenuAddonBynid), new { nid = createdMenuAddon.Nid }, createdMenuAddon);
+            return CreatedAtAction(nameof(GetMenuAddonByNid), new { nid = createdMenuAddon.Nid }, createdMenuAddon);
         }
 
         [HttpGet("{nid}")]
-        public async Task<IActionResult> GetMenuAddonBynid(long nid)
+        public async Task<IActionResult> GetMenuAddonByNid(long nid)
         {
-            var result = await _menuAddonsService.GetMenuAddonByIdAsync(nid);
+            var result = await _menuAddonsService.GetMenuAddonByNidAsync(nid);
             return Ok(result);
         }
 
         [HttpPut("{nid}")]
         public async Task<IActionResult> UpdateMenuAddon([FromBody] MenuAddonUpdateDTO request, long nid)
         {
-            var menuAddon = await _menuAddonsService.GetMenuAddonByIdAsync(nid);
+            var menuAddon = await _menuAddonsService.GetMenuAddonByNidAsync(nid);
 
             if (!string.IsNullOrWhiteSpace(request.Name))
             {
