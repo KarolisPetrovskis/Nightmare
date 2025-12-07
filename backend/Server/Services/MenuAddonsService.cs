@@ -32,7 +32,7 @@ namespace backend.Server.Services
                 throw new ApiException(400, "Menu addon cannot be null");
             }
 
-            if (await _context.MenuItems.AnyAsync(m => m.Name == menuAddon.Name))
+            if (await _context.MenuItemIngredients.AnyAsync(m => m.Name == menuAddon.Name))
             {
                 throw new ApiException(409, "Menu addon with the same name already exists");
             }
