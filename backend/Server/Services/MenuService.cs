@@ -34,8 +34,6 @@ namespace backend.Server.Services
             {
                 throw new ApiException(500, "Failed to create menu item.");
             }
-
-            return;
         }
 
         public async Task<MenuItem> GetMenuItemByNidAsync(long nid)
@@ -59,8 +57,6 @@ namespace backend.Server.Services
             {
                 throw new ApiException(500, "Failed to update menu item.");
             }
-
-            return;
         }
 
         public async Task DeleteMenuItemAsync(long nid)
@@ -74,8 +70,6 @@ namespace backend.Server.Services
             {
                 throw new ApiException(500, "Failed to delete menu item.");
             }
-
-            return;
         }
     }
 }
