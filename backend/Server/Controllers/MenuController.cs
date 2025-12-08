@@ -43,7 +43,7 @@ namespace backend.Server.Controllers
         }
 
         [HttpGet("{nid}")]
-        public async Task<ActionResult<MenuItem>> GetItemBynid(long nid)
+        public async Task<ActionResult<MenuItem>> GetItemByNid(long nid)
         {
             var menuItem = await _menuService.GetMenuItemByNidAsync(nid);
             return Ok(menuItem);
