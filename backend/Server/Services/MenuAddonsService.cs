@@ -69,22 +69,13 @@ namespace backend.Server.Services
 
         public async Task UpdateMenuAddonAsync(MenuItemIngredient menuAddon)
         {
-            if (menuAddon == null || menuAddon.Id <= 0)
+            if (menuAddon == null || menuAddon.Nid <= 0)
             {
                 throw new ApiException(400, "Invalid menu addon data");
             }
 
-            var existingMenuAddon = await _context.MenuItemIngredients.FindAsync(menuAddon.Id);
-            if (existingMenuAddon == null)
-            {
-                throw new ApiException(404, $"Menu addon {menuAddon.Id} not found");
-            }
-
-            // Update properties
-            existingMenuAddon.Name = menuAddon.Name;
-            existingMenuAddon.Description = menuAddon.Description;
-            existingMenuAddon.Price = menuAddon.Price;
-            // Add any other properties that need to be updated here
+            _context.MenuItemIngredients.Update(menuAddon);
+            
             var result = await _context.SaveChangesAsync();
 
             if (result <= 0)
