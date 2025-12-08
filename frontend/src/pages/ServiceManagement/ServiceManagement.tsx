@@ -139,7 +139,7 @@ export default function ServiceManagement() {
                         </div>
 
                         <div className="service-description">
-                            <h3>Service description</h3>
+                            <label>Service description</label>
                             <textarea value={selected.description} onChange={(e) => updateField('description', e.target.value)} />
                         </div>
 
