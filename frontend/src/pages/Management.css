@@ -219,144 +219,54 @@
   }
 }
 
+/* keep option-container (structure) here; menu-specific internals were moved */
 .option-container {
   display: flex;
   flex-direction: column;
 }
 
-.new-tree-button {
-  width: 100%;
-  background-color: #2d2d2d !important;
-  color: white !important;
+/* Keep the shared minimal placeholder; menu-specific styles moved out */
+.item-list-container {
+  display: flex;
+  flex-direction: column;
 }
 
+.option-container {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 2;
+  flex-basis: 0;
+  background-color: #1a1a1a;
+  margin: 10px;
+  padding: 16px;
+  border-radius: 8px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Shared scrolling containers (keeps pagination behaviour) */
+.item-list,
 .option-tree-list {
   flex: 1 1 auto;
   overflow: auto;
-  min-height: 0; /* important in flex containers to allow scrolling */
-  padding-bottom: 8px;
+  min-height: 0; /* prevents collapsing in flex containers on some browsers */
+  padding-bottom: 8px; /* give some breathing room above pagination */
 }
 
-.option-tree-box {
-  flex: 0 0 auto;
-  background-color: #2b2b2b;
-  border-radius: 8px;
-  padding: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  margin-bottom: 8px;
-}
-
-
-.option-tree-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.option-tree-button {
-  flex: 0 !important;
-}
-
-
-.option-tree-header input {
-  flex-grow: 1;
-  background-color: #1f1f1f;
-  border: none;
-  padding: 6px;
-  color: white;
-  border-radius: 6px;
-}
-
-.delete-tree {
-  margin-left: 8px;
-  color: #ff5b5b;
-  background: none;
-  border: none;
-  font-size: 18px;
-}
-
-.option-list {
-  margin-top: 10px;
+/* Make sure the parent containers are column flex (they already are, but ensure min-height=0) */
+.item-list-container,
+.option-container {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  min-height: 0;
 }
 
-.option-row {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  gap: 16px;
-  min-width: 0;
+.item-list-pagination,
+.option-tree-pagination {
+  flex: 0 0 auto;
 }
 
-.option-tree-header input,
-.option-row input {
-  background-color: #1f1f1f;
-  padding: 8px;
-  border-radius: 6px;
-  border: none;
-  color: white;
-  font-size: 1rem;
-  min-width: 0;
-  flex: 1;
-}
-
-.option-row input[type="number"] {
-  flex: 0 0 40px;
-  min-width: 0;
-}
-.delete-option {
-  background: none;
-  color: #ff5b5b;
-  border: none;
-  font-size: 18px;
-  flex-shrink: 0;
-}
-
-.option-tree-header input {
-  flex: 1;
-  min-width: 0;
-}
-
-.delete-tree {
-  margin-left: 8px;
-  color: #ff5b5b;
-  background: none;
-  border: none;
-  font-size: 18px;
-  flex-shrink: 0;
-}
-
-
-.add-option {
-  background-color: #333 !important;
-  color: white !important;
-  width: 100%;
-}
-
-.option-tree-box:focus-within {
-  border: 1px solid #646cff;
-  background-color: #333333;
-  transition: border-color 0.2s, background-color 0.2s;
-}
-
-.option-tree-box input:focus,
-.option-row input:focus,
-.option-tree-header input:focus {
-  outline: none;
-  background-color: #262626;
-}
-
-
-.option-tree-box:focus-within .add-option {
-  background-color: #3e44b3 !important; 
-  color: white !important;
-}
-
-.save-button:disabled {
-  visibility: hidden;
-}
-
+/* Modal overlay and base modal content are shared */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -403,7 +313,6 @@
   flex-shrink: 0;
 }
 
-
 .modal-content input[type="radio"] {
   accent-color: #646cff;
 }
@@ -413,60 +322,14 @@
 }
 
 .modal-content .option-tree-box {
-  background: transparent;
-  border: none;
-  padding: 0;
+  /* moved to MenuManagement.css */
 }
 
 .modal-content .option-tree-header input,
 .modal-content .option-row input[type="text"] {
-  background-color: #1f1f1f;
-  color: white;
+  /* moved to MenuManagement.css */
 }
 
 body.modal-open {
   overflow: hidden;
-}
-
-
-
-.item-list-container {
-  display: flex;
-  flex-direction: column;
-}
-
-
-.option-container {
-  display: flex;
-  flex-direction: column;
-  flex-grow: 2;
-  flex-basis: 0;
-  background-color: #1a1a1a;
-  margin: 10px;
-  padding: 16px;
-  border-radius: 8px;
-  min-width: 0;
-  overflow: hidden;
-}
-
-
-.item-list,
-.option-tree-list {
-  flex: 1 1 auto;
-  overflow: auto;
-  min-height: 0; /* prevents collapsing in flex containers on some browsers */
-  padding-bottom: 8px; /* give some breathing room above pagination */
-}
-
-/* Make sure the parent containers are column flex (they already are, but ensure min-height=0) */
-.item-list-container,
-.option-container {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.item-list-pagination,
-.option-tree-pagination {
-  flex: 0 0 auto;
 }

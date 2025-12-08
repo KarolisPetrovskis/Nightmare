@@ -1,4 +1,5 @@
 import '../Management.css';
+import './MenuManagement.css';
 import Button from '@mui/material/Button';
 import { useState, useEffect } from "react";
 import dishesData from '../dishesData.json';
