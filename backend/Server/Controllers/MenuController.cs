@@ -39,7 +39,7 @@ namespace backend.Server.Controllers
 
             await _menuService.CreateMenuItemAsync(menuItem);
 
-            return CreatedAtAction(nameof(GetItemBynid), new { nid = menuItem.Nid }, menuItem);
+            return CreatedAtAction(nameof(GetItemByNid), new { nid = menuItem.Nid }, menuItem);
         }
 
         [HttpGet("{nid}")]
