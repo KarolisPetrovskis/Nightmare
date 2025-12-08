@@ -2,6 +2,7 @@ import "./ServiceManagement.css";
 import "../Management.css";
 import Button from "@mui/material/Button";
 import { useState } from "react";
+import PaginationComponent from "../../components/Pagination/PaginationComponent";
 import SnackbarNotification from "../../components/SnackBar/SnackNotification";
 
 type Service = {
@@ -15,13 +16,14 @@ type Service = {
 };
 
 export default function ServiceManagement() {
-    const [services, setServices] = useState<Service[]>([
-        // { id: 1, name: "Service #1", price: 12, discount: 0, durationMinutes: 30, description: "" }, Example of added service
-    ]);
+    const [services, setServices] = useState<Service[]>([]);
 
     const [selected, setSelected] = useState<Service | null>(null);
     const [deleteMode, setDeleteMode] = useState(false);
     const [dirty, setDirty] = useState(false);
+
+    const [page, setPage] = useState(1);
+    const servicesPerPage = 7;
 
     const [snackbar, setSnackbar] = useState<{
         open: boolean;
@@ -32,6 +34,11 @@ export default function ServiceManagement() {
         message: '',
         type: 'success',
     });
+
+    const paginatedServices = services.slice(
+        (page - 1) * servicesPerPage,
+        page * servicesPerPage
+    );
 
     const handleNew = () => {
         const s: Service = { id: Date.now(), name: "New Service", price: 0, discount: 0, durationMinutes: 30, description: "" };
@@ -81,11 +88,19 @@ export default function ServiceManagement() {
                 <h3 className="item-list-label">Services</h3>
 
                 <div className="item-list">
-                    {services.map(s => (
+                    {paginatedServices.map(s => (
                         <div key={s.id} className={`item-card ${selected?.id === s.id ? 'selected' : ''}`} onClick={() => handleServiceClick(s)}>
                             {s.name}
                         </div>
                     ))}
+                </div>
+
+                <div className="item-list-pagination">
+                    <PaginationComponent
+                        count={Math.ceil(services.length / servicesPerPage)}
+                        page={page}
+                        onChange={(e, value) => setPage(value)}
+                    />
                 </div>
             </div>
 

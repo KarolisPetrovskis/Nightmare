@@ -1,0 +1,20 @@
+.pagination-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-top: auto;
+    padding-top: 12px;
+}
+
+.pagination-wrapper .MuiPaginationItem-root {
+    color: white;
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.pagination-wrapper .MuiPaginationItem-root:hover {
+    border-color: #646cff;
+}
+
+.pagination-wrapper .Mui-selected {
+    color: #646cff !important;
+    border-color: #646cff !important;
+}

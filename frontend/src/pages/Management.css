@@ -29,6 +29,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-height: 0;
 }
 
 .item-list-container {
@@ -230,17 +231,19 @@
 }
 
 .option-tree-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  flex: 1 1 auto;
+  overflow: auto;
+  min-height: 0; /* important in flex containers to allow scrolling */
+  padding-bottom: 8px;
 }
 
 .option-tree-box {
-  flex-grow: 1;
+  flex: 0 0 auto;
   background-color: #2b2b2b;
   border-radius: 8px;
   padding: 12px;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 8px;
 }
 
 
@@ -426,32 +429,12 @@ body.modal-open {
 }
 
 
-.dish-pagination .MuiPaginationItem-root {
-  color: white;
-  border-color: rgba(255,255,255,0.4);
-}
-
-.dish-pagination .MuiPaginationItem-root:hover {
-  border-color: #646cff;
-}
-
-.dish-pagination .Mui-selected {
-  color: #646cff !important;
-  border-color: #646cff !important;
-}
-
 
 .item-list-container {
   display: flex;
   flex-direction: column;
 }
 
-.item-list-pagination {
-  display: flex;
-  justify-content: center;
-  margin-top: auto;
-  padding-top: 12px;
-}
 
 .option-container {
   display: flex;
@@ -466,9 +449,24 @@ body.modal-open {
   overflow: hidden;
 }
 
-.option-tree-pagination {
-  margin-top: auto;
-  padding-top: 12px;
+
+.item-list,
+.option-tree-list {
+  flex: 1 1 auto;
+  overflow: auto;
+  min-height: 0; /* prevents collapsing in flex containers on some browsers */
+  padding-bottom: 8px; /* give some breathing room above pagination */
+}
+
+/* Make sure the parent containers are column flex (they already are, but ensure min-height=0) */
+.item-list-container,
+.option-container {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.item-list-pagination,
+.option-tree-pagination {
+  flex: 0 0 auto;
 }

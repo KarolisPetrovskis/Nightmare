@@ -43,19 +43,19 @@ export default function SnackbarNotification({
     };
 
     return (
-<Snackbar
-    open={isOpen}
-    onClose={() => {
-        setIsOpen(false);
-        onClose();
-    }}
-    size="lg"
-    variant="soft"
-    color={alertColorMap[type]}
-    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
->
-    {message}
-</Snackbar>
+        <Snackbar
+            open={isOpen}
+            onClose={() => {
+                setIsOpen(false);
+                onClose();
+            }}
+            size="lg"
+            variant="soft"
+            color={alertColorMap[type]}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        >
+            {message}
+        </Snackbar>
 
     );
 }

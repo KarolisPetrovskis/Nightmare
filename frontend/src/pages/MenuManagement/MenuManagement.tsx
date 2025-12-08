@@ -2,7 +2,7 @@ import '../Management.css';
 import Button from '@mui/material/Button';
 import { useState, useEffect } from "react";
 import dishesData from '../dishesData.json';
-import Pagination from '@mui/material/Pagination';
+import PaginationComponent from '../../components/Pagination/PaginationComponent';
 import SnackbarNotification from '../../components/SnackBar/SnackNotification';
 
 type Option = {
@@ -48,7 +48,7 @@ export default function MenuManagement() {
 
   const [page, setPage] = useState(1);
   const itemsPerPage = 7;
-  
+
   const [treePage, setTreePage] = useState(1);
   const treesPerPage = 3;
 
@@ -92,12 +92,10 @@ export default function MenuManagement() {
     if (!editableItem) return;
 
     if (editableItem.id === -1) {
-      // Create a new ID
       const newItem = { ...editableItem, id: Date.now() };
       setItems(prev => [...prev, newItem]);
       setSelectedItem(newItem);
     } else {
-      // Editing an existing item
       setItems(prev =>
         prev.map(i => i.id === editableItem.id ? editableItem : i)
       );
@@ -105,11 +103,11 @@ export default function MenuManagement() {
 
     setItemDirty(false);
     setOptionsDirty(false);
-            setSnackbar({
-            open: true,
-            message: 'Dish saved successfully!',
-            type: 'success',
-        });
+    setSnackbar({
+      open: true,
+      message: 'Dish saved successfully!',
+      type: 'success',
+    });
   };
 
 
@@ -165,14 +163,11 @@ export default function MenuManagement() {
             ))}
         </div>
         <div className="item-list-pagination">
-          <Pagination
-            count={Math.ceil(items.length / itemsPerPage)}
-            page={page}
-            onChange={(e, value) => setPage(value)}
-            variant="outlined"
-            color="secondary"
-            className="dish-pagination"
-          />
+<PaginationComponent
+    count={Math.ceil(items.length / itemsPerPage)}
+    page={page}
+    onChange={(e, value) => setPage(value)}
+/>
         </div>
 
       </div>
@@ -247,10 +242,10 @@ export default function MenuManagement() {
         )}
       </div>
 
-<div className="option-container">
-  {!editableItem && <></>}
-  {editableItem && (
-    <>
+      <div className="option-container">
+        {!editableItem && <></>}
+        {editableItem && (
+          <>
             <Button
               className="option-tree-button item-action-button new-item"
               onClick={() => {
@@ -277,125 +272,122 @@ export default function MenuManagement() {
 
 
             <div className="option-tree-list">
-{editableItem?.optionTrees
-  ?.slice((treePage - 1) * treesPerPage, treePage * treesPerPage)
-  .map((tree, treeIndex) => {
-    const realIndex = (treePage - 1) * treesPerPage + treeIndex;
+              {editableItem?.optionTrees
+                ?.slice((treePage - 1) * treesPerPage, treePage * treesPerPage)
+                .map((tree, treeIndex) => {
+                  const realIndex = (treePage - 1) * treesPerPage + treeIndex;
 
-    return (
-      <div key={tree.id} className="option-tree-box">
+                  return (
+                    <div key={tree.id} className="option-tree-box">
 
-        <div className="option-tree-header">
-          <input
-            type="text"
-            value={tree.name}
-            placeholder="Option Tree Name"
-            onChange={(e) => {
-              const updated = [...editableItem.optionTrees];
-              updated[realIndex].name = e.target.value;
-              setEditableItem(prev => prev ? { ...prev, optionTrees: updated } : prev);
-              setOptionsDirty(true);
-            }}
-          />
+                      <div className="option-tree-header">
+                        <input
+                          type="text"
+                          value={tree.name}
+                          placeholder="Option Tree Name"
+                          onChange={(e) => {
+                            const updated = [...editableItem.optionTrees];
+                            updated[realIndex].name = e.target.value;
+                            setEditableItem(prev => prev ? { ...prev, optionTrees: updated } : prev);
+                            setOptionsDirty(true);
+                          }}
+                        />
 
-          <button
-            className="delete-tree"
-            onClick={() => {
-              const updated = editableItem.optionTrees.filter(t => t.id !== tree.id);
-              setEditableItem(prev => prev ? { ...prev, optionTrees: updated } : prev);
-              setOptionsDirty(true);
-            }}
-          >
-            ✖
-          </button>
-        </div>
+                        <button
+                          className="delete-tree"
+                          onClick={() => {
+                            const updated = editableItem.optionTrees.filter(t => t.id !== tree.id);
+                            setEditableItem(prev => prev ? { ...prev, optionTrees: updated } : prev);
+                            setOptionsDirty(true);
+                          }}
+                        >
+                          ✖
+                        </button>
+                      </div>
 
-        <div className="option-list">
-          {tree.options.map((opt, optIndex) => (
-            <div key={opt.id} className="option-row">
-              <input
-                type="text"
-                value={opt.name}
-                placeholder="Option name"
-                onChange={(e) => {
-                  const updated = [...editableItem.optionTrees];
-                  updated[realIndex].options[optIndex].name = e.target.value;
-                  setEditableItem(prev => prev ? { ...prev, optionTrees: updated } : prev);
-                  setOptionsDirty(true);
-                }}
-              />
+                      <div className="option-list">
+                        {tree.options.map((opt, optIndex) => (
+                          <div key={opt.id} className="option-row">
+                            <input
+                              type="text"
+                              value={opt.name}
+                              placeholder="Option name"
+                              onChange={(e) => {
+                                const updated = [...editableItem.optionTrees];
+                                updated[realIndex].options[optIndex].name = e.target.value;
+                                setEditableItem(prev => prev ? { ...prev, optionTrees: updated } : prev);
+                                setOptionsDirty(true);
+                              }}
+                            />
 
-              <input
-                type="number"
-                value={opt.price}
-                placeholder="Price (€)"
-                onChange={(e) => {
-                  const updated = [...editableItem.optionTrees];
-                  updated[realIndex].options[optIndex].price = parseFloat(e.target.value);
-                  setEditableItem(prev => prev ? { ...prev, optionTrees: updated } : prev);
-                  setOptionsDirty(true);
-                }}
-              />
+                            <input
+                              type="number"
+                              value={opt.price}
+                              placeholder="Price (€)"
+                              onChange={(e) => {
+                                const updated = [...editableItem.optionTrees];
+                                updated[realIndex].options[optIndex].price = parseFloat(e.target.value);
+                                setEditableItem(prev => prev ? { ...prev, optionTrees: updated } : prev);
+                                setOptionsDirty(true);
+                              }}
+                            />
 
-              <button
-                className="delete-option"
-                onClick={() => {
-                  const updated = [...editableItem.optionTrees];
-                  updated[realIndex].options =
-                    updated[realIndex].options.filter(o => o.id !== opt.id);
-                  setEditableItem(prev => prev ? { ...prev, optionTrees: updated } : prev);
-                  setOptionsDirty(true);
-                }}
-              >
-                ✖
-              </button>
-            </div>
-          ))}
+                            <button
+                              className="delete-option"
+                              onClick={() => {
+                                const updated = [...editableItem.optionTrees];
+                                updated[realIndex].options =
+                                  updated[realIndex].options.filter(o => o.id !== opt.id);
+                                setEditableItem(prev => prev ? { ...prev, optionTrees: updated } : prev);
+                                setOptionsDirty(true);
+                              }}
+                            >
+                              ✖
+                            </button>
+                          </div>
+                        ))}
 
-          <Button
-            className="item-action-button new-item add-option"
-            onClick={() => {
-              const updated = [...editableItem.optionTrees];
-              updated[realIndex].options.push({
-                id: Date.now(),
-                name: "",
-                price: 0
-              });
-              setEditableItem(prev => prev ? { ...prev, optionTrees: updated } : prev);
-              setOptionsDirty(true);
-            }}
-          >
-            + Add Option
-          </Button>
-        </div>
-      </div>
-    );
-  })}
+                        <Button
+                          className="item-action-button new-item add-option"
+                          onClick={() => {
+                            const updated = [...editableItem.optionTrees];
+                            updated[realIndex].options.push({
+                              id: Date.now(),
+                              name: "",
+                              price: 0
+                            });
+                            setEditableItem(prev => prev ? { ...prev, optionTrees: updated } : prev);
+                            setOptionsDirty(true);
+                          }}
+                        >
+                          + Add Option
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
 
             </div>
           </>
         )}
 
         <div className="option-tree-pagination">
-  <Pagination
+<PaginationComponent
     count={Math.ceil((editableItem?.optionTrees.length ?? 0) / treesPerPage)}
     page={treePage}
     onChange={(e, value) => setTreePage(value)}
-    variant="outlined"
-    color="secondary"
-    className='dish-pagination'
-  />
-</div>
+/>
+        </div>
 
       </div>
-            <SnackbarNotification
-                open={snackbar.open}
-                onClose={() => setSnackbar({ ...snackbar, open: false })}
-                message={snackbar.message}
-                type={snackbar.type}
-            />
+      <SnackbarNotification
+        open={snackbar.open}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        message={snackbar.message}
+        type={snackbar.type}
+      />
     </div>
 
-    
+
   );
 }

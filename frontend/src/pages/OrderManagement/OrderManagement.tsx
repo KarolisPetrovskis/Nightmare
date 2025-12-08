@@ -3,7 +3,7 @@ import "../Management.css";
 import Button from "@mui/material/Button";
 import { useState } from "react";
 import dishesData from "../dishesData.json";
-import Pagination from '@mui/material/Pagination';
+import PaginationComponent from "../../components/Pagination/PaginationComponent";
 import SnackbarNotification from "../../components/SnackBar/SnackNotification";
 
 
@@ -165,7 +165,6 @@ export default function OrderManagement() {
         setOrderDirty(true);
     };
 
-    // open details modal for an order item
     const openDetails = (item: OrderDish) => {
         setModalItem(item);
         setModalSelections(item.selectedOptions ? { ...item.selectedOptions } : {});
@@ -180,14 +179,12 @@ export default function OrderManagement() {
 
     const toggleSelectOption = (treeId: number, optionId: number) => {
         setModalSelections(prev => {
-            // if already selected → unselect it
             if (prev[treeId] === optionId) {
                 const updated = { ...prev };
                 delete updated[treeId];
                 return updated;
             }
 
-            // otherwise select normally
             return { ...prev, [treeId]: optionId };
         });
     };
@@ -218,7 +215,6 @@ export default function OrderManagement() {
 
     return (
         <div className="management">
-            {/* ITEM LIST */}
             <div className="item-list-container">
                 <div className="item-actions">
                     <Button
@@ -264,18 +260,14 @@ export default function OrderManagement() {
                 </div>
 
                 <div className="item-list-pagination">
-                    <Pagination
+                    <PaginationComponent
                         count={Math.ceil(orders.length / itemsPerPage)}
                         page={page}
                         onChange={(e, value) => setPage(value)}
-                        variant="outlined"
-                        color="secondary"
-                        className="dish-pagination"
                     />
                 </div>
             </div>
 
-            {/* INFORMATION CONTAINER */}
             <div className="info-container">
                 <h2 className="section-title" >Order Information</h2>
 
@@ -284,13 +276,11 @@ export default function OrderManagement() {
                 ) : (
                     <>
                         <div className="info-grid">
-                            {/* TOTAL */}
                             <div className="info-box">
                                 <label>Current Total (€)</label>
                                 <input type="text" value={totalPrice.toFixed(2)} readOnly />
                             </div>
 
-                            {/* STAFF */}
                             <div className="info-box">
                                 <label>Serving Staff</label>
                                 <select
@@ -318,7 +308,6 @@ export default function OrderManagement() {
                 )}
             </div>
 
-            {/* DISHES IN ORDER */}
             <div className="option-container">
                 {selectedOrder && (
                     <>
@@ -365,7 +354,6 @@ export default function OrderManagement() {
 
                                         </div>
 
-                                        {/* show small summary of selected options */}
                                         {it.selectedOptions && Object.keys(it.selectedOptions).length > 0 && (
                                             <div style={{ marginTop: 8, color: '#cfcfcf', fontSize: '0.9rem' }}>
                                                 {it.dish.optionTrees?.map(tree => {
@@ -381,20 +369,15 @@ export default function OrderManagement() {
                     </>
                 )}
                 <div className="option-tree-pagination">
-                    <Pagination
-                        count={Math.ceil((selectedOrder?.items.length || 0) / dishesPerPage)}
-                        page={dishPage}
-                        onChange={(e, value) => setDishPage(value)}
-                        variant="outlined"
-                        color="secondary"
-                        className='dish-pagination'
-                    />
+<PaginationComponent
+    count={Math.ceil((selectedOrder?.items.length || 0) / dishesPerPage)}
+    page={dishPage}
+    onChange={(e, value) => setDishPage(value)}
+/>
                 </div>
 
             </div>
 
-
-            {/* Modal */}
             {modalOpen && modalItem && (
                 <div className="modal-overlay" onClick={closeModal}>
                     <div className="modal-content option-tree-box" onClick={(e) => e.stopPropagation()}>
