@@ -2,6 +2,7 @@ import "./ServiceManagement.css";
 import "../Management.css";
 import Button from "@mui/material/Button";
 import { useState } from "react";
+import SnackbarNotification from "../../components/SnackBar/SnackNotification";
 
 type Service = {
     id: number;
@@ -21,6 +22,16 @@ export default function ServiceManagement() {
     const [selected, setSelected] = useState<Service | null>(null);
     const [deleteMode, setDeleteMode] = useState(false);
     const [dirty, setDirty] = useState(false);
+
+    const [snackbar, setSnackbar] = useState<{
+        open: boolean;
+        message: string;
+        type: 'success' | 'error' | 'warning' | 'info';
+    }>({
+        open: false,
+        message: '',
+        type: 'success',
+    });
 
     const handleNew = () => {
         const s: Service = { id: Date.now(), name: "New Service", price: 0, discount: 0, durationMinutes: 30, description: "" };
@@ -52,6 +63,11 @@ export default function ServiceManagement() {
         if (!selected) return;
         setServices((p) => p.map(s => s.id === selected.id ? selected : s));
         setDirty(false);
+        setSnackbar({
+            open: true,
+            message: 'Service saved successfully!',
+            type: 'success',
+        });
     };
 
     return (
@@ -117,7 +133,12 @@ export default function ServiceManagement() {
                         )}
                     </>)}
             </div>
-
+            <SnackbarNotification
+                open={snackbar.open}
+                onClose={() => setSnackbar({ ...snackbar, open: false })}
+                message={snackbar.message}
+                type={snackbar.type}
+            />
         </div>
     );
 }

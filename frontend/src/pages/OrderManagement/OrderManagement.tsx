@@ -4,6 +4,8 @@ import Button from "@mui/material/Button";
 import { useState } from "react";
 import dishesData from "../dishesData.json";
 import Pagination from '@mui/material/Pagination';
+import SnackbarNotification from "../../components/SnackBar/SnackNotification";
+
 
 type Option = {
     id: number;
@@ -21,14 +23,14 @@ type Dish = {
     id: number;
     name: string;
     price: number;
-    optionTrees?: OptionTree[]; // <-- include option trees
+    optionTrees?: OptionTree[];
 };
 
 type OrderDish = {
     id: number;
     dish: Dish;
     quantity: number;
-    selectedOptions?: Record<number, number>; // treeId -> optionId
+    selectedOptions?: Record<number, number>;
 };
 
 type Order = {
@@ -44,16 +46,25 @@ export default function OrderManagement() {
     const [orderDirty, setOrderDirty] = useState(false);
     const [cancelMode, setCancelMode] = useState(false);
 
-    // modal state
     const [modalOpen, setModalOpen] = useState(false);
     const [modalItem, setModalItem] = useState<OrderDish | null>(null);
     const [modalSelections, setModalSelections] = useState<Record<number, number>>({});
+
+    const [snackbar, setSnackbar] = useState<{
+        open: boolean;
+        message: string;
+        type: 'success' | 'error' | 'warning' | 'info';
+    }>({
+        open: false,
+        message: '',
+        type: 'success',
+    });
 
     const [page, setPage] = useState(1);
     const itemsPerPage = 7;
 
     const [dishPage, setDishPage] = useState(1);
-    const dishesPerPage = 6; // adjust as needed
+    const dishesPerPage = 6;
 
 
     const start = (page - 1) * itemsPerPage;
@@ -139,6 +150,11 @@ export default function OrderManagement() {
         );
 
         setOrderDirty(false);
+        setSnackbar({
+            open: true,
+            message: 'Order saved successfully!',
+            type: 'success',
+        });
     };
 
     const removeDishFromOrder = (id: number) => {
@@ -191,7 +207,6 @@ export default function OrderManagement() {
     const totalPrice = selectedOrder
         ? selectedOrder.items.reduce((sum, it) => {
             const base = it.dish.price * it.quantity;
-            // treat missing optionTrees as empty array to avoid "possibly undefined"
             const optionsTotal = (it.dish.optionTrees || []).reduce((optSum, tree) => {
                 const selId = it.selectedOptions ? it.selectedOptions[tree.id] : undefined;
                 const sel = tree.options.find((o) => o.id === selId);
@@ -432,6 +447,14 @@ export default function OrderManagement() {
                 </div>
             )}
 
+            <SnackbarNotification
+                open={snackbar.open}
+                onClose={() => setSnackbar({ ...snackbar, open: false })}
+                message={snackbar.message}
+                type={snackbar.type}
+            />
         </div>
+
+
     );
 }

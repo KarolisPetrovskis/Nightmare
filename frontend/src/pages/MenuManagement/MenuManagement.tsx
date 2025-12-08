@@ -3,6 +3,7 @@ import Button from '@mui/material/Button';
 import { useState, useEffect } from "react";
 import dishesData from '../dishesData.json';
 import Pagination from '@mui/material/Pagination';
+import SnackbarNotification from '../../components/SnackBar/SnackNotification';
 
 type Option = {
   id: number;
@@ -34,6 +35,16 @@ export default function MenuManagement() {
   const [itemDirty, setItemDirty] = useState(false);
   const [optionsDirty, setOptionsDirty] = useState(false);
   const [deleteMode, setDeleteMode] = useState(false);
+
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+  }>({
+    open: false,
+    message: '',
+    type: 'success',
+  });
 
   const [page, setPage] = useState(1);
   const itemsPerPage = 7;
@@ -94,6 +105,11 @@ export default function MenuManagement() {
 
     setItemDirty(false);
     setOptionsDirty(false);
+            setSnackbar({
+            open: true,
+            message: 'Dish saved successfully!',
+            type: 'success',
+        });
   };
 
 
@@ -372,7 +388,14 @@ export default function MenuManagement() {
 </div>
 
       </div>
-
+            <SnackbarNotification
+                open={snackbar.open}
+                onClose={() => setSnackbar({ ...snackbar, open: false })}
+                message={snackbar.message}
+                type={snackbar.type}
+            />
     </div>
+
+    
   );
 }
