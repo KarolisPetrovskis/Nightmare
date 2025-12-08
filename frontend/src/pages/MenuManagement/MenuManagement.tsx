@@ -11,27 +11,29 @@ type Option = {
   price: number;
 };
 
-type OptionTree = {
+type OptionGroup = {
   id: number;
   name: string;
   options: Option[];
 };
 
-type Item = {
+type MenuItem = {
   id: number;
   name: string;
   price: number;
   discount: number;
   discountExpiration: string;
   vat: string;
-  optionTrees: OptionTree[];
+  optionGroups: OptionGroup[];
 };
 
 
 export default function MenuManagement() {
-  const [items, setItems] = useState<Item[]>(dishesData.dishes);
-  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
-  const [editableItem, setEditableItem] = useState<Item | null>(null);
+  const [items, setItems] = useState<MenuItem[]>(
+    dishesData.dishes.map(d => ({ ...d, optionGroups: d.optionTrees || [] }))
+  );
+  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
+  const [editableItem, setEditableItem] = useState<MenuItem | null>(null);
   const [itemDirty, setItemDirty] = useState(false);
   const [optionsDirty, setOptionsDirty] = useState(false);
   const [deleteMode, setDeleteMode] = useState(false);
@@ -58,14 +60,14 @@ export default function MenuManagement() {
   };
 
   const handleNewItem = () => {
-    const emptyItem: Item = {
+    const emptyItem: MenuItem = {
       id: -1,
       name: "",
       price: 0,
       discount: 0,
       discountExpiration: "",
       vat: "standard",
-      optionTrees: []
+      optionGroups: []
     };
 
     setSelectedItem(emptyItem);
@@ -82,9 +84,9 @@ export default function MenuManagement() {
       editableItem.discountExpiration !== selectedItem.discountExpiration ||
       editableItem.vat !== selectedItem.vat;
 
-    const treesChanged = JSON.stringify(editableItem.optionTrees) !== JSON.stringify(selectedItem.optionTrees);
+    const groupsChanged = JSON.stringify(editableItem.optionGroups) !== JSON.stringify(selectedItem.optionGroups);
 
-    setItemDirty(simpleChanged || treesChanged);
+    setItemDirty(simpleChanged || groupsChanged);
   }, [editableItem, selectedItem]);
 
 
@@ -111,7 +113,7 @@ export default function MenuManagement() {
   };
 
 
-  const handleItemClick = (item: Item) => {
+  const handleItemClick = (item: MenuItem) => {
     if (!deleteMode) {
       setSelectedItem(item);
       setEditableItem({ ...item });
@@ -120,7 +122,7 @@ export default function MenuManagement() {
   };
 
 
-  const updateField = (key: keyof Item, value: string | number) => {
+  const updateField = (key: keyof MenuItem, value: string | number) => {
     setEditableItem(prev => prev ? { ...prev, [key]: value } : prev);
 
     if (selectedItem && editableItem) {
@@ -249,13 +251,13 @@ export default function MenuManagement() {
             <Button
               className="option-tree-button item-action-button new-item"
               onClick={() => {
-                const newTree = {
+                const newGroup = {
                   id: Date.now(),
                   name: "",
                   options: []
                 };
                 setEditableItem(prev =>
-                  prev ? { ...prev, optionTrees: [...prev.optionTrees, newTree] } : prev
+                  prev ? { ...prev, optionGroups: [...prev.optionGroups, newGroup] } : prev
                 );
                 setOptionsDirty(true);
               }}
@@ -270,25 +272,24 @@ export default function MenuManagement() {
         ) : (
           <>
 
-
             <div className="option-tree-list">
-              {editableItem?.optionTrees
+              {editableItem?.optionGroups
                 ?.slice((treePage - 1) * treesPerPage, treePage * treesPerPage)
-                .map((tree, treeIndex) => {
-                  const realIndex = (treePage - 1) * treesPerPage + treeIndex;
+                .map((group, groupIndex) => {
+                  const realIndex = (treePage - 1) * treesPerPage + groupIndex;
 
                   return (
-                    <div key={tree.id} className="option-tree-box">
+                    <div key={group.id} className="option-tree-box">
 
                       <div className="option-tree-header">
                         <input
                           type="text"
-                          value={tree.name}
+                          value={group.name}
                           placeholder="Option Tree Name"
                           onChange={(e) => {
-                            const updated = [...editableItem.optionTrees];
+                            const updated = [...editableItem.optionGroups];
                             updated[realIndex].name = e.target.value;
-                            setEditableItem(prev => prev ? { ...prev, optionTrees: updated } : prev);
+                            setEditableItem(prev => prev ? { ...prev, optionGroups: updated } : prev);
                             setOptionsDirty(true);
                           }}
                         />
@@ -296,8 +297,8 @@ export default function MenuManagement() {
                         <button
                           className="delete-tree"
                           onClick={() => {
-                            const updated = editableItem.optionTrees.filter(t => t.id !== tree.id);
-                            setEditableItem(prev => prev ? { ...prev, optionTrees: updated } : prev);
+                            const updated = editableItem.optionGroups.filter(t => t.id !== group.id);
+                            setEditableItem(prev => prev ? { ...prev, optionGroups: updated } : prev);
                             setOptionsDirty(true);
                           }}
                         >
@@ -306,16 +307,16 @@ export default function MenuManagement() {
                       </div>
 
                       <div className="option-list">
-                        {tree.options.map((opt, optIndex) => (
+                        {group.options.map((opt, optIndex) => (
                           <div key={opt.id} className="option-row">
                             <input
                               type="text"
                               value={opt.name}
                               placeholder="Option name"
                               onChange={(e) => {
-                                const updated = [...editableItem.optionTrees];
+                                const updated = [...editableItem.optionGroups];
                                 updated[realIndex].options[optIndex].name = e.target.value;
-                                setEditableItem(prev => prev ? { ...prev, optionTrees: updated } : prev);
+                                setEditableItem(prev => prev ? { ...prev, optionGroups: updated } : prev);
                                 setOptionsDirty(true);
                               }}
                             />
@@ -325,9 +326,9 @@ export default function MenuManagement() {
                               value={opt.price}
                               placeholder="Price (€)"
                               onChange={(e) => {
-                                const updated = [...editableItem.optionTrees];
+                                const updated = [...editableItem.optionGroups];
                                 updated[realIndex].options[optIndex].price = parseFloat(e.target.value);
-                                setEditableItem(prev => prev ? { ...prev, optionTrees: updated } : prev);
+                                setEditableItem(prev => prev ? { ...prev, optionGroups: updated } : prev);
                                 setOptionsDirty(true);
                               }}
                             />
@@ -335,10 +336,10 @@ export default function MenuManagement() {
                             <button
                               className="delete-option"
                               onClick={() => {
-                                const updated = [...editableItem.optionTrees];
+                                const updated = [...editableItem.optionGroups];
                                 updated[realIndex].options =
                                   updated[realIndex].options.filter(o => o.id !== opt.id);
-                                setEditableItem(prev => prev ? { ...prev, optionTrees: updated } : prev);
+                                setEditableItem(prev => prev ? { ...prev, optionGroups: updated } : prev);
                                 setOptionsDirty(true);
                               }}
                             >
@@ -350,13 +351,13 @@ export default function MenuManagement() {
                         <Button
                           className="item-action-button new-item add-option"
                           onClick={() => {
-                            const updated = [...editableItem.optionTrees];
+                            const updated = [...editableItem.optionGroups];
                             updated[realIndex].options.push({
                               id: Date.now(),
                               name: "",
                               price: 0
                             });
-                            setEditableItem(prev => prev ? { ...prev, optionTrees: updated } : prev);
+                            setEditableItem(prev => prev ? { ...prev, optionGroups: updated } : prev);
                             setOptionsDirty(true);
                           }}
                         >
@@ -373,7 +374,7 @@ export default function MenuManagement() {
 
         <div className="option-tree-pagination">
 <PaginationComponent
-    count={Math.ceil((editableItem?.optionTrees.length ?? 0) / treesPerPage)}
+    count={Math.ceil((editableItem?.optionGroups.length ?? 0) / treesPerPage)}
     page={treePage}
     onChange={(e, value) => setTreePage(value)}
 />
