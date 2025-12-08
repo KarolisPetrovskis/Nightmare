@@ -9,9 +9,9 @@ type Service = {
     id: number;
     name: string;
     price: number;
-    discount: number; 
+    discount: number;
     durationMinutes: number;
-    discountExpires?: string; 
+    discountExpires?: string;
     description?: string;
 };
 
@@ -82,7 +82,7 @@ export default function ServiceManagement() {
             <div className="item-list-container">
                 <div className="item-actions">
                     <Button className="item-action-button new-item" onClick={handleNew}>New Service</Button>
-                    <Button className={`item-action-button delete-item ${deleteMode ? 'active' : ''}`} onClick={toggleDelete}>Delete current Service</Button>
+                    <Button className={`item-action-button delete-item ${deleteMode ? 'active' : ''}`} onClick={toggleDelete}>Delete Services</Button>
                 </div>
 
                 <h3 className="item-list-label">Services</h3>
@@ -91,6 +91,7 @@ export default function ServiceManagement() {
                     {paginatedServices.map(s => (
                         <div key={s.id} className={`item-card ${selected?.id === s.id ? 'selected' : ''}`} onClick={() => handleServiceClick(s)}>
                             {s.name}
+                            {deleteMode && <span className="delete-x">✖</span>}
                         </div>
                     ))}
                 </div>

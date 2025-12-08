@@ -230,7 +230,7 @@ export default function OrderManagement() {
                             }`}
                         onClick={toggleCancelMode}
                     >
-                        Cancel Order
+                        Cancel Orders
                     </Button>
                 </div>
 
