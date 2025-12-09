@@ -13,13 +13,20 @@ namespace backend.Server.Services
 
         public async Task<List<MenuItemIngredient>> GetAllMenuAddonsAsync(int page, int perPage)
         {
-            if (page <= 0)
+            if (page < 0)
             {
                 throw new ApiException(400, "Page number must be greater than zero");
             }
             if (perPage <= 0)
             {
                 throw new ApiException(400, "PerPage value must be greater than zero");
+            }
+
+            if (page == 0)
+            {
+                return await _context.MenuItemIngredients
+                    .AsNoTracking()
+                    .ToListAsync();
             }
 
             return await _context.MenuItemIngredients
