@@ -1,9 +1,34 @@
-using backend.Server.Services;
+using backend.Server.Database;
 using backend.Server.Interfaces;
+using backend.Server.Services;
+using backend.Server.Middleware;
+using DotNetEnv;
+using Microsoft.EntityFrameworkCore;
+
+// Load .env file before building the app
+Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
-// allow frontend
+builder.Configuration.AddEnvironmentVariables();
+
+// Build the connection string using config values
+var dbHost = builder.Configuration["DB_HOST"];
+var dbName = builder.Configuration["DB_NAME"];
+var dbUser = builder.Configuration["DB_USER"];
+var dbPassword = builder.Configuration["DB_PASSWORD"];
+var dbPort = builder.Configuration["DB_PORT"] ?? "5432";
+
+var connectionString =
+    $"Host={dbHost};Port={dbPort};Database={dbName};Username={dbUser};Password={dbPassword}";
+
+// Register DbContext
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseNpgsql(connectionString)
+);
+
+
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend",
@@ -13,10 +38,11 @@ builder.Services.AddCors(options =>
 });
 
 // Add services to the container.
-
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
+
+// Register application services
 builder.Services.AddScoped<IAppointmentsService, AppointmentsService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IBusinessService, BusinessService>();
@@ -33,19 +59,16 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+// Exception handling middleware should run early so API errors are mapped consistently
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.UseCors("AllowFrontend");
-
 app.MapControllers();
-
 app.Run();
