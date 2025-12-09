@@ -21,22 +21,25 @@ namespace backend.Server.Services
             {
                 throw new ApiException(400, "Page number must be greater than or equal to zero");
             }
-            if (perPage < 0)
+            if (perPage <= 0)
             {
                 throw new ApiException(400, "PerPage value must be greater than or equal to zero");
             }
 
-            var query = _context.MenuItems
-                .Where(m => m.BusinessId == businessId)
-                .AsNoTracking()
-                .Skip((page - 1) * perPage);
-
-            if (perPage > 0)
+            if (page == 0)
             {
-                query = query.Take(perPage);
+                return await _context.MenuItems
+                    .Where(m => m.BusinessId == businessId)
+                    .AsNoTracking()
+                    .ToListAsync();
             }
 
-            return await query.ToListAsync();
+            return await _context.MenuItems
+                .Where(m => m.BusinessId == businessId)
+                .AsNoTracking()
+                .Skip((page - 1) * perPage)
+                .Take(perPage)
+                .ToListAsync();
         }
 
         public async Task CreateMenuItemAsync(MenuItem menuItem)
