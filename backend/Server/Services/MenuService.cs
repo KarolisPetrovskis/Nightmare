@@ -26,7 +26,7 @@ namespace backend.Server.Services
 
         public async Task CreateMenuItemAsync(MenuItem menuItem)
         {
-            if (await _context.MenuItems.AnyAsync(m => m.Name == menuItem.Name))
+            if (await _context.MenuItems.AnyAsync(m => m.Name == menuItem.Name && m.BusinessId == menuItem.BusinessId))
             {
                 throw new ApiException(409, $"Menu item with Name {menuItem.Name} already exists.");
             }
