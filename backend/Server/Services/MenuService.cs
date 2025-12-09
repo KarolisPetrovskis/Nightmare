@@ -12,11 +12,16 @@ namespace backend.Server.Services
 
         public async Task<List<MenuItem>> GetMenusAsync(long businessId, int page, int perPage)
         {
-            return await _context.MenuItems
+            var query = _context.MenuItems
                 .Where(m => m.BusinessId == businessId)
-                .Skip((page - 1) * perPage)
-                .Take(perPage)
-                .ToListAsync();
+                .Skip((page - 1) * perPage);
+
+            if (perPage > 0)
+            {
+                query = query.Take(perPage);
+            }
+
+            return await query.ToListAsync();
         }
 
         public async Task CreateMenuItemAsync(MenuItem menuItem)
