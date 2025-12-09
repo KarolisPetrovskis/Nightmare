@@ -36,37 +36,30 @@ namespace backend.Server.Services
                 .ToListAsync();
         }
 
-        public async Task<List<Appointment>> TrimAppointmentsByEmployeeIdAsync(List<Appointment> appointments, long employeeId)
+        public Task<List<Appointment>> TrimAppointmentsByEmployeeIdAsync(List<Appointment> appointments, long employeeId)
         {
             if (employeeId <= 0)
             {
                 throw new ApiException(400, "Employee ID must be a positive number");
             }
 
-            appointments = [.. appointments.Where(a => a.EmployeeId == employeeId)];
-
-            return appointments;
+            var filtered = appointments.Where(a => a.EmployeeId == employeeId).ToList();
+            return Task.FromResult(filtered);
         }
 
-        public async Task<List<Appointment>> TrimAppointmentsByDateAsync(List<Appointment> appointments, DateTime date)
+        public Task<List<Appointment>> TrimAppointmentsByDateAsync(List<Appointment> appointments, DateTime date)
         {
             if (date == default)
             {
                 throw new ApiException(400, "Invalid date provided");
             }
 
-            appointments = [.. appointments.Where(a => a.AppointmentDate.Date == date.Date)];
-
-            return appointments;
+            var filtered = appointments.Where(a => a.AppointmentDate.Date == date.Date).ToList();
+            return Task.FromResult(filtered);
         }
 
         public async Task CreateAppointmentAsync(Appointment appointment)
         {
-            if (appointment == null)
-            {
-                throw new ApiException(400, "Appointment cannot be null");
-            }
-
             if (await _context.Appointment.AnyAsync(a => a.Code == appointment.Code))
             {
                 throw new ApiException(409, "Appointment with the same code already exists");

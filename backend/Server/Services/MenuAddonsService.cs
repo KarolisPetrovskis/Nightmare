@@ -22,28 +22,16 @@ namespace backend.Server.Services
             {
                 throw new ApiException(400, "PerPage value must be greater than zero");
             }
-            var result = await _context.MenuItemIngredients
+
+            return await _context.MenuItemIngredients
                 .Skip((page - 1) * perPage)
                 .Take(perPage)
                 .AsNoTracking()
                 .ToListAsync();
-
-            
-            if (result.Count == 0)
-            {
-                throw new ApiException(404, "No menu addons found");
-            }
-
-            return result;
         }
 
         public async Task CreateMenuAddonAsync(MenuItemIngredient menuAddon)
         {
-            if (menuAddon == null)
-            {
-                throw new ApiException(400, "Menu addon cannot be null");
-            }
-
             if (await _context.MenuItemIngredients.AnyAsync(m => m.Name == menuAddon.Name))
             {
                 throw new ApiException(409, "Menu addon with the same name already exists");
@@ -77,7 +65,7 @@ namespace backend.Server.Services
 
             _context.MenuItemIngredients.Update(menuAddon);
             
-            await _helper.SaveChangesOrThrowAsync(_context, "Failed to create menu addon");
+            await _helper.SaveChangesOrThrowAsync(_context, "Failed to update menu addon");
         }
 
         public async Task DeleteMenuAddonAsync(long nid)

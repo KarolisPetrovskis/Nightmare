@@ -16,7 +16,7 @@ namespace backend.Server.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetEmployees([FromBody] UserGetAllDTO request)
+        public IActionResult GetEmployees([FromQuery] UserGetAllDTO request)
         {
             _employeesService.placeholderMethod();
             return Ok("Employees fetched successfully.");

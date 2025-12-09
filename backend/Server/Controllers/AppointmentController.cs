@@ -17,7 +17,7 @@ namespace backend.Server.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllAppointments([FromQuery] AppointmentGetAllDTO request)
+        public async Task<ActionResult<List<Appointment>>> GetAllAppointments([FromQuery] AppointmentGetAllDTO request)
         {
             var appointments = await _appointmentsService.GetAllAppointmentsAsync(request.Page, request.PerPage);
 
@@ -34,7 +34,7 @@ namespace backend.Server.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateAppointment([FromBody] AppointmentCreateDTO request)
+        public async Task<ActionResult<Appointment>> CreateAppointment([FromBody] AppointmentCreateDTO request)
         {
             var appointment = new Appointment
             {
@@ -58,7 +58,7 @@ namespace backend.Server.Controllers
         }
 
         [HttpGet("{nid}")]
-        public async Task<IActionResult> GetAppointmentBynId(long nid)
+        public async Task<ActionResult<Appointment>> GetAppointmentBynId(long nid)
         {
             var appointment = await _appointmentsService.GetAppointmentByNidAsync(nid);
             return Ok(appointment);

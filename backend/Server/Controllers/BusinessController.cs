@@ -16,7 +16,7 @@ namespace backend.Server.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetBusinesses([FromBody] BusinessGetAllDTO request)
+        public IActionResult GetBusinesses([FromQuery] BusinessGetAllDTO request)
         {
             _businessService.placeholderMethod();
             return Ok("Businesses fetched successfully.");

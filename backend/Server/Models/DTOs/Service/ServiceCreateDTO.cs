@@ -1,12 +1,30 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace backend.Server.Models.DTOs.Service;
 public class ServiceCreateDTO
 {
+    [Required(ErrorMessage = "Name is required")]
+    [StringLength(200, MinimumLength = 1)]
     public required string Name { get; set; }
+
+    [Required]
+    [Range(0.01, double.MaxValue, ErrorMessage = "Price must be greater than zero")]
     public required decimal Price { get; set; }
-    // In mins
+
+    [Required]
+    [Range(1, int.MaxValue, ErrorMessage = "TimeMin must be at least 1 minute")]
     public required int TimeMin { get; set; }
     // Should we add discount time so we can arrange its starting time?
+
+    [Required]
+    [Range(0, 100, ErrorMessage = "Discount must be between 0 and 100")]
     public required decimal Discount { get; set; }
+
+    [Required]
+    [Range(1, long.MaxValue, ErrorMessage = "VatId must be a positive number")]
     public required long VatId { get; set; }
+
+    [Required]
+    [Range(1, long.MaxValue, ErrorMessage = "BusinessId must be a positive number")]
     public required long BusinessId { get; set; }
 }
