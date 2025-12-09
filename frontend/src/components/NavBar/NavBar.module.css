@@ -43,3 +43,18 @@
   display: flex;
   gap: 1rem;
 }
+
+.businessName {
+  font-weight: 700 !important;
+  color: #fff !important;
+  font-size: 1.25rem !important;
+}
+
+.pageTitle {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-weight: 600 !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-size: 1.1rem !important;
+}
