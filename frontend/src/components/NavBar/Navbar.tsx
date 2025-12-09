@@ -26,6 +26,11 @@ export default function Navbar() {
             </NavLink>
           ))}
         </Box>
+
+        <Box className={styles.rightButtons}>
+          <Button className={styles.navButton} onClick={() => {}}>Options</Button>
+          <Button className={styles.navButton} onClick={() => {}}>Sign out</Button>
+        </Box>
       </Toolbar>
     </AppBar>
   );

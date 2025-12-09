@@ -6,7 +6,7 @@
 
 .toolbar {
   display: flex !important;
-  justify-content: flex-start !important;
+  justify-content: space-between !important;
   padding: 0 2rem !important;
 }
 
@@ -37,4 +37,9 @@
 .active .navButton {
   background-color: #646cff !important;
   color: #fff !important;
+}
+
+.rightButtons {
+  display: flex;
+  gap: 1rem;
 }
