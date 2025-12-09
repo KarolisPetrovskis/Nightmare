@@ -58,14 +58,14 @@ namespace backend.Server.Controllers
 
             await _menuService.UpdateMenuItemAsync(menuItem);
 
-            return Ok();
+            return NoContent();
         }
 
         [HttpDelete("{nid}")]
         public async Task<IActionResult> DeleteItem(long nid)
         {
             await _menuService.DeleteMenuItemAsync(nid);
-            return Ok();
+            return NoContent();
         }
     }
 }

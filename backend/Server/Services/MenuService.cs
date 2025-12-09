@@ -33,12 +33,7 @@ namespace backend.Server.Services
 
             _context.MenuItems.Add(menuItem);
 
-            var result = await _context.SaveChangesAsync();
-
-            if (result <= 0)
-            {
-                throw new ApiException(500, "Failed to create menu item.");
-            }
+            await SaveChangesOrThrowAsync("Failed to create menu item.");
         }
 
         public async Task<MenuItem> GetMenuItemByNidAsync(long nid)
@@ -49,19 +44,8 @@ namespace backend.Server.Services
 
         public async Task UpdateMenuItemAsync(MenuItem menuItem)
         {
-            if (await _context.MenuItems.FindAsync(menuItem.Nid) == null)
-            {
-                throw new ApiException(404, $"Menu item {menuItem.Nid} not found.");
-            }
-
             _context.MenuItems.Update(menuItem);
-
-            var result = await _context.SaveChangesAsync();
-
-            if (result <= 0)
-            {
-                throw new ApiException(500, "Failed to update menu item.");
-            }
+            await SaveChangesOrThrowAsync("Failed to update menu item.");
         }
 
         public async Task DeleteMenuItemAsync(long nid)
@@ -69,11 +53,15 @@ namespace backend.Server.Services
             var menuItem = await _context.MenuItems.FindAsync(nid) ?? throw new ApiException(404, $"Menu item {nid} not found.");
             _context.MenuItems.Remove(menuItem);
 
-            var result = await _context.SaveChangesAsync();
+            await SaveChangesOrThrowAsync("Failed to delete menu item.");
+        }
 
+        private async Task SaveChangesOrThrowAsync(string errorMessage)
+        {
+            var result = await _context.SaveChangesAsync();
             if (result <= 0)
             {
-                throw new ApiException(500, "Failed to delete menu item.");
+                throw new ApiException(500, errorMessage);
             }
         }
     }
