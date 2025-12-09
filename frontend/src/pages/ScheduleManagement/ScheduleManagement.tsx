@@ -1,6 +1,11 @@
+// TODO:
+// In the wireframe the ScheduleManagement does not display year, however when clicked on a day it navigates to CurrentScheduleManagement with year-month-day format (Probbably need to include year display here as well)
+// Improve Calendar design from aesthethics side
+
 import "./ScheduleManagement.css";
 import "../../App.css";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function getMonthMatrix(year: number, month: number) {
   // month: 0-11
@@ -44,9 +49,18 @@ function getMonthMatrix(year: number, month: number) {
 }
 
 export default function ScheduleManagement() {
+  const navigate = useNavigate();
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
+
+  const handleDayClick = (day: number, inMonth: boolean) => {
+    if (inMonth) {
+      const monthStr = String(month + 1).padStart(2, "0");
+      const dayStr = String(day).padStart(2, "0");
+      navigate(`/current-schedule-management/${year}-${monthStr}-${dayStr}`);
+    }
+  };
 
   const monthNames = [
     "January",
@@ -101,7 +115,9 @@ export default function ScheduleManagement() {
                 {row.map((cell, ci) => (
                   <div
                     key={ci}
-                    className={`day-cell ${cell.inMonth ? "in-month" : "out-month"}`}>
+                    className={`day-cell ${cell.inMonth ? "in-month" : "out-month"}`}
+                    onClick={() => handleDayClick(cell.day, cell.inMonth)}
+                    style={{ cursor: cell.inMonth ? "pointer" : "default" }}>
                     <div className="day-number">{cell.day}</div>
                   </div>
                 ))}

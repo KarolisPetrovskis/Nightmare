@@ -1,0 +1,250 @@
+/* Day Schedule Page Styles */
+
+.day-schedule-page {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  padding: 16px;
+}
+
+.schedule-left-column {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  flex-shrink: 0;
+  width: 80px;
+}
+
+.add-appointment-btn {
+  padding: 6px 12px !important;
+  font-size: 0.75rem !important;
+  background-color: #2b2b2b !important;
+  color: #fff !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 4px !important;
+  text-transform: none !important;
+  white-space: nowrap !important;
+}
+
+.add-appointment-btn:hover {
+  background-color: #3e44b3 !important;
+}
+
+.current-date {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.time-labels {
+  display: flex;
+  flex-direction: column;
+  margin-top: 8px;
+}
+
+.time-label-header-spacer {
+  height: 100px; /* Match worker header height (avatar 60px + name + padding) */
+}
+
+.schedule-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+.schedule-header {
+  display: flex;
+  flex-direction: row;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 12px;
+  margin-bottom: 0;
+}
+
+.worker-column-header {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  min-width: 120px;
+}
+
+.schedule-grid {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  position: relative;
+}
+
+.time-label {
+  height: 50px;
+  display: flex;
+  align-items: flex-start;
+  padding-top: 0;
+  padding-right: 12px;
+  justify-content: flex-end;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+  transform: translateY(-8px);
+}
+
+.time-label.full-hour {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.87);
+}
+
+.time-label.half-hour {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.worker-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.worker-name {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.87);
+  text-align: center;
+}
+
+.worker-column {
+  flex: 1;
+  position: relative;
+  min-width: 120px;
+  border-left: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.time-row {
+  height: 50px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.time-row.full-hour {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.time-row.half-hour {
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+}
+
+.appointment-block {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  background-color: #3a3a3a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.appointment-block:hover {
+  background-color: #4a4a4a;
+  border-color: #646cff;
+}
+
+.appointment-text {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.87);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 900px) {
+  .schedule-left-column {
+    padding-right: 8px;
+  }
+  
+  .worker-column-header {
+    min-width: 100px;
+  }
+  
+  .worker-column {
+    min-width: 100px;
+  }
+  
+  .worker-avatar {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+/* Appointment Modal Styles */
+.appointment-modal {
+  background-color: #1a1a1a !important;
+  border-radius: 12px !important;
+  min-width: 400px;
+}
+
+.appointment-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px !important;
+  background-color: #1a1a1a;
+}
+
+.appointment-modal-content .info-box {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: #2b2b2b;
+  padding: 16px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.appointment-modal-content .info-box label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  text-align: center;
+}
+
+.appointment-modal-content .info-box input,
+.appointment-modal-content .info-box select {
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background-color: #fff;
+  color: #333;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.appointment-modal-content .info-box input:focus,
+.appointment-modal-content .info-box select:focus {
+  outline: none;
+  border-color: #646cff;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.modal-actions .save-button {
+  flex: 1;
+  margin-top: 0;
+}
