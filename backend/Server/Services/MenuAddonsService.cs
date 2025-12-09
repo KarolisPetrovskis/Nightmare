@@ -2,6 +2,7 @@ using backend.Server.Database;
 using backend.Server.Interfaces;
 using backend.Server.Models.DatabaseObjects;
 using backend.Server.Exceptions;
+using backend.Server._helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace backend.Server.Services
@@ -9,6 +10,8 @@ namespace backend.Server.Services
     public class MenuAddonsService(ApplicationDbContext context) : IMenuAddonsService
     {
         private readonly ApplicationDbContext _context = context;
+        private readonly Helper _helper = new();
+
         public async Task<List<MenuItemIngredient>> GetAllMenuAddonsAsync(int page, int perPage)
         {
             if (page <= 0)
@@ -22,6 +25,7 @@ namespace backend.Server.Services
             var result = await _context.MenuItemIngredients
                 .Skip((page - 1) * perPage)
                 .Take(perPage)
+                .AsNoTracking()
                 .ToListAsync();
 
             
@@ -47,12 +51,7 @@ namespace backend.Server.Services
 
             _context.MenuItemIngredients.Add(menuAddon);
 
-            var result = await _context.SaveChangesAsync();
-
-            if (result <= 0)
-            {
-                throw new ApiException(500, "Failed to create menu addon");
-            }
+            await _helper.SaveChangesOrThrowAsync(_context, "Failed to create menu addon");
         }
 
         public async Task<MenuItemIngredient> GetMenuAddonByNidAsync(long nid)
@@ -62,7 +61,9 @@ namespace backend.Server.Services
                 throw new ApiException(400, "Invalid menu addon ID");
             }
 
-            var menuAddon = await _context.MenuItemIngredients.FindAsync(nid) ?? throw new ApiException(404, $"Menu addon {nid} not found");
+            var menuAddon = await _context.MenuItemIngredients
+                .AsNoTracking()
+                .FirstOrDefaultAsync(m => m.Nid == nid) ?? throw new ApiException(404, $"Menu addon {nid} not found");
             
             return menuAddon;
         }
@@ -76,12 +77,7 @@ namespace backend.Server.Services
 
             _context.MenuItemIngredients.Update(menuAddon);
             
-            var result = await _context.SaveChangesAsync();
-
-            if (result <= 0)
-            {
-                throw new ApiException(500, "Failed to update menu addon");
-            }
+            await _helper.SaveChangesOrThrowAsync(_context, "Failed to create menu addon");
         }
 
         public async Task DeleteMenuAddonAsync(long nid)
@@ -90,12 +86,7 @@ namespace backend.Server.Services
 
             _context.MenuItemIngredients.Remove(menuAddon);
 
-            var result = await _context.SaveChangesAsync();
-
-            if (result <= 0)
-            {
-                throw new ApiException(500, "Failed to delete menu addon");
-            }
+            await _helper.SaveChangesOrThrowAsync(_context, "Failed to delete menu addon");
         }
     }
 }

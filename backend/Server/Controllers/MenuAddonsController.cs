@@ -31,10 +31,7 @@ namespace backend.Server.Controllers
 
             await _menuAddonsService.CreateMenuAddonAsync(menuAddon);
 
-            // Reload the entity to ensure Nid is populated
-            var createdMenuAddon = await _menuAddonsService.GetMenuAddonByNidAsync(menuAddon.Nid);
-
-            return CreatedAtAction(nameof(GetMenuAddonByNid), new { nid = createdMenuAddon.Nid }, createdMenuAddon);
+            return CreatedAtAction(nameof(GetMenuAddonByNid), new { nid = menuAddon.Nid }, menuAddon);
         }
 
         [HttpGet("{nid}")]
