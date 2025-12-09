@@ -63,16 +63,12 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-}
-// Exception handling middleware should run early so API errors are mapped consistently
-app.UseMiddleware<ExceptionHandlingMiddleware>();
+}   
 
 app.UseHttpsRedirection();
-
-// Exception handling middleware should run early so API errors are mapped consistently
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-app.UseAuthorization();
 app.UseCors("AllowFrontend");
+app.UseAuthorization();
 app.MapControllers();
 app.Run();
