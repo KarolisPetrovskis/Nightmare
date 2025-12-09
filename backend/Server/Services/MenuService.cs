@@ -3,6 +3,7 @@ using backend.Server.Database;
 using backend.Server.Models.DatabaseObjects;
 using Microsoft.EntityFrameworkCore;
 using backend.Server.Exceptions;
+using backend.Server._helpers;
 
 namespace backend.Server.Services
 {
@@ -12,8 +13,22 @@ namespace backend.Server.Services
 
         public async Task<List<MenuItem>> GetMenuItemsAsync(long businessId, int page, int perPage)
         {
+            if (businessId <= 0)
+            {
+                throw new ApiException(400, "BusinessId must be a positive number");
+            }
+            if (page < 0)
+            {
+                throw new ApiException(400, "Page number must be greater than or equal to zero");
+            }
+            if (perPage < 0)
+            {
+                throw new ApiException(400, "PerPage value must be greater than or equal to zero");
+            }
+
             var query = _context.MenuItems
                 .Where(m => m.BusinessId == businessId)
+                .AsNoTracking()
                 .Skip((page - 1) * perPage);
 
             if (perPage > 0)
@@ -33,11 +48,16 @@ namespace backend.Server.Services
 
             _context.MenuItems.Add(menuItem);
 
-            await SaveChangesOrThrowAsync("Failed to create menu item.");
+            await Helper.SaveChangesOrThrowAsync(_context, "Failed to create menu item.");
         }
 
         public async Task<MenuItem> GetMenuItemByNidAsync(long nid)
         {
+            if (nid <= 0)
+            {
+                throw new ApiException(400, "Nid must be a positive number");
+            }
+
             var menuItem = await _context.MenuItems.FindAsync(nid) ?? throw new ApiException(404, $"Menu item {nid} not found.");
             return menuItem;
         }
@@ -45,7 +65,7 @@ namespace backend.Server.Services
         public async Task UpdateMenuItemAsync(MenuItem menuItem)
         {
             _context.MenuItems.Update(menuItem);
-            await SaveChangesOrThrowAsync("Failed to update menu item.");
+            await Helper.SaveChangesOrThrowAsync(_context, "Failed to update menu item.");
         }
 
         public async Task DeleteMenuItemAsync(long nid)
@@ -53,16 +73,7 @@ namespace backend.Server.Services
             var menuItem = await _context.MenuItems.FindAsync(nid) ?? throw new ApiException(404, $"Menu item {nid} not found.");
             _context.MenuItems.Remove(menuItem);
 
-            await SaveChangesOrThrowAsync("Failed to delete menu item.");
-        }
-
-        private async Task SaveChangesOrThrowAsync(string errorMessage)
-        {
-            var result = await _context.SaveChangesAsync();
-            if (result <= 0)
-            {
-                throw new ApiException(500, errorMessage);
-            }
+            await Helper.SaveChangesOrThrowAsync(_context, "Failed to delete menu item.");
         }
     }
 }

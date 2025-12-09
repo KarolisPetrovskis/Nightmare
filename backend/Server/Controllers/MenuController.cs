@@ -20,9 +20,8 @@ namespace backend.Server.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateItem([FromBody] MenuCreateDTO request)
+        public async Task<ActionResult<MenuItem>> CreateItem([FromBody] MenuCreateDTO request)
         {
-
             var menuItem = new MenuItem
             {
                 Name = request.Name,
@@ -50,11 +49,11 @@ namespace backend.Server.Controllers
         {
             var menuItem = await _menuService.GetMenuItemByNidAsync(nid);
 
-            menuItem.Name = request.Name;
-            menuItem.Price = request.Price;
-            menuItem.Discount = request.Discount;
-            menuItem.VatId = request.VatId;
-            menuItem.DiscountTime = request.DiscountTime;
+            if (request.Name != null) menuItem.Name = request.Name;
+            if (request.Price != default) menuItem.Price = request.Price;
+            if (request.Discount.HasValue) menuItem.Discount = request.Discount;
+            if (request.VatId != default) menuItem.VatId = request.VatId;
+            if (request.DiscountTime.HasValue) menuItem.DiscountTime = request.DiscountTime;
 
             await _menuService.UpdateMenuItemAsync(menuItem);
 
