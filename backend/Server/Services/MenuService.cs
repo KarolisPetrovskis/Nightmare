@@ -10,7 +10,7 @@ namespace backend.Server.Services
     {
         private readonly ApplicationDbContext _context = context;
 
-        public async Task<List<MenuItem>> GetMenusAsync(long businessId, int page, int perPage)
+        public async Task<List<MenuItem>> GetMenuItemsAsync(long businessId, int page, int perPage)
         {
             var query = _context.MenuItems
                 .Where(m => m.BusinessId == businessId)

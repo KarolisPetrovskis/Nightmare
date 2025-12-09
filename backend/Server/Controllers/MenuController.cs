@@ -14,7 +14,7 @@ namespace backend.Server.Controllers
         [HttpGet]
         public async Task<ActionResult<List<MenuItem>>> GetMenu([FromQuery] MenuGetAllDTO request)
         {
-            var result = await _menuService.GetMenusAsync(request.BusinessId, request.Page, request.PerPage);
+            var result = await _menuService.GetMenuItemsAsync(request.BusinessId, request.Page, request.PerPage);
 
             return Ok(result);
         }
