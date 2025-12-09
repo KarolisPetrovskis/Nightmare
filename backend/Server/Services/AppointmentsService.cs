@@ -10,7 +10,6 @@ namespace backend.Server.Services
     public class AppointmentsService(ApplicationDbContext context) : IAppointmentsService
     {
         private readonly ApplicationDbContext _context = context;
-        private readonly Helper _helper = new();
 
         public async Task<List<Appointment>> GetAllAppointmentsAsync(int page, int perPage)
         {
@@ -67,7 +66,7 @@ namespace backend.Server.Services
 
             _context.Appointment.Add(appointment);
 
-            await _helper.SaveChangesOrThrowAsync(_context, "Failed to create appointment");
+            await Helper.SaveChangesOrThrowAsync(_context, "Failed to create appointment");
         }
 
         public async Task<Appointment> GetAppointmentByNidAsync(long nid)
@@ -93,7 +92,7 @@ namespace backend.Server.Services
 
             _context.Appointment.Update(appointment);
             
-            await _helper.SaveChangesOrThrowAsync(_context, "Failed to update appointment");
+            await Helper.SaveChangesOrThrowAsync(_context, "Failed to update appointment");
         }
 
         public async Task DeleteAppointmentAsync(long nid)
@@ -102,7 +101,7 @@ namespace backend.Server.Services
 
             _context.Appointment.Remove(appointment);
 
-            await _helper.SaveChangesOrThrowAsync(_context, "Failed to delete appointment");
+            await Helper.SaveChangesOrThrowAsync(_context, "Failed to delete appointment");
         }
     }
 }

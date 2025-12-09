@@ -10,7 +10,6 @@ namespace backend.Server.Services
     public class MenuAddonsService(ApplicationDbContext context) : IMenuAddonsService
     {
         private readonly ApplicationDbContext _context = context;
-        private readonly Helper _helper = new();
 
         public async Task<List<MenuItemIngredient>> GetAllMenuAddonsAsync(int page, int perPage)
         {
@@ -39,7 +38,7 @@ namespace backend.Server.Services
 
             _context.MenuItemIngredients.Add(menuAddon);
 
-            await _helper.SaveChangesOrThrowAsync(_context, "Failed to create menu addon");
+            await Helper.SaveChangesOrThrowAsync(_context, "Failed to create menu addon");
         }
 
         public async Task<MenuItemIngredient> GetMenuAddonByNidAsync(long nid)
@@ -65,7 +64,7 @@ namespace backend.Server.Services
 
             _context.MenuItemIngredients.Update(menuAddon);
             
-            await _helper.SaveChangesOrThrowAsync(_context, "Failed to update menu addon");
+            await Helper.SaveChangesOrThrowAsync(_context, "Failed to update menu addon");
         }
 
         public async Task DeleteMenuAddonAsync(long nid)
@@ -74,7 +73,7 @@ namespace backend.Server.Services
 
             _context.MenuItemIngredients.Remove(menuAddon);
 
-            await _helper.SaveChangesOrThrowAsync(_context, "Failed to delete menu addon");
+            await Helper.SaveChangesOrThrowAsync(_context, "Failed to delete menu addon");
         }
     }
 }
