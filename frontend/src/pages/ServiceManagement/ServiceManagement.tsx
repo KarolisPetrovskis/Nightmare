@@ -100,7 +100,7 @@ export default function ServiceManagement() {
                     <PaginationComponent
                         count={Math.ceil(services.length / servicesPerPage)}
                         page={page}
-                        onChange={(e, value) => setPage(value)}
+                        onChange={(_, value) => setPage(value)} // TODO: change _ back to e if event is needed
                     />
                 </div>
             </div>

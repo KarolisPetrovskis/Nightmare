@@ -264,7 +264,7 @@ export default function OrderManagement() {
                     <PaginationComponent
                         count={Math.ceil(orders.length / itemsPerPage)}
                         page={page}
-                        onChange={(e, value) => setPage(value)}
+                        onChange={(_, value) => setPage(value)} // TODO: change _ back to e if event is needed
                     />
                 </div>
             </div>
@@ -373,7 +373,7 @@ export default function OrderManagement() {
                     <PaginationComponent
                         count={Math.ceil((selectedOrder?.items.length || 0) / dishesPerPage)}
                         page={dishPage}
-                        onChange={(e, value) => setDishPage(value)}
+                        onChange={(_, value) => setDishPage(value)} // TODO: change _ back to e if event is needed
                     />
                 </div>
 

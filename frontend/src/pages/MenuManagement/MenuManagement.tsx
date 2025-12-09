@@ -169,7 +169,7 @@ export default function MenuManagement() {
 <PaginationComponent
     count={Math.ceil(items.length / itemsPerPage)}
     page={page}
-    onChange={(e, value) => setPage(value)}
+    onChange={(_, value) => setPage(value)} // TODO: change _ back to e if event is needed
 />
         </div>
 
@@ -377,7 +377,7 @@ export default function MenuManagement() {
 <PaginationComponent
     count={Math.ceil((editableItem?.optionGroups.length ?? 0) / treesPerPage)}
     page={treePage}
-    onChange={(e, value) => setTreePage(value)}
+    onChange={(_, value) => setTreePage(value)} // TODO: change _ back to e if event is needed
 />
         </div>
 
