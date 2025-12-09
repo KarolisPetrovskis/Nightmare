@@ -1,4 +1,5 @@
 using backend.Server.Interfaces;
+using backend.Server.Models.DatabaseObjects;
 using backend.Server.Models.DTOs.MenuAddon;
 using Microsoft.AspNetCore.Mvc;
 
@@ -6,48 +7,71 @@ namespace backend.Server.Controllers
 {
     [ApiController]
     [Route("api/menu/addons")]
-    public class MenuAddonsController : ControllerBase
+    public class MenuAddonsController(IMenuAddonsService menuAddonsService) : ControllerBase
     {
-        private readonly IMenuAddonsService _menuAddonsService;
-
-        public MenuAddonsController(IMenuAddonsService menuAddonsService)
-        {
-            _menuAddonsService = menuAddonsService;
-        }
+        private readonly IMenuAddonsService _menuAddonsService = menuAddonsService;
 
         [HttpGet]
-        public IActionResult GetMenuAddons([FromBody] MenuAddonsGetAllDTO request)
+        public async Task<IActionResult> GetMenuAddons([FromQuery] MenuAddonsGetAllDTO request)
         {
-            _menuAddonsService.placeholderMethod();
-            return Ok("Menu addons fetched successfully.");
+            var result = await _menuAddonsService.GetAllMenuAddonsAsync(request.Page, request.PerPage);
+            
+            return Ok(result);
         }
 
         [HttpPost]
-        public IActionResult CreateMenuAddon([FromBody] MenuAddonCreateDTO request)
+        public async Task<IActionResult> CreateMenuAddon([FromBody] MenuAddonCreateDTO request)
         {
-            _menuAddonsService.placeholderMethod();
-            return Ok("Menu addon created successfully.");
+            MenuItemIngredient menuAddon = new()
+            {
+                Name = request.Name,
+                ItemId = request.ItemId,
+                Price = request.Price
+            };
+
+            await _menuAddonsService.CreateMenuAddonAsync(menuAddon);
+
+            // Reload the entity to ensure Nid is populated
+            var createdMenuAddon = await _menuAddonsService.GetMenuAddonByNidAsync(menuAddon.Nid);
+
+            return CreatedAtAction(nameof(GetMenuAddonByNid), new { nid = createdMenuAddon.Nid }, createdMenuAddon);
         }
 
         [HttpGet("{nid}")]
-        public IActionResult GetMenuAddonBynid(long nid)
+        public async Task<IActionResult> GetMenuAddonByNid(long nid)
         {
-            _menuAddonsService.placeholderMethod();
-            return Ok($"Menu addon {nid} fetched successfully.");
+            var result = await _menuAddonsService.GetMenuAddonByNidAsync(nid);
+            return Ok(result);
         }
 
         [HttpPut("{nid}")]
-        public IActionResult UpdateMenuAddon([FromBody] MenuAddonUpdateDTO request, long nid)
+        public async Task<IActionResult> UpdateMenuAddon([FromBody] MenuAddonUpdateDTO request, long nid)
         {
-            _menuAddonsService.placeholderMethod();
-            return Ok($"Menu addon {nid} updated successfully.");
+            var menuAddon = await _menuAddonsService.GetMenuAddonByNidAsync(nid);
+
+            if (!string.IsNullOrWhiteSpace(request.Name))
+            {
+                menuAddon.Name = request.Name;
+            }
+            if (request.ItemId != default)
+            {
+                menuAddon.ItemId = request.ItemId;
+            }
+            if (request.Price != default)
+            {
+                menuAddon.Price = request.Price;
+            }
+
+            await _menuAddonsService.UpdateMenuAddonAsync(menuAddon);
+
+            return Ok(menuAddon);
         }
 
         [HttpDelete("{nid}")]
-        public IActionResult DeleteMenuAddon(long nid)
+        public async Task<IActionResult> DeleteMenuAddon(long nid)
         {
-            _menuAddonsService.placeholderMethod();
-            return Ok($"Menu addon {nid} deleted successfully.");
+            await _menuAddonsService.DeleteMenuAddonAsync(nid);
+            return NoContent();
         }
     }
 }
