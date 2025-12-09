@@ -22,10 +22,6 @@ namespace backend.Server.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateItem([FromBody] MenuCreateDTO request)
         {
-            if (request == null)
-            {
-                return BadRequest("Request body is null.");
-            }
 
             var menuItem = new MenuItem
             {
