@@ -92,7 +92,7 @@ namespace backend.Server.Services
 
             _context.Appointment.Update(appointment);
             
-            await Helper.SaveChangesOrThrowAsync(_context, "Failed to update appointment");
+            await Helper.SaveChangesOrThrowAsync(_context, "Failed to update appointment", expectChanges: false);
         }
 
         public async Task DeleteAppointmentAsync(long nid)

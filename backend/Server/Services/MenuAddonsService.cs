@@ -71,7 +71,7 @@ namespace backend.Server.Services
 
             _context.MenuItemIngredients.Update(menuAddon);
             
-            await Helper.SaveChangesOrThrowAsync(_context, "Failed to update menu addon");
+            await Helper.SaveChangesOrThrowAsync(_context, "Failed to update menu addon", expectChanges: false);
         }
 
         public async Task DeleteMenuAddonAsync(long nid)

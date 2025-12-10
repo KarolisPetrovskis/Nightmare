@@ -7,11 +7,17 @@ namespace backend.Server._helpers
 {
     public class Helper
     {
-        public static async Task SaveChangesOrThrowAsync(ApplicationDbContext context, string errorMessage)
+        public static async Task SaveChangesOrThrowAsync(ApplicationDbContext context, string errorMessage, bool expectChanges = true)
         {
             try
             {
-                await context.SaveChangesAsync();
+                var affectedRows = await context.SaveChangesAsync();
+                
+                // If we expect changes (CREATE/DELETE) but got 0, that's an error
+                if (expectChanges && affectedRows == 0)
+                {
+                    throw new ApiException(500, errorMessage);
+                }
             }
             catch (DbUpdateException ex)
             {
