@@ -55,7 +55,7 @@ builder.Services.AddScoped<IOrdersService, OrdersService>();
 builder.Services.AddScoped<IPaymentsService, PaymentsService>();
 builder.Services.AddScoped<IReceiptsService, ReceiptsService>();
 builder.Services.AddScoped<IServicesService, ServicesService>();
-builder.Services.AddScoped<VatService, VatService>();
+builder.Services.AddScoped<IVatService, VatService>();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
