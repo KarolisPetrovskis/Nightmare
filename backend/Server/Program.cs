@@ -4,7 +4,7 @@ using backend.Server.Services;
 using backend.Server.Middleware;
 using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
-using backend.Services.Services;
+using backend.Server.Services;
 
 // Load .env file before building the app
 Env.Load();

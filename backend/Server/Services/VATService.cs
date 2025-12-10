@@ -4,7 +4,7 @@ using backend.Server.Models.DatabaseObjects;
 using backend.Server.Models.DTOs.VAT;
 using backend.Server.Models.Helpers;
 using Microsoft.EntityFrameworkCore;
-namespace backend.Services.Services;
+namespace backend.Server.Services;
 
 public class VatService : IVatService
 {
