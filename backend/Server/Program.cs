@@ -4,6 +4,7 @@ using backend.Server.Services;
 using backend.Server.Middleware;
 using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
+using backend.Services.Services;
 
 // Load .env file before building the app
 Env.Load();
@@ -54,7 +55,7 @@ builder.Services.AddScoped<IOrdersService, OrdersService>();
 builder.Services.AddScoped<IPaymentsService, PaymentsService>();
 builder.Services.AddScoped<IReceiptsService, ReceiptsService>();
 builder.Services.AddScoped<IServicesService, ServicesService>();
-builder.Services.AddScoped<IVATService, VATService>();
+builder.Services.AddScoped<VatService, VatService>();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
