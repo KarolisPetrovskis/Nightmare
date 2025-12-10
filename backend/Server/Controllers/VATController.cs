@@ -41,9 +41,9 @@ namespace backend.Server.Controllers
         {
             var vat = _vatService.GetVatRateByNid(nid);
             if (vat == null)
-                return NotFound($"VAT rate with nid {nid} not found.");
+                return NotFound(null);
             else
-                return Ok($"VAT rate {nid} fetched successfully.");
+                return Ok(vat);
         }
 
         [HttpDelete("{nid}")]
