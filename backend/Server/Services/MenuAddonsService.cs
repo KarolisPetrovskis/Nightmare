@@ -22,13 +22,8 @@ namespace backend.Server.Services
             var result = await _context.MenuItemIngredients
                 .Skip((page - 1) * perPage)
                 .Take(perPage)
+                .AsNoTracking()
                 .ToListAsync();
-
-            
-            if (result.Count == 0)
-            {
-                throw new ApiException(404, "No menu addons found");
-            }
 
             return result;
         }
@@ -62,7 +57,9 @@ namespace backend.Server.Services
                 throw new ApiException(400, "Invalid menu addon ID");
             }
 
-            var menuAddon = await _context.MenuItemIngredients.FindAsync(nid) ?? throw new ApiException(404, $"Menu addon {nid} not found");
+            var menuAddon = await _context.MenuItemIngredients
+                .AsNoTracking()
+                .SingleOrDefaultAsync(m => m.Nid == nid) ?? throw new ApiException(404, $"Menu addon {nid} not found");
             
             return menuAddon;
         }
