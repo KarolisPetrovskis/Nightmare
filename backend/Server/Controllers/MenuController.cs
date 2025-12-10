@@ -12,38 +12,57 @@ namespace backend.Server.Controllers
         private readonly IMenuService _menuService = menuService;
 
         [HttpGet]
-        public IActionResult GetMenu([FromQuery] MenuGetAllDTO request)
+        public async Task<ActionResult<List<MenuItem>>> GetMenu([FromQuery] MenuGetAllDTO request)
         {
-            _menuService.placeholderMethod();
-            return Ok("Menus fetched successfully.");
+            var result = await _menuService.GetMenuItemsAsync(request.BusinessId, request.Page, request.PerPage);
+
+            return Ok(result);
         }
 
         [HttpPost]
-        public IActionResult CreateItem([FromBody] MenuCreateDTO request)
+        public async Task<ActionResult<MenuItem>> CreateItem([FromBody] MenuCreateDTO request)
         {
-            _menuService.placeholderMethod();
-            return Ok("Menu item created successfully.");
+            var menuItem = new MenuItem
+            {
+                Name = request.Name,
+                BusinessId = request.BusinessId,
+                Price = request.Price,
+                Discount = request.Discount,
+                VatId = request.VatId,
+                DiscountTime = request.DiscountTime
+            };
+
+            return CreatedAtAction(nameof(GetItemByNid), new { nid = menuItem.Nid }, menuItem);
         }
 
         [HttpGet("{nid}")]
-        public IActionResult GetItemBynid(long nid)
+        public async Task<ActionResult<MenuItem>> GetItemByNid(long nid)
         {
-            _menuService.placeholderMethod();
-            return Ok($"Menu item {nid} fetched successfully.");
+            var menuItem = await _menuService.GetMenuItemByNidAsync(nid);
+            return Ok(menuItem);
         }
 
         [HttpPut("{nid}")]
-        public IActionResult UpdateItem([FromBody] MenuUpdateDTO request, long nid)
+        public async Task<IActionResult> UpdateItem(long nid, [FromBody] MenuUpdateDTO request)
         {
-            _menuService.placeholderMethod();
-            return Ok($"Menu item {nid} updated successfully.");
+            var menuItem = await _menuService.GetMenuItemByNidAsync(nid);
+
+            if (request.Name != null) menuItem.Name = request.Name;
+            if (request.Price != default) menuItem.Price = request.Price;
+            if (request.Discount.HasValue) menuItem.Discount = request.Discount;
+            if (request.VatId != default) menuItem.VatId = request.VatId;
+            if (request.DiscountTime.HasValue) menuItem.DiscountTime = request.DiscountTime;
+
+            await _menuService.UpdateMenuItemAsync(menuItem);
+
+            return NoContent();
         }
 
         [HttpDelete("{nid}")]
-        public IActionResult DeleteItem(long nid)
+        public async Task<IActionResult> DeleteItem(long nid)
         {
-            _menuService.placeholderMethod();
-            return Ok($"Menu item {nid} deleted successfully.");
+            await _menuService.DeleteMenuItemAsync(nid);
+            return NoContent();
         }
     }
 }
