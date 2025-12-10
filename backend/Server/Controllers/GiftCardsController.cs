@@ -16,7 +16,7 @@ namespace backend.Server.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetGiftCards([FromBody] GiftCardGetAllDTO request)
+        public IActionResult GetGiftCards([FromQuery] GiftCardGetAllDTO request)
         {
             _giftCardsService.placeholderMethod();
             return Ok("Gift cards fetched successfully.");

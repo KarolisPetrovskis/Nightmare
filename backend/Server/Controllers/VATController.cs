@@ -16,7 +16,7 @@ namespace backend.Server.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetVATRates([FromBody] VatGetAllDTO request)
+        public IActionResult GetVATRates([FromQuery] VatGetAllDTO request)
         {
             _vatService.placeholderMethod();
             return Ok("VAT rates fetched successfully.");

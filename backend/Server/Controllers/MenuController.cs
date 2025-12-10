@@ -32,8 +32,6 @@ namespace backend.Server.Controllers
                 DiscountTime = request.DiscountTime
             };
 
-            await _menuService.CreateMenuItemAsync(menuItem);
-
             return CreatedAtAction(nameof(GetItemByNid), new { nid = menuItem.Nid }, menuItem);
         }
 
@@ -50,9 +48,9 @@ namespace backend.Server.Controllers
             var menuItem = await _menuService.GetMenuItemByNidAsync(nid);
 
             if (request.Name != null) menuItem.Name = request.Name;
-            if (request.Price != default) menuItem.Price = request.Price;
-            if (request.Discount.HasValue) menuItem.Discount = request.Discount;
-            if (request.VatId != default) menuItem.VatId = request.VatId;
+            if (request.Price.HasValue) menuItem.Price = request.Price.Value;
+            if (request.Discount.HasValue) menuItem.Discount = request.Discount.Value;
+            if (request.VatId.HasValue) menuItem.VatId = request.VatId.Value;
             if (request.DiscountTime.HasValue) menuItem.DiscountTime = request.DiscountTime;
 
             await _menuService.UpdateMenuItemAsync(menuItem);

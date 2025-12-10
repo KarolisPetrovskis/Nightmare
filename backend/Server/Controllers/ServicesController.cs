@@ -16,7 +16,7 @@ namespace backend.Server.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetServices([FromBody] ServiceGetAllDTO request)
+        public IActionResult GetServices([FromQuery] ServiceGetAllDTO request)
         {
             _servicesService.placeholderMethod();
             return Ok("Services fetched successfully.");

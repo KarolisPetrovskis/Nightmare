@@ -1,11 +1,21 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace backend.Server.Models.DTOs.Service;
 public class ServiceUpdateDTO
 {
-    public required string Name { get; set; }
-    public required decimal Price { get; set; }
-    // In minutes
-    public required int TimeMin { get; set; }
+    [StringLength(200, MinimumLength = 1)]
+    public string? Name { get; set; }
+
+    [Range(0.01, double.MaxValue, ErrorMessage = "Price must be greater than zero")]
+    public decimal? Price { get; set; }
+
+    [Range(1, int.MaxValue, ErrorMessage = "TimeMin must be at least 1 minute")]
+    public int? TimeMin { get; set; }
     // Same problem with DiscountTIme as in ServiceCreateDTO
-    public required decimal Discount { get; set; }
-    public required long VatId { get; set; }
+
+    [Range(0, 100, ErrorMessage = "Discount must be between 0 and 100")]
+    public decimal? Discount { get; set; }
+
+    [Range(1, long.MaxValue, ErrorMessage = "VatId must be a positive number")]
+    public long? VatId { get; set; }
 }

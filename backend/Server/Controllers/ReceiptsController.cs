@@ -16,7 +16,7 @@ namespace backend.Server.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetReceipts([FromBody] ReceiptGetAllDTO request)
+        public IActionResult GetReceipts([FromQuery] ReceiptGetAllDTO request)
         {
             _receiptsService.placeholderMethod();
             return Ok("Receipts fetched successfully.");

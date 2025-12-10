@@ -12,7 +12,7 @@ namespace backend.Server.Controllers
         private readonly IMenuAddonsService _menuAddonsService = menuAddonsService;
 
         [HttpGet]
-        public async Task<IActionResult> GetMenuAddons([FromQuery] MenuAddonsGetAllDTO request)
+        public async Task<ActionResult<List<MenuItemIngredient>>> GetMenuAddons([FromQuery] MenuAddonsGetAllDTO request)
         {
             var result = await _menuAddonsService.GetAllMenuAddonsAsync(request.Page, request.PerPage);
             
@@ -20,7 +20,7 @@ namespace backend.Server.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateMenuAddon([FromBody] MenuAddonCreateDTO request)
+        public async Task<ActionResult<MenuItemIngredient>> CreateMenuAddon([FromBody] MenuAddonCreateDTO request)
         {
             MenuItemIngredient menuAddon = new()
             {
@@ -31,40 +31,28 @@ namespace backend.Server.Controllers
 
             await _menuAddonsService.CreateMenuAddonAsync(menuAddon);
 
-            // Reload the entity to ensure Nid is populated
-            var createdMenuAddon = await _menuAddonsService.GetMenuAddonByNidAsync(menuAddon.Nid);
-
-            return CreatedAtAction(nameof(GetMenuAddonByNid), new { nid = createdMenuAddon.Nid }, createdMenuAddon);
+            return CreatedAtAction(nameof(GetMenuAddonByNid), new { nid = menuAddon.Nid }, menuAddon);
         }
 
         [HttpGet("{nid}")]
-        public async Task<IActionResult> GetMenuAddonByNid(long nid)
+        public async Task<ActionResult<MenuItemIngredient>> GetMenuAddonByNid(long nid)
         {
             var result = await _menuAddonsService.GetMenuAddonByNidAsync(nid);
             return Ok(result);
         }
 
         [HttpPut("{nid}")]
-        public async Task<IActionResult> UpdateMenuAddon([FromBody] MenuAddonUpdateDTO request, long nid)
+        public async Task<IActionResult> UpdateMenuAddon(long nid, [FromBody] MenuAddonUpdateDTO request)
         {
             var menuAddon = await _menuAddonsService.GetMenuAddonByNidAsync(nid);
 
-            if (!string.IsNullOrWhiteSpace(request.Name))
-            {
-                menuAddon.Name = request.Name;
-            }
-            if (request.ItemId != default)
-            {
-                menuAddon.ItemId = request.ItemId;
-            }
-            if (request.Price != default)
-            {
-                menuAddon.Price = request.Price;
-            }
+            if (request.Name != null) menuAddon.Name = request.Name;
+            if (request.ItemId.HasValue) menuAddon.ItemId = request.ItemId.Value;
+            if (request.Price.HasValue) menuAddon.Price = request.Price.Value;
 
             await _menuAddonsService.UpdateMenuAddonAsync(menuAddon);
 
-            return Ok(menuAddon);
+            return NoContent();
         }
 
         [HttpDelete("{nid}")]

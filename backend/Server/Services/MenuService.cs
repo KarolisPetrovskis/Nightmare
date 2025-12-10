@@ -68,7 +68,7 @@ namespace backend.Server.Services
         public async Task UpdateMenuItemAsync(MenuItem menuItem)
         {
             _context.MenuItems.Update(menuItem);
-            await Helper.SaveChangesOrThrowAsync(_context, "Failed to update menu item.");
+            await Helper.SaveChangesOrThrowAsync(_context, "Failed to update menu item.", expectChanges: false);
         }
 
         public async Task DeleteMenuItemAsync(long nid)
