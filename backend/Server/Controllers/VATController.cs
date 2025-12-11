@@ -16,7 +16,7 @@ namespace backend.Server.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetVatRates([FromBody] VatGetAllDTO request)
+        public IActionResult GetVatRates([FromQuery] VatGetAllDTO request)
         {
             var list = _vatService.GetVatRates(request);
             return Ok(list);

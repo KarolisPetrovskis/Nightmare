@@ -18,12 +18,31 @@ public class VatService : IVatService
 
     public async Task<AllItems<Vat>> GetVatRates(VatGetAllDTO request)
     {
-        return new AllItems<Vat>
-        {
-            List = await _context.Vats.ToListAsync(),
-            Page = request.Page,
-            PerPage = request.PerPage
-        };
+
+        if (request.Page < 0)
+            {
+                throw new ApiException(400, "Page number must be greater than zero");
+            }
+            if (request.PerPage <= 0)
+            {
+                throw new ApiException(400, "PerPage value must be greater than zero");
+            }
+            AllItems<Vat> list = new AllItems<Vat>();
+            if (request.Page == 0)
+            {
+                list.List = await _context.Vats.ToListAsync();
+                list.Page = request.Page;
+                list.PerPage = request.PerPage;
+                return list;
+            }
+            list.List = await _context.Vats
+                .Skip((request.Page - 1) * request.PerPage)
+                .Take(request.PerPage)
+                .AsNoTracking()
+                .ToListAsync();
+            list.Page = request.Page;
+            list.PerPage = request.PerPage;
+            return list;
     }
 
     public async Task CreateVatRate(VatCreateDTO request)
