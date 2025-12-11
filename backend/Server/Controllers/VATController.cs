@@ -6,11 +6,11 @@ namespace backend.Server.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class VATController : ControllerBase
+    public class VatController : ControllerBase
     {
         private readonly IVatService _vatService;
 
-        public VATController(IVatService vatService)
+        public VatController(IVatService vatService)
         {
             _vatService = vatService;
         }
