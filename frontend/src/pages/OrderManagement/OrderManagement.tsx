@@ -1,10 +1,13 @@
 import "./OrderManagement.css";
 import "../Management.css";
 import Button from "@mui/material/Button";
-import { useState } from "react";
+
 import dishesData from "../dishesData.json";
 import PaginationComponent from "../../components/Pagination/PaginationComponent";
 import SnackbarNotification from "../../components/SnackBar/SnackNotification";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+
 type Option = {
     id: number;
     name: string;
@@ -40,7 +43,7 @@ type Order = {
 
 export default function OrderManagement() {
     const [dishes] = useState<MenuItem[]>(
-      dishesData.dishes.map(d => ({ ...d, optionGroups: d.optionTrees || [] }))
+        dishesData.dishes.map(d => ({ ...d, optionGroups: d.optionTrees || [] }))
     );
     const [orders, setOrders] = useState<Order[]>([]);
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -55,11 +58,14 @@ export default function OrderManagement() {
         open: boolean;
         message: string;
         type: 'success' | 'error' | 'warning' | 'info';
-    }>( {
+    }>({
         open: false,
         message: '',
         type: 'success',
     });
+
+    const navigate = useNavigate();
+    const location = useLocation();
 
     const [page, setPage] = useState(1);
     const itemsPerPage = 7;
@@ -67,6 +73,7 @@ export default function OrderManagement() {
     const [dishPage, setDishPage] = useState(1);
     const dishesPerPage = 6;
 
+    
 
     const start = (page - 1) * itemsPerPage;
     const end = start + itemsPerPage;
@@ -97,16 +104,16 @@ export default function OrderManagement() {
         }
     };
 
-const handleCancelOrder = (orderId: number) => {
-    setOrders((prev) => prev.filter((o) => o.id !== orderId));
-    if (selectedOrder?.id === orderId) setSelectedOrder(null);
+    const handleCancelOrder = (orderId: number) => {
+        setOrders((prev) => prev.filter((o) => o.id !== orderId));
+        if (selectedOrder?.id === orderId) setSelectedOrder(null);
 
-    setSnackbar({
-        open: true,
-        message: 'Order cancelled.',
-        type: 'success',
-    });
-};
+        setSnackbar({
+            open: true,
+            message: 'Order cancelled.',
+            type: 'success',
+        });
+    };
 
     const updateStaff = (staff: string) => {
         if (!selectedOrder) return;
@@ -115,24 +122,7 @@ const handleCancelOrder = (orderId: number) => {
     };
 
     const addDishToOrder = () => {
-        if (!selectedOrder) return;
-
-        const firstDish = dishes[0];
-        if (!firstDish) return;
-
-        const newItem: OrderDish = {
-            id: Date.now(),
-            menuItem: firstDish,
-            quantity: 1,
-            selectedOptions: {},
-        };
-
-        setSelectedOrder({
-            ...selectedOrder,
-            items: [...selectedOrder.items, newItem],
-        });
-
-        setOrderDirty(true);
+        navigate("/order-management/select-dish");
     };
 
     const updateQuantity = (id: number, delta: number) => {
@@ -164,19 +154,19 @@ const handleCancelOrder = (orderId: number) => {
         });
     };
 
-const removeDishFromOrder = (id: number) => {
-    if (!selectedOrder) return;
+    const removeDishFromOrder = (id: number) => {
+        if (!selectedOrder) return;
 
-    const updated = selectedOrder.items.filter(it => it.id !== id);
-    setSelectedOrder({ ...selectedOrder, items: updated });
-    setOrderDirty(true);
+        const updated = selectedOrder.items.filter(it => it.id !== id);
+        setSelectedOrder({ ...selectedOrder, items: updated });
+        setOrderDirty(true);
 
-    setSnackbar({
-        open: true,
-        message: 'Dish removed from order.',
-        type: 'info',
-    });
-};
+        setSnackbar({
+            open: true,
+            message: 'Dish removed from order.',
+            type: 'info',
+        });
+    };
 
     const openDetails = (item: OrderDish) => {
         setModalItem(item);
@@ -213,6 +203,45 @@ const removeDishFromOrder = (id: number) => {
         setOrderDirty(true);
         closeModal();
     };
+
+    
+    useEffect(() => {
+        // read addedDish from navigation state
+        const anyState = (location as any).state;
+        if (anyState && anyState.addedDish) {
+            const payload = anyState.addedDish as {
+                id: number;
+                menuItem: MenuItem;
+                quantity: number;
+                selectedOptions?: Record<number, number>;
+            };
+
+            // if there's no selected order, create one automatically
+            if (!selectedOrder) {
+                const newOrder: Order = { id: Date.now(), items: [], staff: "" };
+                setOrders(prev => [...prev, newOrder]);
+                setSelectedOrder(newOrder);
+            }
+
+            // add to currently selected order
+            setSelectedOrder(prev => {
+                if (!prev) return prev;
+                const newItem = {
+                    id: payload.id,
+                    menuItem: payload.menuItem,
+                    quantity: payload.quantity,
+                    selectedOptions: payload.selectedOptions || {}
+                };
+                return { ...prev, items: [...prev.items, newItem] };
+            });
+
+            setOrderDirty(true);
+
+            // clear the navigation state (replace with empty state so repeated back/refresh doesn't re-add)
+            navigate(location.pathname, { replace: true, state: {} });
+        }
+        // only want to run when location changes
+    }, [location.key]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const totalPrice = selectedOrder
         ? selectedOrder.items.reduce((sum, it) => {

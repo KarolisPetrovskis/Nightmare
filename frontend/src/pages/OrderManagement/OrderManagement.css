@@ -90,3 +90,29 @@
 .management .info-container {
   flex-grow: 2;
 }
+
+
+/* in OrderManagement.css */
+.quantity-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.quantity-box input {
+  width: 56px;
+  text-align: center;
+  background: #1f1f1f;
+  border-radius: 6px;
+  border: none;
+  color: white;
+  padding: 6px;
+}
+.quantity-box button {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background: #2d2d2d;
+  color: white;
+}
