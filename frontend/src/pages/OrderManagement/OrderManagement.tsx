@@ -97,12 +97,16 @@ export default function OrderManagement() {
         setOrderDirty(false);
     };
 
-    const handleOrderClick = (order: Order) => {
-        if (!cancelMode) {
-            setSelectedOrder({ ...order });
+const handleOrderClick = (order: Order) => {
+    if (!cancelMode) {
+        // Find the order from the current orders state to ensure we have the latest data
+        const currentOrder = orders.find(o => o.id === order.id);
+        if (currentOrder) {
+            setSelectedOrder({ ...currentOrder });
             setOrderDirty(false);
         }
-    };
+    }
+};
 
     const handleCancelOrder = (orderId: number) => {
         setOrders((prev) => prev.filter((o) => o.id !== orderId));
@@ -139,20 +143,21 @@ export default function OrderManagement() {
         setOrderDirty(true);
     };
 
-    const handleSave = () => {
-        if (!selectedOrder) return;
+const handleSave = () => {
+    if (!selectedOrder) return;
 
-        setOrders((prev) =>
-            prev.map((o) => (o.id === selectedOrder.id ? selectedOrder : o))
-        );
+    // Update the orders list with the current selectedOrder
+    setOrders(prev =>
+        prev.map((o) => (o.id === selectedOrder.id ? { ...selectedOrder } : o))
+    );
 
-        setOrderDirty(false);
-        setSnackbar({
-            open: true,
-            message: 'Order saved successfully!',
-            type: 'success',
-        });
-    };
+    setOrderDirty(false);
+    setSnackbar({
+        open: true,
+        message: 'Order saved successfully!',
+        type: 'success',
+    });
+};
 
     const removeDishFromOrder = (id: number) => {
         if (!selectedOrder) return;
@@ -205,43 +210,57 @@ export default function OrderManagement() {
     };
 
     
-    useEffect(() => {
-        // read addedDish from navigation state
-        const anyState = (location as any).state;
-        if (anyState && anyState.addedDish) {
-            const payload = anyState.addedDish as {
-                id: number;
-                menuItem: MenuItem;
-                quantity: number;
-                selectedOptions?: Record<number, number>;
+useEffect(() => {
+    const anyState = (location as any).state;
+    if (anyState && anyState.addedDish) {
+        const payload = anyState.addedDish as {
+            id: number;
+            menuItem: MenuItem;
+            quantity: number;
+            selectedOptions?: Record<number, number>;
+        };
+
+        const newItem: OrderDish = {
+            id: Date.now(), // Generate a unique ID for this dish
+            menuItem: payload.menuItem,
+            quantity: payload.quantity,
+            selectedOptions: payload.selectedOptions || {}
+        };
+
+        // Get the current selected order ID before any state updates
+        const currentSelectedOrderId = selectedOrder?.id;
+
+        if (!currentSelectedOrderId) {
+            // No order selected, create a new one
+            const newOrder: Order = {
+                id: Date.now(),
+                items: [newItem],
+                staff: ""
             };
-
-            // if there's no selected order, create one automatically
-            if (!selectedOrder) {
-                const newOrder: Order = { id: Date.now(), items: [], staff: "" };
-                setOrders(prev => [...prev, newOrder]);
-                setSelectedOrder(newOrder);
-            }
-
-            // add to currently selected order
-            setSelectedOrder(prev => {
-                if (!prev) return prev;
-                const newItem = {
-                    id: payload.id,
-                    menuItem: payload.menuItem,
-                    quantity: payload.quantity,
-                    selectedOptions: payload.selectedOptions || {}
-                };
-                return { ...prev, items: [...prev.items, newItem] };
-            });
-
-            setOrderDirty(true);
-
-            // clear the navigation state (replace with empty state so repeated back/refresh doesn't re-add)
-            navigate(location.pathname, { replace: true, state: {} });
+            
+            // Update both states
+            setOrders(prev => [...prev, newOrder]);
+            setSelectedOrder(newOrder);
+        } else {
+            // Update the existing order
+            setSelectedOrder(prev => 
+                prev ? { ...prev, items: [...prev.items, newItem] } : prev
+            );
+            
+            // Update the orders list
+            setOrders(prev => 
+                prev.map(order => 
+                    order.id === currentSelectedOrderId 
+                        ? { ...order, items: [...order.items, newItem] }
+                        : order
+                )
+            );
         }
-        // only want to run when location changes
-    }, [location.key]); // eslint-disable-line react-hooks/exhaustive-deps
+
+        setOrderDirty(true);
+        navigate(location.pathname, { replace: true, state: {} });
+    }
+}, [location.key]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const totalPrice = selectedOrder
         ? selectedOrder.items.reduce((sum, it) => {

@@ -29,13 +29,9 @@ type OrderDishPayload = {
 
 export default function DishSelectionPage() {
   const navigate = useNavigate();
-const allDishes: MenuItem[] = useMemo(() =>
-  dishesData.dishes.map(d => ({
-    ...d,
-    optionTrees: d.optionTrees || [],
-    optionGroups: (d as any).optionGroups ?? d.optionTrees ?? []
-  })), []
-);
+  const allDishes: MenuItem[] = useMemo(() =>
+    dishesData.dishes.map(d => ({ ...d, optionTrees: d.optionTrees || [] })), []
+  );
 
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
