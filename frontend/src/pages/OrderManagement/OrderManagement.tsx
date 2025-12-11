@@ -97,10 +97,16 @@ export default function OrderManagement() {
         }
     };
 
-    const handleCancelOrder = (orderId: number) => {
-        setOrders((prev) => prev.filter((o) => o.id !== orderId));
-        if (selectedOrder?.id === orderId) setSelectedOrder(null);
-    };
+const handleCancelOrder = (orderId: number) => {
+    setOrders((prev) => prev.filter((o) => o.id !== orderId));
+    if (selectedOrder?.id === orderId) setSelectedOrder(null);
+
+    setSnackbar({
+        open: true,
+        message: 'Order cancelled.',
+        type: 'success',
+    });
+};
 
     const updateStaff = (staff: string) => {
         if (!selectedOrder) return;
@@ -158,13 +164,19 @@ export default function OrderManagement() {
         });
     };
 
-    const removeDishFromOrder = (id: number) => {
-        if (!selectedOrder) return;
+const removeDishFromOrder = (id: number) => {
+    if (!selectedOrder) return;
 
-        const updated = selectedOrder.items.filter(it => it.id !== id);
-        setSelectedOrder({ ...selectedOrder, items: updated });
-        setOrderDirty(true);
-    };
+    const updated = selectedOrder.items.filter(it => it.id !== id);
+    setSelectedOrder({ ...selectedOrder, items: updated });
+    setOrderDirty(true);
+
+    setSnackbar({
+        open: true,
+        message: 'Dish removed from order.',
+        type: 'info',
+    });
+};
 
     const openDetails = (item: OrderDish) => {
         setModalItem(item);

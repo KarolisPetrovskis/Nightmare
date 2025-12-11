@@ -122,6 +122,21 @@ export default function MenuManagement() {
     }
   };
 
+  const handleDeleteDish = (id: number) => {
+    setItems(prev => prev.filter(i => i.id !== id));
+    if (selectedItem?.id === id) {
+      setSelectedItem(null);
+      setEditableItem(null);
+      setItemDirty(false);
+      setOptionsDirty(false);
+    }
+    setSnackbar({
+      open: true,
+      message: 'Dish deleted successfully.',
+      type: 'success',
+    });
+  };
+
 
   const updateField = (key: keyof MenuItem, value: string | number) => {
     setEditableItem(prev => prev ? { ...prev, [key]: value } : prev);
@@ -161,16 +176,26 @@ export default function MenuManagement() {
                 onClick={() => handleItemClick(item)}
               >
                 {item.name}
-                {deleteMode && <span className="delete-x">✖</span>}
+                {deleteMode && (
+                  <span
+                    className="delete-x"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteDish(item.id);
+                    }}
+                  >
+                    ✖
+                  </span>
+                )}
               </div>
             ))}
         </div>
         <div className="item-list-pagination">
-<PaginationComponent
-    count={Math.ceil(items.length / itemsPerPage)}
-    page={page}
-    onChange={(_, value) => setPage(value)} // TODO: change _ back to e if event is needed
-/>
+          <PaginationComponent
+            count={Math.ceil(items.length / itemsPerPage)}
+            page={page}
+            onChange={(_, value) => setPage(value)} // TODO: change _ back to e if event is needed
+          />
         </div>
 
       </div>
@@ -374,11 +399,11 @@ export default function MenuManagement() {
         )}
 
         <div className="option-tree-pagination">
-<PaginationComponent
-    count={Math.ceil((editableItem?.optionGroups.length ?? 0) / treesPerPage)}
-    page={treePage}
-    onChange={(_, value) => setTreePage(value)} // TODO: change _ back to e if event is needed
-/>
+          <PaginationComponent
+            count={Math.ceil((editableItem?.optionGroups.length ?? 0) / treesPerPage)}
+            page={treePage}
+            onChange={(_, value) => setTreePage(value)} // TODO: change _ back to e if event is needed
+          />
         </div>
 
       </div>

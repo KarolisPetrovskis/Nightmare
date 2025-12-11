@@ -91,7 +91,23 @@ export default function ServiceManagement() {
                     {paginatedServices.map(s => (
                         <div key={s.id} className={`item-card ${selected?.id === s.id ? 'selected' : ''}`} onClick={() => handleServiceClick(s)}>
                             {s.name}
-                            {deleteMode && <span className="delete-x">✖</span>}
+                            {deleteMode && (
+                                <span
+                                    className="delete-x"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setServices((p) => p.filter(x => x.id !== s.id));
+                                        if (selected?.id === s.id) setSelected(null);
+                                        setSnackbar({
+                                            open: true,
+                                            message: 'Service deleted',
+                                            type: 'success',
+                                        });
+                                    }}
+                                >
+                                    ✖
+                                </span>
+                            )}
                         </div>
                     ))}
                 </div>
