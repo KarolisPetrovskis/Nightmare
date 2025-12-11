@@ -158,6 +158,10 @@
   margin-top: 16px;
 }
 
+.save-button.Mui-disabled {
+  color: transparent !important;
+}
+
 .section-title {
   font-size: 1.3rem;
   margin-bottom: 1rem;
@@ -219,13 +223,11 @@
   }
 }
 
-/* keep option-container (structure) here; menu-specific internals were moved */
 .option-container {
   display: flex;
   flex-direction: column;
 }
 
-/* Keep the shared minimal placeholder; menu-specific styles moved out */
 .item-list-container {
   display: flex;
   flex-direction: column;
@@ -244,16 +246,14 @@
   overflow: hidden;
 }
 
-/* Shared scrolling containers (keeps pagination behaviour) */
 .item-list,
 .option-tree-list {
   flex: 1 1 auto;
   overflow: auto;
-  min-height: 0; /* prevents collapsing in flex containers on some browsers */
-  padding-bottom: 8px; /* give some breathing room above pagination */
+  min-height: 0; 
+  padding-bottom: 8px;
 }
 
-/* Make sure the parent containers are column flex (they already are, but ensure min-height=0) */
 .item-list-container,
 .option-container {
   display: flex;
@@ -266,7 +266,6 @@
   flex: 0 0 auto;
 }
 
-/* Modal overlay and base modal content are shared */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -315,19 +314,6 @@
 
 .modal-content input[type="radio"] {
   accent-color: #646cff;
-}
-
-.modal-content input[type="radio"]:checked {
-
-}
-
-.modal-content .option-tree-box {
-  /* moved to MenuManagement.css */
-}
-
-.modal-content .option-tree-header input,
-.modal-content .option-row input[type="text"] {
-  /* moved to MenuManagement.css */
 }
 
 body.modal-open {

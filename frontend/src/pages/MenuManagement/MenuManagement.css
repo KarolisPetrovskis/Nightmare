@@ -124,3 +124,7 @@
   background-color: #1f1f1f;
   color: white;
 }
+
+.save-button.Mui-disabled {
+  color: transparent !important;
+}
