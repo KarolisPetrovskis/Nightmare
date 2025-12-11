@@ -11,16 +11,14 @@ const links = [
 
 export default function Navbar() {
   const location = useLocation();
-  
-  // Get current page name from route
+
   const getCurrentPageTitle = () => {
-    // Check for current-schedule-management route (dynamic route with date parameter)
     if (location.pathname.startsWith('/current-schedule-management/')) {
       return 'Current Schedule Management';
     }
     return links.find(link => link.to === location.pathname)?.label || 'Home';
   };
-  
+
   const currentPage = getCurrentPageTitle();
 
   return (
