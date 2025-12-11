@@ -69,12 +69,15 @@ public class VatService : IVatService
         {
             vat.Name = request.Name;
         }
+        if (request.Percentage == 0)
+        {
+            vat.Percentage = null;
+        }
         if (request.Percentage != 0)
         {
-            // make it nullable as we cant set it to 0 otherwise and see when is intended and when its a defualt response
-            // if afteter pr its decimal change VatUpdateDTO to float
-            vat.Percentage = (float) request.Percentage;
+            vat.Percentage = request.Percentage;
         }
+
         int rowsAffected = await _context.SaveChangesAsync();
 
         if (!(rowsAffected > 0))

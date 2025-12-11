@@ -7,5 +7,5 @@ public class VatUpdateDTO
     public string? Name { get; set; }
 
     [Range(0, 100, ErrorMessage = "Percentage must be between 0 and 100")]
-    public decimal? Percentage { get; set; }
+    public float? Percentage { get; set; }
 }
