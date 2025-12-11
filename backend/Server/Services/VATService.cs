@@ -50,7 +50,8 @@ public class VatService : IVatService
         if (request.Percentage < 0 || request.Percentage > 100 || string.IsNullOrWhiteSpace(request.Name))
             throw new ApiException(400, "Bad Data imputed");
 
-        
+        if (request.Percentage == 0)
+            request.Percentage = null;
         var currentDateTime = DateTime.UtcNow;
         
         Vat vat = new Vat
