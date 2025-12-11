@@ -26,8 +26,9 @@ namespace backend.Server.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateVatRateAsync([FromBody] VatCreateDTO request)
         {
-            await _vatService.CreateVatRate(request);
-            return Ok("Vat created successfully");
+            var vat = await _vatService.CreateVatRate(request);
+            return CreatedAtAction(nameof(GetVatRateBYNid), new { nid = vat.Nid }, vat);
+;
         }
 
         [HttpPut("{nid}")]

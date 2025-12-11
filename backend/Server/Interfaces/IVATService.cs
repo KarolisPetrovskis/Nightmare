@@ -7,7 +7,7 @@ namespace backend.Server.Interfaces
     public interface IVatService
     {
         Task<AllItems<Vat>> GetVatRates(VatGetAllDTO request);
-        Task CreateVatRate(VatCreateDTO request);
+        Task<Vat> CreateVatRate(VatCreateDTO request);
         Task UpdateVatRate(VatUpdateDTO request, long nid);
         Task<Vat?> GetVatRateByNid(long nid);
         Task DeleteVatRate(long nid);

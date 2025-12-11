@@ -45,7 +45,7 @@ public class VatService : IVatService
             return list;
     }
 
-    public async Task CreateVatRate(VatCreateDTO request)
+    public async Task<Vat> CreateVatRate(VatCreateDTO request)
     {
         if (request.Percentage < 0 || request.Percentage > 100 || string.IsNullOrWhiteSpace(request.Name))
             throw new ApiException(400, "Bad Data imputed");
@@ -68,6 +68,7 @@ public class VatService : IVatService
         {
             throw new ApiException(500, "Internal server error");
         }
+        return vat;
     }
 
     public async Task UpdateVatRate(VatUpdateDTO request, long nid)
