@@ -1,3 +1,4 @@
+using backend.server.Models.DTOs.Auth;
 using backend.Server.Interfaces;
 using backend.Server.Models.DTOs.Auth;
 using Microsoft.AspNetCore.Mvc;
@@ -17,24 +18,37 @@ namespace backend.Server.Controllers
         }
 
         [HttpPost("login")]
-        public IActionResult Login([FromBody] LoginRequestDTO request)
+        public async Task<ActionResult<LoginResponseDTO>> Login([FromBody] LoginRequestDTO request)
         {
-            _authService.placeholderMethod();
-            return Ok("Login successful.");
+            var user = await _authService.GetUserByEmail(request.Email);
+
+            if (user is null || !_authService.VerifyPassword(request.Password, user.Password))
+                return Unauthorized();
+
+            // Persist the cookie accross multiple sessions
+            await _authService.AddCookie(HttpContext, user.Nid, true);
+
+            var response = new LoginResponseDTO
+            {
+                UserId = user.Nid,
+                UserType = user.UserType
+            };
+
+            return Ok(response);
         }
 
         [HttpPost("register")]
-        public IActionResult Register([FromBody] RegisterDTO request)
+        public async Task<IActionResult> Register([FromBody] RegisterDTO request)
         {
-            _authService.placeholderMethod();
-            return Ok("Registration successful.");
+            await _authService.CreateUserAsync(request);
+            return Created();
         }
 
         [HttpPost("logout")]
         public IActionResult Logout()
         {
-            _authService.placeholderMethod();
-            return NoContent();
+            _authService.RemoveCookie(HttpContext);
+            return Ok();
         }
     }
 }
