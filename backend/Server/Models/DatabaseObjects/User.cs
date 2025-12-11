@@ -8,12 +8,12 @@ public class User
     public string Name { get; set; }
     public string Surname { get; set; }
     public long UserType { get; set; }
-    public string Address { get; set; }
+    public string? Address { get; set; }
     public string? Telephone { get; set; }
     public long? PlanId { get; set; }
     public decimal? Salary { get; set; }
     public long? BossId { get; set; }
     public string Email { get; set; }
     public string Password { get; set; }
-    public string BankAccount { get; set; }
+    public string? BankAccount { get; set; }
 }
