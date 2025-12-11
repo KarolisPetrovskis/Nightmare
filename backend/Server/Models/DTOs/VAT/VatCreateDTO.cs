@@ -9,5 +9,5 @@ public class VatCreateDTO
     public required string Name { get; set; }
     [Required]
     [Range(0, 100, ErrorMessage = "Percentage must be between 0 and 100")]
-    public required float Percentage { get; set; }
+    public required float? Percentage { get; set; }
 }
