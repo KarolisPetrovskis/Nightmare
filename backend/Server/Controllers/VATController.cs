@@ -26,7 +26,7 @@ namespace backend.Server.Controllers
         public IActionResult CreateVatRate([FromBody] VatCreateDTO request)
         {
             _vatService.CreateVatRate(request);
-            return Ok("Vat created successfullys");
+            return Ok("Vat created successfully");
         }
 
         [HttpPut("{nid}")]
