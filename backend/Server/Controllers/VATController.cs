@@ -25,15 +25,15 @@ namespace backend.Server.Controllers
         [HttpPost]
         public IActionResult CreateVatRate([FromBody] VatCreateDTO request)
         {
-            Task<int> code = _vatService.CreateVatRate(request);
-            return Ok(code);
+            _vatService.CreateVatRate(request);
+            return Ok("Vat created successfullys");
         }
 
         [HttpPut("{nid}")]
         public IActionResult UpdateVatRate([FromBody] VatUpdateDTO request, long nid)
         {
-            Task<int> code = _vatService.UpdateVatRate(request, nid);
-            return Ok(code);
+            _vatService.UpdateVatRate(request, nid);
+            return Ok("Vat updated successfully");
         }
 
         [HttpGet("{nid}")]
@@ -41,7 +41,7 @@ namespace backend.Server.Controllers
         {
             var vat = _vatService.GetVatRateByNid(nid);
             if (vat == null)
-                return NotFound(null);
+                return NotFound();
             else
                 return Ok(vat);
         }
@@ -49,8 +49,8 @@ namespace backend.Server.Controllers
         [HttpDelete("{nid}")]
         public IActionResult DeleteVATRate(long nid)         //Different from YAML, but DELETE with body is not a good practice
         {
-            Task<int> code = _vatService.DeleteVatRate(nid);
-            return Ok(code);
+            _vatService.DeleteVatRate(nid);
+            return Ok("Vat deleted successfully");
         }
     }
 }

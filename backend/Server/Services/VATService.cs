@@ -1,4 +1,5 @@
 using backend.Server.Database;
+using backend.Server.Exceptions;
 using backend.Server.Interfaces;
 using backend.Server.Models.DatabaseObjects;
 using backend.Server.Models.DTOs.VAT;
@@ -25,10 +26,10 @@ public class VatService : IVatService
         };
     }
 
-    public async Task<int> CreateVatRate(VatCreateDTO request)
+    public async Task CreateVatRate(VatCreateDTO request)
     {
         if (request.Percentage < 0 || request.Percentage > 100 || string.IsNullOrWhiteSpace(request.Name))
-            return 400; // Bad Request
+            throw new ApiException(400, "Bad Data imputed");
         
         var largestId = await _context.Vats
             .MaxAsync(v => (long?)v.Nid) ?? 0;
@@ -46,26 +47,22 @@ public class VatService : IVatService
         _context.Vats.Add(vat);
         int rowsAffected = await _context.SaveChangesAsync();
 
-        if (rowsAffected > 0)
+        if (!(rowsAffected > 0))
         {
-            return 201; // Created
-        }
-        else
-        {
-            return 500; // Internal Server Error
+            throw new ApiException(500, "Internal server error");
         }
     }
 
-    public async Task<int> UpdateVatRate(VatUpdateDTO request, long nid)
+    public async Task UpdateVatRate(VatUpdateDTO request, long nid)
     {
         if (request.Percentage < 0 || request.Percentage > 100 || string.IsNullOrWhiteSpace(request.Name))
-            return 400; // Bad Request
+            throw new ApiException(400, "Bad Data imputed");
 
         var vat = await _context.Vats.Where(v => v.Nid == nid).FirstOrDefaultAsync();
 
         if (vat == null)
         {
-            return 404; // Not found
+            throw new ApiException(404, "Vat cannot be null");
         }  
 
         if (!string.IsNullOrEmpty(request.Name))
@@ -80,13 +77,9 @@ public class VatService : IVatService
         }
         int rowsAffected = await _context.SaveChangesAsync();
 
-        if (rowsAffected > 0)
+        if (!(rowsAffected > 0))
         {
-            return 201; // Created
-        }
-        else
-        {
-            return 500; // Internal Server Error
+            throw new ApiException(500, "Internal server error");
         }
 
     }
@@ -96,15 +89,15 @@ public class VatService : IVatService
         return await _context.Vats.Where(v => v.Nid == nid).FirstOrDefaultAsync();
     }
 
-    public async Task<int> DeleteVatRate(long nid)
+    public async Task DeleteVatRate(long nid)
     {
         var vat = await _context.Vats.FindAsync(nid);
-        if (vat == null) return 204;
-
+        if (vat == null)
+        {
+            throw new ApiException(404, "Vat rate not found");
+        }
         _context.Vats.Remove(vat);
         await _context.SaveChangesAsync();
-
-        return 204; // No Content
     }
 
 }
