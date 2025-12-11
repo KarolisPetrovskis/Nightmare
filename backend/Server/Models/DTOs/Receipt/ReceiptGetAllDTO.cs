@@ -1,8 +1,15 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace backend.Server.Models.DTOs.Receipt;
 public class ReceiptGetAllDTO
 {
+    [Required]
+    [Range(1, long.MaxValue, ErrorMessage = "BusinessId must be a positive number")]
     public required long BusinessId { get; set; }
+
+    [Range(0, int.MaxValue, ErrorMessage = "Page must be non-negative")]
     public int Page { get; set; } = 1;
-    // if 0 lets say we laod all
+
+    [Range(0, 1000, ErrorMessage = "PerPage must be between 0 and 1000")]
     public int PerPage { get; set; } = 20;
 }

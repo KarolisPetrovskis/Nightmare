@@ -1,16 +1,40 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace backend.Server.Models.DTOs.User;
-// Pass NId to controller manually
 public class UserUpdateDTO
 {
-    public string Name { get; set; }
-    public string Surname { get; set; }
-    public string Email { get; set; }
-    public long UserType { get; set; }
+    [StringLength(100, MinimumLength = 1)]
+    public string? Name { get; set; }
+
+    [StringLength(100, MinimumLength = 1)]
+    public string? Surname { get; set; }
+
+    [EmailAddress(ErrorMessage = "Invalid email format")]
+    [StringLength(100)]
+    public string? Email { get; set; }
+
+    [Range(1, long.MaxValue, ErrorMessage = "UserType must be a positive number")]
+    public long? UserType { get; set; }
+
+    [StringLength(500)]
     public string? Address { get; set; }
+
+    [Phone(ErrorMessage = "Invalid phone number format")]
+    [StringLength(20)]
     public string? Telephone { get; set; }
+
+    [Range(1, long.MaxValue, ErrorMessage = "PlanId must be a positive number")]
     public long? PlanId { get; set; }
+
+    [Range(0, double.MaxValue, ErrorMessage = "Salary must be non-negative")]
     public decimal? Salary { get; set; }
+
+    [Range(1, long.MaxValue, ErrorMessage = "BossId must be a positive number")]
     public long? BossId { get; set; }
-    public string WorkStart { get; set; }
+
+    [StringLength(50)]
+    public string? WorkStart { get; set; }
+
+    [StringLength(50)]
     public string? WorkEnd { get; set; }
 }

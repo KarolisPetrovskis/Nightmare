@@ -1,13 +1,29 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace backend.Server.Models.DTOs.Order;
 public class OrderCreateDTO
 {
-    public string Code { get; set; }
+    [StringLength(50)]
+    public string? Code { get; set; }
+
+    [Required]
+    [Range(1, long.MaxValue, ErrorMessage = "VatId must be a positive number")]
     public required long VatId { get; set; }
+
+    [Required]
+    [Range(1, long.MaxValue, ErrorMessage = "StatusId must be a positive number")]
     public required long StatusId { get; set; }
+
+    [Range(0, double.MaxValue, ErrorMessage = "Total must be non-negative")]
     public decimal Total { get; set; } = 0.00M;
+
+    [Required]
+    [Range(1, long.MaxValue, ErrorMessage = "BusinessId must be a positive number")]
     public required long BusinessId { get; set; }
-    // Null if untracked or not yet assinged
+
+    [Range(1, long.MaxValue, ErrorMessage = "WorkerId must be a positive number")]
     public long? WorkerId { get; set; } = null;
-    // do we have null or pottentially empty, or do we not have it at all?
+
+    [Required]
     public required List<OrderDetailRequest> OrderDetails { get; set; } = new List<OrderDetailRequest>();
 }
