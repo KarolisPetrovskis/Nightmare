@@ -49,15 +49,12 @@ public class VatService : IVatService
     {
         if (request.Percentage < 0 || request.Percentage > 100 || string.IsNullOrWhiteSpace(request.Name))
             throw new ApiException(400, "Bad Data imputed");
-        
-        var largestId = await _context.Vats
-            .MaxAsync(v => (long?)v.Nid) ?? 0;
+
         
         var currentDateTime = DateTime.UtcNow;
         
         Vat vat = new Vat
         {
-            Nid = largestId + 1,
             Name = request.Name,
             Percentage = request.Percentage,
             DateCreated = currentDateTime
