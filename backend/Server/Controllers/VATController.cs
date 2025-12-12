@@ -2,7 +2,6 @@ using System.Threading.Tasks;
 using backend.Server.Interfaces;
 using backend.Server.Models.DatabaseObjects;
 using backend.Server.Models.DTOs.VAT;
-using backend.Server.Models.Helpers;
 using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Server.Controllers
@@ -19,7 +18,7 @@ namespace backend.Server.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<AllItems<Vat>>> GetVatRatesAsync([FromQuery] VatGetAllDTO request)
+        public async Task<ActionResult<List<Vat>>> GetVatRatesAsync([FromQuery] VatGetAllDTO request)
         {
             var list = await _vatService.GetVatRates(request);
             return Ok(list);

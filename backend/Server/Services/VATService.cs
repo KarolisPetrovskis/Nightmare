@@ -4,7 +4,6 @@ using backend.Server.Exceptions;
 using backend.Server.Interfaces;
 using backend.Server.Models.DatabaseObjects;
 using backend.Server.Models.DTOs.VAT;
-using backend.Server.Models.Helpers;
 using Microsoft.EntityFrameworkCore;
 namespace backend.Server.Services;
 
@@ -84,7 +83,6 @@ public class VATService : IVATService
         }
 
         await Helper.SaveChangesOrThrowAsync(_context, "Internal server error", expectChanges: false);
-
     }
 
     public async Task<Vat> GetVatRateByNid(long nid)
