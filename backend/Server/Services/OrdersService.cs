@@ -10,7 +10,6 @@ namespace backend.Server.Services
     public class OrdersService (ApplicationDbContext context) : IOrdersService
     {
         private readonly ApplicationDbContext _context = context;
-        private readonly Helper _helper = new();
         public async Task<List<Order>> GetAllOrdersAsync(int page, int perPage)
         {
             if (page < 0)

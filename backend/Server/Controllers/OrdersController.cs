@@ -8,14 +8,9 @@ namespace backend.Server.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class OrdersController : ControllerBase
+    public class OrdersController(IOrdersService ordersService) : ControllerBase
     {
-        private readonly IOrdersService _ordersService;
-
-        public OrdersController(IOrdersService ordersService)
-        {
-            _ordersService = ordersService;
-        }
+        private readonly IOrdersService _ordersService = ordersService;
 
         [HttpGet]
         public async Task<ActionResult<List<Order>>> GetAllOrders([FromQuery] OrderGetAllDTO request)
