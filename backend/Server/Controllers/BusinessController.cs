@@ -21,10 +21,7 @@ namespace backend.Server.Controllers
         public async Task<ActionResult<List<Business>>> GetBusinessesByOwnerNid([FromQuery] BusinessGetAllByOwnerNidDTO request)
         {
             var list = await _businessService.RetrieveAllBusinessbyOwnerNid(request);
-            if (list == null || list.Count == 0)
-                return NotFound();
-            else
-                return Ok(list);
+            return Ok(list);
         }
 
         [HttpPost]
@@ -38,10 +35,7 @@ namespace backend.Server.Controllers
         public async Task<ActionResult<Business>> GetBusinessByNidAsync(long nid)
         {
             var bus = await _businessService.GetBusinessByNid(nid);
-            if (bus == null)
-                return NotFound();
-            else
-                return Ok(bus);
+            return Ok(bus);
         }
 
         [HttpPut("{nid}")]

@@ -21,14 +21,15 @@ namespace backend.Server.Services
 
         public async Task<List<Business>> RetrieveAllBusinessbyOwnerNid(BusinessGetAllByOwnerNidDTO request)
         {
-            return await _context.Businesses.Where(b => b.OwnerId == request.OwnerId).ToListAsync();    
+            return await _context.Businesses.Where(b => b.OwnerId == request.OwnerId).ToListAsync() ?? throw new ApiException(404, "No businesses found for this owner.");
+;
         }
         public async Task<Business> GetBusinessByNid(long nid)
         {
             var bus = await _context.Businesses.Where(b => b.Nid == nid).FirstOrDefaultAsync();    
             if (bus == null)
             {
-                throw new ApiException(404, "Business cannot be null");
+                throw new ApiException(404, "Business with such nid was not found.");
             }
             return bus;
         }
@@ -49,12 +50,8 @@ namespace backend.Server.Services
             
             _context.Businesses.Add(bus);
 
-            int rowsAffected = await _context.SaveChangesAsync();
-
-            if (!(rowsAffected > 0))
-            {
-                await Helper.SaveChangesOrThrowAsync(_context, "Internal server error");
-            }
+            await Helper.SaveChangesOrThrowAsync(_context, "Internal server error", expectChanges: true);
+            
             return bus;
         }
         public async Task UpdateBussiness(BusinessUpdateDTO request, long nid)
@@ -65,7 +62,7 @@ namespace backend.Server.Services
             var bus = await _context.Businesses.Where(b => b.Nid == nid).FirstOrDefaultAsync();
             if (bus == null)
             {
-                throw new ApiException(404, "Business cannot be null");
+                throw new ApiException(404, "Business with such nid was not found.");
             }
             if (!string.IsNullOrEmpty(request.Name))
             {
@@ -83,21 +80,17 @@ namespace backend.Server.Services
             bus.Phone = request.Phone;
             bus.Email = request.Email;
 
-            int rowsAffected = await _context.SaveChangesAsync();
-            if (!(rowsAffected > 0))
-            {
-                await Helper.SaveChangesOrThrowAsync(_context, "Internal server error");
-            }
+            await Helper.SaveChangesOrThrowAsync(_context, "Internal server error", expectChanges:false);
         }
         public async Task DeleteBusiness(long nid)
         {
             var bus = await _context.Businesses.FindAsync(nid);
             if (bus == null)
             {
-                throw new ApiException(404, "Vat rate not found");
+                throw new ApiException(404, "Business with such mid was not found");
             }
             _context.Businesses.Remove(bus);
-            await _context.SaveChangesAsync();  
+            await Helper.SaveChangesOrThrowAsync(_context, "Internal server error", expectChanges:true);
         }
     }
 }
