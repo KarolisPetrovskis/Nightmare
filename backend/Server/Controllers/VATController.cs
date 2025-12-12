@@ -9,11 +9,11 @@ namespace backend.Server.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class VatController : ControllerBase
+    public class VATController : ControllerBase
     {
-        private readonly IVatService _vatService;
+        private readonly IVATService _vatService;
 
-        public VatController(IVatService vatService)
+        public VATController(IVATService vatService)
         {
             _vatService = vatService;
         }
@@ -44,10 +44,7 @@ namespace backend.Server.Controllers
         public async Task<ActionResult<Vat>> GetVatRateBYNid(long nid)
         {
             var vat = await _vatService.GetVatRateByNid(nid);
-            if (vat == null)
-                return NotFound();
-            else
-                return Ok(vat);
+            return Ok(vat);
         }
 
         [HttpDelete("{nid}")]
