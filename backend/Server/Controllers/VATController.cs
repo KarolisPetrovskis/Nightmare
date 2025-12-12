@@ -1,6 +1,8 @@
 using System.Threading.Tasks;
 using backend.Server.Interfaces;
+using backend.Server.Models.DatabaseObjects;
 using backend.Server.Models.DTOs.VAT;
+using backend.Server.Models.Helpers;
 using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Server.Controllers
@@ -17,14 +19,14 @@ namespace backend.Server.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetVatRatesAsync([FromQuery] VatGetAllDTO request)
+        public async Task<ActionResult<AllItems<Vat>>> GetVatRatesAsync([FromQuery] VatGetAllDTO request)
         {
             var list = await _vatService.GetVatRates(request);
             return Ok(list);
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateVatRateAsync([FromBody] VatCreateDTO request)
+        public async Task<ActionResult<Vat>> CreateVatRateAsync([FromBody] VatCreateDTO request)
         {
             var vat = await _vatService.CreateVatRate(request);
             return CreatedAtAction(nameof(GetVatRateBYNid), new { nid = vat.Nid }, vat);
@@ -39,7 +41,7 @@ namespace backend.Server.Controllers
         }
 
         [HttpGet("{nid}")]
-        public async Task<IActionResult> GetVatRateBYNid(long nid)
+        public async Task<ActionResult<Vat>> GetVatRateBYNid(long nid)
         {
             var vat = await _vatService.GetVatRateByNid(nid);
             if (vat == null)

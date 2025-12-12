@@ -1,3 +1,4 @@
+using backend.Server._helpers;
 using backend.Server.Database;
 using backend.Server.Exceptions;
 using backend.Server.Interfaces;
@@ -66,7 +67,7 @@ public class VatService : IVatService
 
         if (!(rowsAffected > 0))
         {
-            throw new ApiException(500, "Internal server error");
+            await Helper.SaveChangesOrThrowAsync(_context, "Internal server error", expectChanges: false);
         }
         return vat;
     }
@@ -100,14 +101,20 @@ public class VatService : IVatService
 
         if (!(rowsAffected > 0))
         {
-            throw new ApiException(500, "Internal server error");
+            await Helper.SaveChangesOrThrowAsync(_context, "Internal server error", expectChanges: false);
         }
 
     }
 
-    public async Task<Vat?> GetVatRateByNid(long nid)
+    public async Task<Vat> GetVatRateByNid(long nid)
     {   
-        return await _context.Vats.Where(v => v.Nid == nid).FirstOrDefaultAsync();
+        var vat = await _context.Vats.Where(v => v.Nid == nid).FirstOrDefaultAsync();
+        if (vat == null)
+        {
+            await Helper.SaveChangesOrThrowAsync(_context, "Internal server error", expectChanges: false);
+    
+        }
+        return vat;
     }
 
     public async Task DeleteVatRate(long nid)
