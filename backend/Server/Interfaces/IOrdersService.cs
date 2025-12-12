@@ -10,6 +10,11 @@ namespace backend.Server.Interfaces
         Task CreateOrderAsync(Order order);
         Task CreateOrderDetailsAsync(List<OrderDetail> orderDetails);
         Task CreateOrderDetailAddOnsAsync(List<OrderDetailAddOn> orderDetailAddOns);
-        void placeholderMethod();
+        Task<Order> GetOrderByNidAsync(long nid);
+        Task<List<OrderDetail>> GetOrderDetailsByOrderId(long orderNid);
+        Task<List<OrderDetailAddOn>> GetOrderDetailAddOnsByDetailId(long detailNid);
+        Task<Order> GetOrderByBusinessIdAsync(long businessId);
+        Task UpdateOrderAsync(Order order);
+        Task DeleteOrderAsync(long nid);
     }
 }

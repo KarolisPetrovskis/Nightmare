@@ -1,6 +1,356 @@
+# Can be run with REST Client extension for VSCode
+####################
+
 @backend_HostAddress = http://localhost:5087
 
 GET {{backend_HostAddress}}/weatherforecast/
 Accept: application/json
+
+###
+
+####################
+# ORDER TESTS
+####################
+
+# Test Create Order - Simple order with one item, no addons
+POST {{backend_HostAddress}}/api/orders
+Content-Type: application/json
+
+{
+  "code": "ORD-001",
+  "vatId": 1,
+  "statusId": 1,
+  "total": 15.50,
+  "businessId": 1,
+  "workerId": 1,
+  "orderDetails": [
+    {
+      "itemId": 1,
+      "priceWoVat": 12.50,
+      "priceWtVat": 15.50
+    }
+  ]
+}
+
+###
+
+# Test Create Order - Order with multiple items
+POST {{backend_HostAddress}}/api/orders
+Content-Type: application/json
+
+{
+  "code": "ORD-002",
+  "vatId": 1,
+  "statusId": 1,
+  "total": 45.75,
+  "businessId": 1,
+  "workerId": 2,
+  "orderDetails": [
+    {
+      "itemId": 1,
+      "priceWoVat": 12.50,
+      "priceWtVat": 15.50
+    },
+    {
+      "itemId": 2,
+      "priceWoVat": 20.00,
+      "priceWtVat": 24.80
+    },
+    {
+      "itemId": 3,
+      "priceWoVat": 4.00,
+      "priceWtVat": 5.45
+    }
+  ]
+}
+
+###
+
+# Test Create Order - Order with items and addons
+POST {{backend_HostAddress}}/api/orders
+Content-Type: application/json
+
+{
+  "code": "ORD-003",
+  "vatId": 1,
+  "statusId": 1,
+  "total": 22.75,
+  "businessId": 1,
+  "workerId": 1,
+  "orderDetails": [
+    {
+      "itemId": 1,
+      "priceWoVat": 12.50,
+      "priceWtVat": 15.50,
+      "addons": [
+        {
+          "ingredientId": 1,
+          "priceWoVat": 2.00
+        },
+        {
+          "ingredientId": 2,
+          "priceWoVat": 1.50
+        }
+      ]
+    },
+    {
+      "itemId": 2,
+      "priceWoVat": 20.00,
+      "priceWtVat": 24.80,
+      "addons": [
+        {
+          "ingredientId": 3,
+          "priceWoVat": 3.50
+        }
+      ]
+    }
+  ]
+}
+
+###
+
+# Test Create Order - Complex order with multiple items and multiple addons
+POST {{backend_HostAddress}}/api/orders
+Content-Type: application/json
+
+{
+  "code": "ORD-004",
+  "vatId": 1,
+  "statusId": 2,
+  "total": 89.99,
+  "businessId": 1,
+  "workerId": 3,
+  "orderDetails": [
+    {
+      "itemId": 1,
+      "priceWoVat": 15.00,
+      "priceWtVat": 18.60,
+      "addons": [
+        {
+          "ingredientId": 1,
+          "priceWoVat": 2.00
+        },
+        {
+          "ingredientId": 2,
+          "priceWoVat": 1.50
+        },
+        {
+          "ingredientId": 3,
+          "priceWoVat": 3.00
+        }
+      ]
+    },
+    {
+      "itemId": 2,
+      "priceWoVat": 25.00,
+      "priceWtVat": 31.00
+    },
+    {
+      "itemId": 3,
+      "priceWoVat": 18.00,
+      "priceWtVat": 22.32,
+      "addons": [
+        {
+          "ingredientId": 4,
+          "priceWoVat": 4.50
+        }
+      ]
+    }
+  ]
+}
+
+###
+
+# Get Order by Nid
+GET {{backend_HostAddress}}/api/orders/1
+Accept: application/json
+
+###
+
+# Get Order Details by Order Nid
+GET {{backend_HostAddress}}/api/orders/item/1
+Accept: application/json
+
+###
+
+# Get Order Detail Add-ons by Order Nid
+GET {{backend_HostAddress}}/api/orders/item/addons/1
+Accept: application/json
+
+###
+
+# Get Orders by Business ID
+GET {{backend_HostAddress}}/api/orders/business/1
+Accept: application/json
+
+###
+
+# Get All Orders with pagination
+GET {{backend_HostAddress}}/api/orders?page=1&perPage=10
+Accept: application/json
+
+###
+
+# Get Orders filtered by WorkerId
+GET {{backend_HostAddress}}/api/orders?page=1&perPage=10&workerId=1
+Accept: application/json
+
+###
+
+# Get Orders filtered by DateCreated (use today's date in UTC)
+GET {{backend_HostAddress}}/api/orders?page=1&perPage=10&dateCreated=2025-12-12
+Accept: application/json
+
+###
+
+# Get Orders filtered by WorkerId and DateCreated
+GET {{backend_HostAddress}}/api/orders?page=1&perPage=10&workerId=1&dateCreated=2025-12-12
+Accept: application/json
+
+###
+
+# Update Order - Change status and total
+PUT {{backend_HostAddress}}/api/orders/1
+Content-Type: application/json
+
+{
+  "statusId": 2,
+  "total": 25.99
+}
+
+###
+
+# Update Order - Change only status
+PUT {{backend_HostAddress}}/api/orders/1
+Content-Type: application/json
+
+{
+  "statusId": 3
+}
+
+###
+
+# Update Order - Change only total
+PUT {{backend_HostAddress}}/api/orders/1
+Content-Type: application/json
+
+{
+  "total": 30.50
+}
+
+###
+
+# Delete Order
+DELETE {{backend_HostAddress}}/api/orders/1
+
+###
+
+####################
+# MENU ADDON TESTS
+####################
+
+# Create Menu Addon
+POST {{backend_HostAddress}}/api/menu/addons
+Content-Type: application/json
+
+{
+  "name": "Extra Cheese",
+  "itemId": 1,
+  "price": 2.50
+}
+
+###
+
+# Get Menu Addon by Nid
+GET {{backend_HostAddress}}/api/menu/addons/1
+Accept: application/json
+
+###
+
+# Get All Menu Addons
+GET {{backend_HostAddress}}/api/menu/addons?page=1&perPage=10
+Accept: application/json
+
+###
+
+# Update Menu Addon
+PUT {{backend_HostAddress}}/api/menu/addons/1
+Content-Type: application/json
+
+{
+  "name": "Extra Mozzarella Cheese",
+  "price": 3.00
+}
+
+###
+
+# Delete Menu Addon
+DELETE {{backend_HostAddress}}/api/menu/addons/1
+
+###
+
+####################
+# APPOINTMENT TESTS
+####################
+
+# Create Appointment
+POST {{backend_HostAddress}}/api/appointment
+Content-Type: application/json
+
+{
+  "code": "APT-001",
+  "businessId": 1,
+  "employeeId": 1,
+  "serviceId": 1,
+  "appointmentDate": "2025-12-15T00:00:00Z",
+  "appointmentStart": "2025-12-15T10:00:00Z",
+  "appointmentEnd": "2025-12-15T11:00:00Z",
+  "total": 50.00,
+  "statusId": 1,
+  "customerCode": "CUST-123",
+  "customerName": "John Doe",
+  "customerNumber": "+1234567890"
+}
+
+###
+
+# Get Appointment by Nid
+GET {{backend_HostAddress}}/api/appointment/1
+Accept: application/json
+
+###
+
+# Get All Appointments
+GET {{backend_HostAddress}}/api/appointment?page=1&perPage=10
+Accept: application/json
+
+###
+
+# Get Appointments filtered by EmployeeId
+GET {{backend_HostAddress}}/api/appointment?page=1&perPage=10&employeeId=1
+Accept: application/json
+
+###
+
+# Get Appointments filtered by AppointmentDate
+GET {{backend_HostAddress}}/api/appointment?page=1&perPage=10&appointmentDate=2025-12-15
+Accept: application/json
+
+###
+
+# Update Appointment
+PUT {{backend_HostAddress}}/api/appointment/1
+Content-Type: application/json
+
+{
+  "appointmentStart": "2025-12-15T14:00:00Z",
+  "appointmentEnd": "2025-12-15T15:00:00Z",
+  "statusId": 2
+}
+
+###
+
+# Delete Appointment
+DELETE {{backend_HostAddress}}/api/appointment/1
 
 ###

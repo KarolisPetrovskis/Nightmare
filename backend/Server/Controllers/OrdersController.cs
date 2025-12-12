@@ -35,7 +35,7 @@ namespace backend.Server.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateOrder([FromBody] OrderCreateDTO request)
+        public async Task<ActionResult<Order>> CreateOrder([FromBody] OrderCreateDTO request)
         {
             var order = new Order
             {
@@ -43,7 +43,7 @@ namespace backend.Server.Controllers
                 VatId = request.VatId,
                 StatusId = request.StatusId,
                 Total = request.Total,
-                DateCreated = DateTime.Now,
+                DateCreated = DateTime.UtcNow,
                 BusinessId = request.BusinessId,
                 WorkerId = request.WorkerId,
             };
@@ -57,8 +57,8 @@ namespace backend.Server.Controllers
                 {
                     OrderId = order.Nid,
                     ItemId = detailRequest.ItemId,
-                    PriceWoVat = detailRequest.PriceWoVat,
-                    PriceWtVat = detailRequest.PriceWtVat
+                    Price_wo_vat = detailRequest.PriceWoVat,
+                    Price_w_vat = detailRequest.PriceWtVat
                 };
                 orderDetails.Add(orderDetail);
             }
@@ -76,45 +76,78 @@ namespace backend.Server.Controllers
                         {
                             DetailId = orderDetails.First(od => od.ItemId == detailRequest.ItemId && od.OrderId == order.Nid).Nid,
                             IngredientId = addonRequest.IngredientId,
-                            PriceWoVat = addonRequest.PriceWoVat
+                            Price_wo_vat = addonRequest.PriceWoVat
                         };
                         orderAddOns.Add(orderAddOn);
                     }
                 }
             }
 
-            await _ordersService.CreateOrderDetailAddOnsAsync(orderAddOns);
+            if (orderAddOns.Count > 0)
+            {
+                await _ordersService.CreateOrderDetailAddOnsAsync(orderAddOns);
+            }
 
             return CreatedAtAction(nameof(GetOrderByNid), new { nid = order.Nid }, order);
-
-        }
-
-        [HttpPut]
-        public IActionResult UpdateOrder([FromBody] OrderUpdateDTO request)
-        {
-            _ordersService.placeholderMethod();
-            return Ok("Order updated successfully.");
         }
 
         [HttpGet("{nid}")]
-        public IActionResult GetOrderByNid(long nid)
+        public async Task<ActionResult<Order>> GetOrderByNid(long nid)
         {
-            _ordersService.placeholderMethod();
-            return Ok($"Order {nid} fetched successfully.");
+            var order = await _ordersService.GetOrderByNidAsync(nid);
+            return Ok(order);
+        }
+
+        [HttpGet("item/{orderNid}")]
+        public async Task<ActionResult<List<OrderDetail>>> GetOrderDetailsByOrderNid(long orderNid)
+        {
+            var order = await _ordersService.GetOrderByNidAsync(orderNid);
+
+            var orderDetails = await _ordersService.GetOrderDetailsByOrderId(order.Nid);
+
+            return Ok(orderDetails);
+        }
+
+        [HttpGet("item/addons/{orderNid}")]
+        public async Task<ActionResult<List<OrderDetailAddOn>>> GetOrderDetailAddOnsByDetailNid(long orderNid)
+        {
+            var orderDetails = await _ordersService.GetOrderDetailsByOrderId(orderNid);
+
+            var addOns = new List<OrderDetailAddOn>();
+            foreach (var detail in orderDetails)
+            {
+                var detailAddOns = await _ordersService.GetOrderDetailAddOnsByDetailId(detail.Nid);
+                addOns.AddRange(detailAddOns);
+            }
+
+            return Ok(addOns);
         }
 
         [HttpGet("business/{businessnid}")]
-        public IActionResult GetOrdersByBusinessnid(long businessnid)
+        public async Task<ActionResult<Order>> GetOrdersByBusinessnid(long businessnid)
         {
-            _ordersService.placeholderMethod();
-            return Ok($"Orders for business {businessnid} fetched successfully.");
+            var order = await _ordersService.GetOrderByBusinessIdAsync(businessnid);
+            return Ok(order);
+        }
+
+        [HttpPut("{nid}")]
+        public async Task<IActionResult> UpdateOrder(long nid, [FromBody] OrderUpdateDTO request)
+        {
+            var existingOrder = await _ordersService.GetOrderByNidAsync(nid);
+
+            if (request.StatusId.HasValue) existingOrder.StatusId = request.StatusId.Value;
+            if (request.Total.HasValue) existingOrder.Total = request.Total.Value;
+
+            await _ordersService.UpdateOrderAsync(existingOrder);
+
+            return NoContent();
         }
 
         [HttpDelete("{nid}")]
-        public IActionResult DeleteOrder(long nid)         //Different from YAML, but DELETE with body is not a good practice
+        public async Task<IActionResult> DeleteOrder(long nid)         //Different from YAML, but DELETE with body is not a good practice
         {
-            _ordersService.placeholderMethod();
-            return Ok("Order deleted successfully.");
+            await _ordersService.DeleteOrderAsync(nid);
+            return NoContent();
         }
     }
 }

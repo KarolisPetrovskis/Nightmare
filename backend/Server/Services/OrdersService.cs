@@ -10,7 +10,7 @@ namespace backend.Server.Services
     public class OrdersService (ApplicationDbContext context) : IOrdersService
     {
         private readonly ApplicationDbContext _context = context;
-        private readonly Helper _helper = new Helper();
+        private readonly Helper _helper = new();
         public async Task<List<Order>> GetAllOrdersAsync(int page, int perPage)
         {
             if (page < 0)
@@ -106,9 +106,74 @@ namespace backend.Server.Services
             return order;
         }
 
-        public void placeholderMethod()
+        public async Task<List<OrderDetail>> GetOrderDetailsByOrderId(long orderNid)
         {
-            // Implementation of the placeholder method
+            if (orderNid <= 0)
+            {
+                throw new ApiException(400, "OrderNid must be a positive number");
+            }
+
+            var orderDetails = await _context.OrderDetails
+                .AsNoTracking()
+                .Where(od => od.OrderId == orderNid)
+                .ToListAsync() ?? throw new ApiException(404, $"Order details for OrderNid {orderNid} not found");
+
+            return orderDetails;
+        }
+
+        public async Task<List<OrderDetailAddOn>> GetOrderDetailAddOnsByDetailId(long detailNid)
+        {
+            if (detailNid <= 0)
+            {
+                throw new ApiException(400, "DetailNid must be a positive number");
+            }
+
+            var orderDetailAddOns = await _context.OrderDetailAddOns
+                .AsNoTracking()
+                .Where(oda => oda.DetailId == detailNid)
+                .ToListAsync() ?? throw new ApiException(404, $"Order detail add-ons for DetailNid {detailNid} not found");
+
+            return orderDetailAddOns;
+        }
+
+        public async Task<Order> GetOrderByBusinessIdAsync(long businessId)
+        {
+            if (businessId <= 0)
+            {
+                throw new ApiException(400, "BusinessId must be a positive number");
+            }
+
+            var order = await _context.Orders
+                .AsNoTracking()
+                .FirstOrDefaultAsync(o => o.BusinessId == businessId) ?? throw new ApiException(404, $"Order with BusinessId {businessId} not found");
+
+            return order;
+        }
+
+        public async Task UpdateOrderAsync(Order order)
+        {
+            if (order == null || order.Nid <= 0)
+            {
+                throw new ApiException(400, "Invalid order data");
+            } 
+
+            _context.Orders.Update(order);
+
+            await Helper.SaveChangesOrThrowAsync(_context, $"Failed to update order {order.Nid}.", expectChanges: false);
+        }
+
+        public async Task DeleteOrderAsync(long nid)
+        {
+            if (nid <= 0)
+            {
+                throw new ApiException(400, "Nid must be a positive number");
+            }
+
+            var order = await _context.Orders.FindAsync(nid) ?? throw new ApiException(404, $"Order {nid} not found");
+
+            _context.Orders.Remove(order);
+
+            await Helper.SaveChangesOrThrowAsync(_context, $"Failed to delete order {nid}.");
         }
     }
 }
