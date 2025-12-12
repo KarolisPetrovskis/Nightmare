@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using backend.Server._helpers;
 using backend.Server.Database;
 using backend.Server.Exceptions;
 using backend.Server.Interfaces;
@@ -24,7 +25,12 @@ namespace backend.Server.Services
         }
         public async Task<Business> GetBusinessByNid(long nid)
         {
-            return await _context.Businesses.Where(b => b.Nid == nid).FirstOrDefaultAsync();    
+            var bus = await _context.Businesses.Where(b => b.Nid == nid).FirstOrDefaultAsync();    
+            if (bus == null)
+            {
+                throw new ApiException(404, "Business cannot be null");
+            }
+            return bus;
         }
         public async Task<Business> CreateBusiness(BusinessCreateDTO request)
         {
@@ -47,7 +53,7 @@ namespace backend.Server.Services
 
             if (!(rowsAffected > 0))
             {
-                throw new ApiException(500, "Internal server error");
+                await Helper.SaveChangesOrThrowAsync(_context, "Internal server error");
             }
             return bus;
         }
@@ -80,7 +86,7 @@ namespace backend.Server.Services
             int rowsAffected = await _context.SaveChangesAsync();
             if (!(rowsAffected > 0))
             {
-                throw new ApiException(500, "Internal server error");
+                await Helper.SaveChangesOrThrowAsync(_context, "Internal server error");
             }
         }
         public async Task DeleteBusiness(long nid)

@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using backend.Server.Interfaces;
+using backend.Server.Models.DatabaseObjects;
 using backend.Server.Models.DTOs.Business;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,7 +18,7 @@ namespace backend.Server.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetBusinessesByOwnerNid([FromQuery] BusinessGetAllByOwnerNidDTO request)
+        public async Task<ActionResult<List<Business>>> GetBusinessesByOwnerNid([FromQuery] BusinessGetAllByOwnerNidDTO request)
         {
             var list = await _businessService.RetrieveAllBusinessbyOwnerNid(request);
             if (list == null || list.Count == 0)
@@ -27,14 +28,14 @@ namespace backend.Server.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateBusiness([FromBody] BusinessCreateDTO request)
+        public async Task<ActionResult<Business>> CreateBusiness([FromBody] BusinessCreateDTO request)
         {
             var bus = await _businessService.CreateBusiness(request);
             return CreatedAtAction(nameof(CreateBusiness), new { nid = bus.Nid }, bus);
         }
 
         [HttpGet("{nid}")]
-        public async Task<IActionResult> GetBusinessByNidAsync(long nid)
+        public async Task<ActionResult<Business>> GetBusinessByNidAsync(long nid)
         {
             var bus = await _businessService.GetBusinessByNid(nid);
             if (bus == null)
