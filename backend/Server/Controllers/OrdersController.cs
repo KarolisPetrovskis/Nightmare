@@ -1,4 +1,6 @@
+using System.Threading.Tasks;
 using backend.Server.Interfaces;
+using backend.Server.Models.DatabaseObjects;
 using backend.Server.Models.DTOs.Order;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,17 +18,75 @@ namespace backend.Server.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetOrders()        //They don't have it in YAML, but we should probably have it
+        public async Task<ActionResult<List<Order>>> GetAllOrders([FromQuery] OrderGetAllDTO request)
         {
-            _ordersService.placeholderMethod();
-            return Ok("Orders fetched successfully.");
+            var orders = await _ordersService.GetAllOrdersAsync(request.Page, request.PerPage);
+
+            if (request.WorkerId.HasValue && request.WorkerId > 0)
+            {
+                orders = await _ordersService.TrimOrdersByWorkerIdAsync(orders, request.WorkerId.Value);
+            }
+            if (request.DateCreated.HasValue)
+            {
+                orders = await _ordersService.TrimOrdersByDateAsync(orders, request.DateCreated.Value);
+            }
+
+            return Ok(orders);
         }
 
         [HttpPost]
-        public IActionResult CreateOrder([FromBody] OrderCreateDTO request)
+        public async Task<IActionResult> CreateOrder([FromBody] OrderCreateDTO request)
         {
-            _ordersService.placeholderMethod();
-            return Ok("Order created successfully.");
+            var order = new Order
+            {
+                Code = request.Code,
+                VatId = request.VatId,
+                StatusId = request.StatusId,
+                Total = request.Total,
+                DateCreated = DateTime.Now,
+                BusinessId = request.BusinessId,
+                WorkerId = request.WorkerId,
+            };
+
+            await _ordersService.CreateOrderAsync(order);
+
+            var orderDetails = new List<OrderDetail>();
+            foreach (var detailRequest in request.OrderDetails)
+            {
+                var orderDetail = new OrderDetail
+                {
+                    OrderId = order.Nid,
+                    ItemId = detailRequest.ItemId,
+                    PriceWoVat = detailRequest.PriceWoVat,
+                    PriceWtVat = detailRequest.PriceWtVat
+                };
+                orderDetails.Add(orderDetail);
+            }
+
+            await _ordersService.CreateOrderDetailsAsync(orderDetails);
+
+            var orderAddOns = new List<OrderDetailAddOn>();
+            foreach (var detailRequest in request.OrderDetails)
+            {
+                if (detailRequest.Addons != null)
+                {
+                    foreach (var addonRequest in detailRequest.Addons)
+                    {
+                        var orderAddOn = new OrderDetailAddOn
+                        {
+                            DetailId = orderDetails.First(od => od.ItemId == detailRequest.ItemId && od.OrderId == order.Nid).Nid,
+                            IngredientId = addonRequest.IngredientId,
+                            PriceWoVat = addonRequest.PriceWoVat
+                        };
+                        orderAddOns.Add(orderAddOn);
+                    }
+                }
+            }
+
+            await _ordersService.CreateOrderDetailAddOnsAsync(orderAddOns);
+
+            return CreatedAtAction(nameof(GetOrderByNid), new { nid = order.Nid }, order);
+
         }
 
         [HttpPut]
@@ -37,17 +97,10 @@ namespace backend.Server.Controllers
         }
 
         [HttpGet("{nid}")]
-        public IActionResult GetOrderBynid(long nid)
+        public IActionResult GetOrderByNid(long nid)
         {
             _ordersService.placeholderMethod();
             return Ok($"Order {nid} fetched successfully.");
-        }
-
-        [HttpDelete("{nid}")]
-        public IActionResult DeleteOrder(long nid)         //Different from YAML, but DELETE with body is not a good practice
-        {
-            _ordersService.placeholderMethod();
-            return Ok("Order deleted successfully.");
         }
 
         [HttpGet("business/{businessnid}")]
@@ -55,6 +108,13 @@ namespace backend.Server.Controllers
         {
             _ordersService.placeholderMethod();
             return Ok($"Orders for business {businessnid} fetched successfully.");
+        }
+
+        [HttpDelete("{nid}")]
+        public IActionResult DeleteOrder(long nid)         //Different from YAML, but DELETE with body is not a good practice
+        {
+            _ordersService.placeholderMethod();
+            return Ok("Order deleted successfully.");
         }
     }
 }
