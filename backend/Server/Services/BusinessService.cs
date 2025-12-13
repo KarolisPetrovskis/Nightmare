@@ -26,7 +26,7 @@ namespace backend.Server.Services
         }
         public async Task<Business> GetBusinessByNid(long nid)
         {
-            var bus = await _context.Businesses.Where(b => b.Nid == nid).FirstOrDefaultAsync();    
+            var bus = await _context.Businesses.FindAsync(nid);    
             if (bus == null)
             {
                 throw new ApiException(404, "Business with such nid was not found.");
@@ -59,7 +59,7 @@ namespace backend.Server.Services
             if (string.IsNullOrWhiteSpace(request.Name) || request.OwnerId < 0 || request.Type < 0 )
                 throw new ApiException(400, "Bad Data imputed");
 
-            var bus = await _context.Businesses.Where(b => b.Nid == nid).FirstOrDefaultAsync();
+            var bus = await _context.Businesses.FindAsync(nid);
             if (bus == null)
             {
                 throw new ApiException(404, "Business with such nid was not found.");
@@ -79,7 +79,7 @@ namespace backend.Server.Services
             bus.Address = request.Address;
             bus.Phone = request.Phone;
             bus.Email = request.Email;
-
+            _context.Businesses.Update(bus);
             await Helper.SaveChangesOrThrowAsync(_context, "Internal server error", expectChanges:false);
         }
         public async Task DeleteBusiness(long nid)
