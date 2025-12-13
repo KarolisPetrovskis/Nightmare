@@ -29,7 +29,6 @@ namespace backend.Server.Controllers
         {
             var vat = await _vatService.CreateVatRate(request);
             return CreatedAtAction(nameof(GetVatRateBYNid), new { nid = vat.Nid }, vat);
-;
         }
 
         [HttpPut("{nid}")]
