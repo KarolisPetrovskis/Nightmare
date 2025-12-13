@@ -82,6 +82,10 @@ namespace backend.Server.Services
 
         public async Task<MenuItemWithAddons> GetMenuItemWithAddonsAsync(long nid)
         {
+            if (nid <= 0)
+            {
+                throw new ApiException(400, "Invalid menu item ID");
+            }
             var menuItem = await GetMenuItemByNidAsync(nid);
             if (menuItem == null)
             {
