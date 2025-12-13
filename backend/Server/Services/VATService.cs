@@ -34,13 +34,11 @@ public class VATService : IVATService
                     .ToListAsync();
             }
 
-            List<Vat> list = new List<Vat>();
-            list = await _context.Vats
+            return await _context.Vats
                 .Skip((request.Page - 1) * request.PerPage)
                 .Take(request.PerPage)
                 .AsNoTracking()
                 .ToListAsync();
-            return list;
     }
 
     public async Task<Vat> CreateVatRate(VatCreateDTO request)
@@ -69,7 +67,7 @@ public class VATService : IVATService
         if (request.Percentage < 0 || request.Percentage > 100 || string.IsNullOrWhiteSpace(request.Name))
             throw new ApiException(400, "Bad Data imputed");
 
-        var vat = await _context.Vats.Where(v => v.Nid == nid).FirstOrDefaultAsync();
+        var vat = await _context.Vats.FindAsync(nid);
 
         if (vat == null)
         {
