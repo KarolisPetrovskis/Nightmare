@@ -11,6 +11,7 @@ import DishSelection from './pages/OrderManagement/DishSelection/DishSelection';
 import Login from './pages/Login/Login';
 import BusinessView from './pages/AdminPages/Business view/BusinessView';
 import WorkerManagement from './pages/AdminPages/Worker Management/WorkerManagement';
+import { OrderProvider } from './context/OrderContext';
 
 export interface WeatherForecast {
   date: string;
@@ -31,27 +32,29 @@ export default function App() {
 
   return (
     <>
-      <div className="root-container">
-        {location.pathname !== '/login' && <Navbar />}
-        <div className="content-wrapper">
-          <div className="side-container" />
-          <main className="page-container">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/menu-management" element={<MenuManagement />} />
-              <Route path="/order-management" element={<OrderManagement />} />
-              <Route path="/order-management/select-dish" element={<DishSelection />} />
-              <Route path="/service-management" element={<ServiceManagement />} />
-              <Route path="/schedule-management" element={<ScheduleManagement />} />
-              <Route path="/current-schedule-management/:date" element={<CurrentScheduleManagement />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/admin/business-view" element={<BusinessView />} />
-              <Route path="/admin/worker-management" element={<WorkerManagement />} />
-            </Routes>
-          </main>
-          <div className="side-container" />
+      <OrderProvider>
+        <div className="root-container">
+          {location.pathname !== '/login' && <Navbar />}
+          <div className="content-wrapper">
+            <div className="side-container" />
+            <main className="page-container">
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/menu-management" element={<MenuManagement />} />
+                <Route path="/order-management" element={<OrderManagement />} />
+                <Route path="/order-management/select-dish" element={<DishSelection />} />
+                <Route path="/service-management" element={<ServiceManagement />} />
+                <Route path="/schedule-management" element={<ScheduleManagement />} />
+                <Route path="/current-schedule-management/:date" element={<CurrentScheduleManagement />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/admin/business-view" element={<BusinessView />} />
+                <Route path="/admin/worker-management" element={<WorkerManagement />} />
+              </Routes>
+            </main>
+            <div className="side-container" />
+          </div>
         </div>
-      </div>
+      </OrderProvider>
     </>
   );
 }

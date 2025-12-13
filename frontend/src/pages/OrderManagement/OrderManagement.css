@@ -7,13 +7,24 @@
 }
 
 .option-row span {
-  flex: 0 0 auto;
+  flex: 0 0 140px;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.option-row input[type="text"] {
-  flex: 1;
-  min-width: 0;
+.option-row input[type="text"]:first-of-type {
+  flex: 0 0 60px;
+  background-color: #1f1f1f;
+  padding: 8px;
+  border-radius: 6px;
+  border: none;
+  color: white;
+  font-size: 1rem;
+}
+
+.option-row input[type="text"]:not(:first-of-type) {
+  flex: 0 0 auto;
   background-color: #1f1f1f;
   padding: 8px;
   border-radius: 6px;

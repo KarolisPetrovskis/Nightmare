@@ -5,8 +5,9 @@ import Button from "@mui/material/Button";
 import dishesData from "../dishesData.json";
 import PaginationComponent from "../../components/Pagination/PaginationComponent";
 import SnackbarNotification from "../../components/SnackBar/SnackNotification";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useOrderContext } from "../../context/OrderContext";
 
 type Option = {
     id: number;
@@ -45,7 +46,7 @@ export default function OrderManagement() {
     const [dishes] = useState<MenuItem[]>(
         dishesData.dishes.map(d => ({ ...d, optionGroups: d.optionTrees || [] }))
     );
-    const [orders, setOrders] = useState<Order[]>([]);
+    const { orders, setOrders } = useOrderContext();
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [orderDirty, setOrderDirty] = useState(false);
     const [cancelMode, setCancelMode] = useState(false);
@@ -73,7 +74,7 @@ export default function OrderManagement() {
     const [dishPage, setDishPage] = useState(1);
     const dishesPerPage = 6;
 
-    
+    const processedStateRef = useRef<string | null>(null);
 
     const start = (page - 1) * itemsPerPage;
     const end = start + itemsPerPage;
@@ -126,7 +127,9 @@ const handleOrderClick = (order: Order) => {
     };
 
     const addDishToOrder = () => {
-        navigate("/order-management/select-dish");
+        if (selectedOrder) {
+            navigate("/order-management/select-dish", { state: { orderId: selectedOrder.id } });
+        }
     };
 
     const updateQuantity = (id: number, delta: number) => {
@@ -213,6 +216,16 @@ const handleSave = () => {
 useEffect(() => {
     const anyState = (location as any).state;
     if (anyState && anyState.addedDish) {
+        // Create a unique key for this state to prevent processing twice in strict mode
+        const stateKey = `${anyState.orderId}-${anyState.addedDish.id}`;
+        
+        // Only process if we haven't already processed this exact state
+        if (processedStateRef.current === stateKey) {
+            return;
+        }
+        
+        processedStateRef.current = stateKey;
+
         const payload = anyState.addedDish as {
             id: number;
             menuItem: MenuItem;
@@ -221,40 +234,28 @@ useEffect(() => {
         };
 
         const newItem: OrderDish = {
-            id: Date.now(), // Generate a unique ID for this dish
+            id: Date.now(),
             menuItem: payload.menuItem,
             quantity: payload.quantity,
             selectedOptions: payload.selectedOptions || {}
         };
 
-        // Get the current selected order ID before any state updates
-        const currentSelectedOrderId = selectedOrder?.id;
+        const targetOrderId = anyState.orderId;
 
-        if (!currentSelectedOrderId) {
-            // No order selected, create a new one
-            const newOrder: Order = {
-                id: Date.now(),
-                items: [newItem],
-                staff: ""
-            };
-            
-            // Update both states
-            setOrders(prev => [...prev, newOrder]);
-            setSelectedOrder(newOrder);
-        } else {
-            // Update the existing order
-            setSelectedOrder(prev => 
-                prev ? { ...prev, items: [...prev.items, newItem] } : prev
+        if (targetOrderId) {
+            const updatedOrders = orders.map(order => 
+                order.id === targetOrderId 
+                    ? { ...order, items: [...order.items, newItem] }
+                    : order
             );
             
-            // Update the orders list
-            setOrders(prev => 
-                prev.map(order => 
-                    order.id === currentSelectedOrderId 
-                        ? { ...order, items: [...order.items, newItem] }
-                        : order
-                )
-            );
+            setOrders(updatedOrders);
+            
+            // Find and set the updated order as selected
+            const updatedOrder = updatedOrders.find(o => o.id === targetOrderId);
+            if (updatedOrder) {
+                setSelectedOrder(updatedOrder);
+            }
         }
 
         setOrderDirty(true);
@@ -388,7 +389,7 @@ useEffect(() => {
                                     <div key={it.id} className="option-tree-box">
                                         <div className="option-row">
                                             <span>{it.menuItem.name}</span>
-                                            <input type="text" value={`€ ${it.menuItem.price.toFixed(2)}`} readOnly />
+                                            <input type="text" value={`€ ${it.menuItem.price.toFixed(2)}`} readOnly style={{ width: 100, flexShrink: 0 }} />
 
                                             <Button className="details-button" onClick={() => openDetails(it)}>Details</Button>
 

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import "../../Management.css";
 import "../OrderManagement.css"; // reuse your existing order styles for modal, item-card, etc.
 import "./DishSelection.css"; // new styles for grid
@@ -29,9 +29,13 @@ type OrderDishPayload = {
 
 export default function DishSelectionPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const allDishes: MenuItem[] = useMemo(() =>
     dishesData.dishes.map(d => ({ ...d, optionTrees: d.optionTrees || [] })), []
   );
+
+  // Get the order ID from the navigation state
+  const orderId = (location as any).state?.orderId;
 
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -88,7 +92,7 @@ const saveDish = (): OrderDishPayload | null => {
 };
 
   const returnToOrder = (payload: OrderDishPayload) => {
-    navigate("/order-management", { state: { addedDish: payload } });
+    navigate("/order-management", { state: { addedDish: payload, orderId } });
   };
 
   const saveAndReturn = () => {
