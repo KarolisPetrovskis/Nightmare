@@ -52,8 +52,7 @@ namespace backend.Server.Services
                 }
 
             var service = await _context.Services
-                .FindAsync(serviceId) ?? throw new ApiException(404, $"Appointment with Nid {serviceId} not found");
-            ;
+                .FindAsync(serviceId) ?? throw new ApiException(404, $"Service with Nid {serviceId} not found");
 
             return service;
             }
