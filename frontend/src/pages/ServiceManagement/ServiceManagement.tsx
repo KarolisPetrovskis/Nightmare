@@ -41,7 +41,7 @@ export default function ServiceManagement() {
     );
 
     const handleNew = () => {
-        const s: Service = { id: Date.now(), name: "New Service", price: 0, discount: 0, durationMinutes: 30, description: "" };
+        const s: Service = { id: Date.now(), name: "", price: 0, discount: 0, durationMinutes: 30, description: "" };
         setServices((p) => [...p, s]);
         setSelected(s);
         setDirty(true);
@@ -68,6 +68,21 @@ export default function ServiceManagement() {
 
     const handleSave = () => {
         if (!selected) return;
+
+        let errorMessage = '';
+        if (!selected.name.trim() || isNaN(selected.price) || selected.price <= 0 || isNaN(selected.durationMinutes) || selected.durationMinutes <= 0) {
+            errorMessage = 'Service name, valid price (>0), and service time (>0) are required.';
+        }
+
+        if (errorMessage) {
+            setSnackbar({
+                open: true,
+                message: errorMessage,
+                type: 'error',
+            });
+            return;
+        }
+
         setServices((p) => p.map(s => s.id === selected.id ? selected : s));
         setDirty(false);
         setSnackbar({
