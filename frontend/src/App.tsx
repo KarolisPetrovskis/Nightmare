@@ -54,7 +54,7 @@ export default function App() {
           </main>
           <div className="side-container" />
         </div>
-      </OrderProvider>
+      </div>
     </>
   );
 }
