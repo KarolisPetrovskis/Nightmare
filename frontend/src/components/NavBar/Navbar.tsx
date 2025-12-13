@@ -1,6 +1,7 @@
 import { AppBar, Toolbar, Button, Box, Typography } from '@mui/material';
 import { useLocation } from 'react-router-dom';
 import styles from './Navbar.module.css';
+import NightlightRoundIcon from '@mui/icons-material/NightlightRound';
 
 const links = [
   { to: '/menu-management', label: 'Menu Management' },
@@ -24,8 +25,8 @@ export default function Navbar() {
   return (
     <AppBar position="sticky" className={styles.appBar}>
       <Toolbar className={styles.toolbar}>
-        <Typography variant="h6" className={styles.businessName}>
-          Nightmare
+        <Typography variant="h6" className={styles.businessName} sx={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <NightlightRoundIcon fontSize="large"/> Nightmare 
         </Typography>
 
         <Typography variant="h6" className={styles.pageTitle}>

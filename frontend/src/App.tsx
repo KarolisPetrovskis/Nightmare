@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar/Navbar';
-import Home from './pages/Home'
+import Home from './pages/Home/Home'
 import Forecast from './pages/Forecast'
 import MenuManagement from './pages/MenuManagement/MenuManagement';
 import OrderManagement from './pages/OrderManagement/OrderManagement';
