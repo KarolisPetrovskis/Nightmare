@@ -1,0 +1,174 @@
+.worker-management-page {
+  display: flex;
+  height: 100vh;
+  background-color: #242424;
+  color: rgba(255, 255, 255, 0.87);
+  padding: 20px;
+  gap: 16px;
+}
+
+/* Main table area (left, dominant) */
+.worker-table-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: #1a1a1a;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 16px;
+  min-width: 0;
+}
+
+/* Table-like header */
+.worker-table-header {
+  display: grid;
+  grid-template-columns: 1fr 140px 220px 120px;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #bdbdbd;
+  margin-bottom: 8px;
+}
+
+.col-name { text-align: left }
+.col-phone { text-align: left }
+.col-email { text-align: left }
+.col-action { text-align: center }
+
+/* Worker rows container (scrollable) */
+.worker-table-rows {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Individual worker row */
+.worker-table-row {
+  display: grid;
+  grid-template-columns: 1fr 140px 220px 120px;
+  gap: 16px;
+  align-items: center;
+  padding: 12px;
+  background-color: #2b2b2b;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.worker-table-row:hover {
+  background-color: #323232;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.worker-table-row .col-name {
+  font-weight: 500;
+  color: #ffffff;
+}
+
+.worker-table-row .col-phone,
+.worker-table-row .col-email {
+  color: #cfcfcf;
+  font-size: 0.9rem;
+}
+
+.worker-table-row .col-action {
+  display: flex;
+  justify-content: center;
+}
+
+/* More details button */
+.more-details-btn {
+  padding: 6px 12px !important;
+  font-size: 0.85rem !important;
+  font-weight: 500 !important;
+  background-color: #2d2d2d !important;
+  color: #ffffff !important;
+  text-transform: none !important;
+  border-radius: 4px !important;
+  transition: background-color 0.2s;
+}
+
+.more-details-btn:hover {
+  background-color: #3e44b3 !important;
+}
+
+/* Right sidebar */
+.worker-sidebar {
+  width: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Create new button */
+.create-new-btn {
+  padding: 10px 16px !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  background-color: #2d2d2d !important;
+  color: #ffffff !important;
+  text-transform: none !important;
+  border-radius: 6px !important;
+  transition: background-color 0.2s;
+  height: fit-content;
+}
+
+.create-new-btn:hover {
+  background-color: #3e44b3 !important;
+}
+
+/* Scrollbar styling */
+.worker-table-rows::-webkit-scrollbar {
+  width: 6px;
+}
+
+.worker-table-rows::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.worker-table-rows::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.worker-table-rows::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .worker-table-header,
+  .worker-table-row {
+    grid-template-columns: 1fr 100px 150px 100px;
+    gap: 12px;
+  }
+
+  .col-email {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .worker-management-page {
+    flex-direction: column;
+  }
+
+  .worker-sidebar {
+    width: 100%;
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+
+  .create-new-btn {
+    width: auto;
+  }
+
+  .worker-table-header,
+  .worker-table-row {
+    grid-template-columns: 1fr 100px 120px auto;
+  }
+}

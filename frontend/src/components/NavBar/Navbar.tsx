@@ -21,6 +21,9 @@ export default function Navbar() {
     if (location.pathname === '/admin/business-view') {
       return 'Business Management';
     }
+    if (location.pathname === '/admin/worker-management') {
+      return 'Worker Management'
+    }
     return links.find(link => link.to === location.pathname)?.label || 'Home';
   };
 

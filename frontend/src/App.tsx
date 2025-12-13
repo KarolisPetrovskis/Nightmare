@@ -11,6 +11,7 @@ import CurrentScheduleManagement from './pages/CurrentScheduleManagement/Current
 import DishSelection from './pages/OrderManagement/DishSelection/DishSelection';
 import Login from './pages/Login/Login';
 import BusinessView from './pages/AdminPages/Business view/BusinessView';
+import WorkerManagement from './pages/AdminPages/Worker Management/WorkerManagement';
 
 export interface WeatherForecast {
   date: string;
@@ -47,6 +48,7 @@ export default function App() {
               <Route path="/current-schedule-management/:date" element={<CurrentScheduleManagement />} />
               <Route path="/login" element={<Login />} />
               <Route path="/admin/business-view" element={<BusinessView />} />
+              <Route path="/admin/worker-management" element={<WorkerManagement />} />
             </Routes>
           </main>
           <div className="side-container" />

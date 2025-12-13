@@ -83,7 +83,7 @@ export default function BusinessView() {
   const handleDelete = (id: number) => {
     if (confirm("Are you sure you want to delete this business?")) {
       setBusinesses((prev) => prev.filter((b) => b.id !== id));
-      // add DELETE call
+      // TODO: add DELETE call
     }
   };
 
