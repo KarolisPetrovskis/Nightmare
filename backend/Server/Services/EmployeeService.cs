@@ -105,6 +105,19 @@ namespace backend.Server.Services
             }
 
             var employee = await _context.Users.FindAsync(nid) ?? throw new ApiException(404, $"Employee with Nid {nid} not found.");
+            
+            return employee;
+        }
+
+        public async Task<User> GetEmployeeByEmailAsync(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                throw new ApiException(400, "Email must be provided");
+            }
+
+            var employee = await _context.Users.FindAsync(email) ?? throw new ApiException(404, $"Employee with Email {email} not found.");
+
             return employee;
         }
 

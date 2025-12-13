@@ -43,10 +43,19 @@ namespace backend.Server.Controllers
             return Ok(employee);
         }
 
+        [HttpGet("{email}/by-email")]
+        public async Task<ActionResult<User>> GetEmployeeByEmail(string email)
+        {
+            var employee = await _employeesService.GetEmployeeByEmailAsync(email);
+
+            return Ok(employee);
+        }
+
         [HttpPut("{nid}")]
         public async Task<IActionResult> UpdateEmployee([FromBody] UserUpdateDTO request, long nid)
         {
             await _employeesService.UpdateEmployeeAsync(request, nid);
+            
             return NoContent();
         }
 

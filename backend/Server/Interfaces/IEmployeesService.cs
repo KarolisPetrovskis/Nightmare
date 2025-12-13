@@ -9,6 +9,7 @@ namespace backend.Server.Interfaces
         Task<List<User>> GetAllEmployeesByBusinessIdAsync(UserGetAllDTO request);
         Task<User> CreateEmployeeAsync(UserCreateDTO request);
         Task<User> GetEmployeeByNidAsync(long nid);
+        Task<User> GetEmployeeByEmailAsync(string email);
         Task UpdateEmployeeAsync(UserUpdateDTO request, long nid);
         Task DeleteEmployeeAsync(long nid);
     }
