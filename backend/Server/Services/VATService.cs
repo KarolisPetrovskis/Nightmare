@@ -27,6 +27,13 @@ public class VATService : IVATService
             {
                 throw new ApiException(400, "PerPage value must be greater than zero");
             }
+            if (request.Page == 0)
+            {
+                return await _context.Vats
+                    .AsNoTracking()
+                    .ToListAsync();
+            }
+
             List<Vat> list = new List<Vat>();
             list = await _context.Vats
                 .Skip((request.Page - 1) * request.PerPage)
