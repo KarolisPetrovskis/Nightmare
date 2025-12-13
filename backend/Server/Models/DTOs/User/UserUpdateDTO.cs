@@ -17,6 +17,8 @@ public class UserUpdateDTO
 
     [Range(1, long.MaxValue, ErrorMessage = "UserType must be a positive number")]
     public long? UserType { get; set; }
+    [Range(1, long.MaxValue, ErrorMessage = "BusinessId must be a positive number")]
+    public long? BusinessId { get; set; }
 
     [StringLength(500)]
     public string? Address { get; set; }

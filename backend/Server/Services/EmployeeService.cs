@@ -36,6 +36,37 @@ namespace backend.Server.Services
                 .ToListAsync();
         }
 
+        public async Task<List<User>> GetAllEmployeesByBusinessIdAsync(UserGetAllDTO request)
+        {
+            if (request.BusinessId <= 0)
+            {
+                throw new ApiException(400, "BusinessId must be a positive number");
+            }
+            if (request.Page < 0)
+            {
+                throw new ApiException(400, "Page number must be greater than or equal to zero");
+            }
+            if (request.PerPage <= 0)
+            {
+                throw new ApiException(400, "PerPage value must be greater than or equal to zero");
+            }
+
+            if (request.Page == 0)
+            {
+                return await _context.Users
+                    .Where(u => u.BusinessId == request.BusinessId)
+                    .AsNoTracking()
+                    .ToListAsync();
+            }
+
+            return await _context.Users
+                .Where(u => u.BusinessId == request.BusinessId)
+                .AsNoTracking()
+                .Skip((request.Page - 1) * request.PerPage)
+                .Take(request.PerPage)
+                .ToListAsync();
+        }
+
         public async Task<User> CreateEmployeeAsync(UserCreateDTO request)
         {
             if (await _context.Users.AnyAsync(u => u.Email == request.Email))
@@ -55,7 +86,8 @@ namespace backend.Server.Services
                 PlanId = request.PlanId,
                 Salary = request.Salary,
                 BossId = request.BossId,
-                BankAccount = request.BankAccount
+                BankAccount = request.BankAccount,
+                BusinessId = request.BusinessId
             };
 
             _context.Users.Add(employee);
@@ -76,12 +108,13 @@ namespace backend.Server.Services
             return employee;
         }
 
-        public async Task UpdateEmployeeAsync(UserUpdateDTO request, User employee)
+        public async Task UpdateEmployeeAsync(UserUpdateDTO request, long nid)
         {
-            if (employee == null || employee.Nid <= 0)
+            if (nid <= 0)
             {
-                throw new ApiException(400, "Invalid employee data");
+                throw new ApiException(400, "Nid must be a positive number");
             }
+            var employee = await _context.Users.FindAsync(nid) ?? throw new ApiException(404, $"Employee with Nid {nid} not found.");
 
             if (request.Name != null) employee.Name = request.Name;
             if (request.Surname != null) employee.Surname = request.Surname;
@@ -94,6 +127,7 @@ namespace backend.Server.Services
             if (request.Salary.HasValue) employee.Salary = request.Salary;
             if (request.BossId.HasValue) employee.BossId = request.BossId;
             if (request.BankAccount != null) employee.BankAccount = request.BankAccount;
+            if (request.BusinessId.HasValue) employee.BusinessId = request.BusinessId.Value;
 
             _context.Users.Update(employee);
 

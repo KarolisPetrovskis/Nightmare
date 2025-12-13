@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using backend.Server.Interfaces;
 using backend.Server.Models.DatabaseObjects;
 using backend.Server.Models.DTOs.User;
@@ -16,6 +15,15 @@ namespace backend.Server.Controllers
         public async Task<ActionResult<List<User>>> GetAllEmployees([FromQuery] UserGetAllDTO request)
         {
             var employees = await _employeesService.GetAllEmployeesAsync(request.Page, request.PerPage);
+
+            return Ok(employees);
+        }
+
+        [HttpGet("business")]
+        public async Task<ActionResult<List<User>>> GetAllEmployeesByBusinessId([FromQuery] UserGetAllDTO request)
+        {
+            var employees = await _employeesService.GetAllEmployeesByBusinessIdAsync(request);
+
             return Ok(employees);
         }
 
@@ -31,16 +39,14 @@ namespace backend.Server.Controllers
         public async Task<ActionResult<User>> GetEmployeeBynid(long nid)
         {
             var employee = await _employeesService.GetEmployeeByNidAsync(nid);
+
             return Ok(employee);
         }
 
         [HttpPut("{nid}")]
         public async Task<IActionResult> UpdateEmployee([FromBody] UserUpdateDTO request, long nid)
         {
-            var existingEmployee = await _employeesService.GetEmployeeByNidAsync(nid);
-
-            await _employeesService.UpdateEmployeeAsync(request, existingEmployee);
-
+            await _employeesService.UpdateEmployeeAsync(request, nid);
             return NoContent();
         }
 
