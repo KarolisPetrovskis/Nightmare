@@ -1,4 +1,5 @@
 using backend.Server.Models.DatabaseObjects;
+using backend.Server.Models.Helper;
 
 namespace backend.Server.Interfaces
 {
@@ -9,5 +10,7 @@ namespace backend.Server.Interfaces
         Task<MenuItem> GetMenuItemByNidAsync(long nid);
         Task UpdateMenuItemAsync(MenuItem menuItem);
         Task DeleteMenuItemAsync(long nid);
+        Task<MenuItemWithAddons> GetMenuItemWithAddonsAsync(long nid);
+
     }
 }

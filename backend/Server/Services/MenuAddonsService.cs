@@ -82,5 +82,20 @@ namespace backend.Server.Services
 
             await Helper.SaveChangesOrThrowAsync(_context, "Failed to delete menu addon");
         }
+
+        public async Task<List<MenuItemIngredient>> GetMenuAddonsByMenuItemNidAsync(long menuItemNid)
+        {
+            if (menuItemNid <= 0)
+            {
+                throw new ApiException(400, "Invalid menu item ID");
+            }
+
+            var addons = await _context.MenuItemIngredients
+                .Where(m => m.ItemId == menuItemNid)
+                .AsNoTracking()
+                .ToListAsync();
+
+            return addons;
+        }
     }
 }

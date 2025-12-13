@@ -2,6 +2,7 @@ using backend.Server.Interfaces;
 using backend.Server.Models.DTOs.Menu;
 using backend.Server.Models.DatabaseObjects;
 using Microsoft.AspNetCore.Mvc;
+using backend.Server.Models.Helper;
 
 namespace backend.Server.Controllers
 {
@@ -64,5 +65,12 @@ namespace backend.Server.Controllers
             await _menuService.DeleteMenuItemAsync(nid);
             return NoContent();
         }
+
+        public async Task<ActionResult<MenuItemWithAddons>> GetMenuItemWithAddons(long nid)
+        {
+            var result = await _menuService.GetMenuItemWithAddonsAsync(nid);
+            return Ok(result);
+        }
+
     }
 }
