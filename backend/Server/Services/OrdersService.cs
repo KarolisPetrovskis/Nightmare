@@ -155,9 +155,7 @@ namespace backend.Server.Services
                 throw new ApiException(400, "Nid must be a positive number");
             }
 
-            var order = await _context.Orders
-                .AsNoTracking()
-                .FirstOrDefaultAsync(o => o.Nid == nid) ?? throw new ApiException(404, $"Order with Nid {nid} not found");
+            var order = await _context.Orders.FindAsync(nid) ?? throw new ApiException(404, $"Order with Nid {nid} not found");
 
             return order;
         }
@@ -201,16 +199,20 @@ namespace backend.Server.Services
                 .ToListAsync();
         }
 
-        public async Task UpdateOrderAsync(Order order)
+        public async Task UpdateOrderAsync(OrderUpdateDTO request, long nid)
         {
-            if (order == null || order.Nid <= 0)
+            if (nid <= 0)
             {
-                throw new ApiException(400, "Invalid order data");
-            } 
+                throw new ApiException(400, "Nid must be a positive number");
+            }
+            var order = await _context.Orders.FindAsync(nid) ?? throw new ApiException(404, $"Order {nid} not found");
+
+            if (request.StatusId.HasValue) order.StatusId = request.StatusId.Value;
+            if (request.Total.HasValue) order.Total = request.Total.Value;
 
             _context.Orders.Update(order);
 
-            await Helper.SaveChangesOrThrowAsync(_context, $"Failed to update order {order.Nid}.", expectChanges: false);
+            await Helper.SaveChangesOrThrowAsync(_context, $"Failed to update order {nid}.", expectChanges: false);
         }
 
         public async Task DeleteOrderAsync(long nid)

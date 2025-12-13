@@ -16,7 +16,7 @@ namespace backend.Server.Interfaces
         Task<List<OrderDetail>> GetOrderDetailsByOrderId(long orderNid);
         Task<List<OrderDetailAddOn>> GetOrderDetailAddOnsByDetailId(long detailNid);
         Task<List<Order>> GetOrderByBusinessIdAsync(long businessId);
-        Task UpdateOrderAsync(Order order);
+        Task UpdateOrderAsync(OrderUpdateDTO request, long nid);
         Task DeleteOrderAsync(long nid);
     }
 }

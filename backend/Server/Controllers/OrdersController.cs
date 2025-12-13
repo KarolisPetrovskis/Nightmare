@@ -79,13 +79,7 @@ namespace backend.Server.Controllers
         [HttpPut("{nid}")]
         public async Task<IActionResult> UpdateOrder(long nid, [FromBody] OrderUpdateDTO request)
         {
-            var existingOrder = await _ordersService.GetOrderByNidAsync(nid);
-
-            if (request.StatusId.HasValue) existingOrder.StatusId = request.StatusId.Value;
-            if (request.Total.HasValue) existingOrder.Total = request.Total.Value;
-
-            await _ordersService.UpdateOrderAsync(existingOrder);
-
+            await _ordersService.UpdateOrderAsync(request, nid);
             return NoContent();
         }
 
