@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/NavBar/Navbar';
 import Home from './pages/Home/Home'
-import Forecast from './pages/Forecast'
 import MenuManagement from './pages/MenuManagement/MenuManagement';
 import OrderManagement from './pages/OrderManagement/OrderManagement';
 import ServiceManagement from './pages/ServiceManagement/ServiceManagement';
@@ -39,7 +38,6 @@ export default function App() {
           <main className="page-container">
             <Routes>
               <Route path="/" element={<Home />} />
-              <Route path="/forecast" element={<Forecast />} />
               <Route path="/menu-management" element={<MenuManagement />} />
               <Route path="/order-management" element={<OrderManagement />} />
               <Route path="/order-management/select-dish" element={<DishSelection />} />

@@ -3,10 +3,11 @@ import Button from '@mui/material/Button';
 
 import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
-import RoomServiceIcon from '@mui/icons-material/RoomService';
+import ContentCutIcon from '@mui/icons-material/ContentCut';
 import EventNoteIcon from '@mui/icons-material/EventNote';
 import TodayIcon from '@mui/icons-material/Today';
-import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import StoreIcon from '@mui/icons-material/Store';
+import EngineeringIcon from '@mui/icons-material/Engineering';
 
 import './Home.css';
 
@@ -33,7 +34,7 @@ export default function Home() {
         />
 
         <DashboardButton
-          icon={<RoomServiceIcon />}
+          icon={<ContentCutIcon />}
           label="Service Management"
           onClick={() => navigate('/service-management')}
         />
@@ -53,9 +54,15 @@ export default function Home() {
         />
 
         <DashboardButton
-          icon={<AdminPanelSettingsIcon />}
-          label="Admin Business View"
+          icon={<StoreIcon />}
+          label="Business View"
           onClick={() => navigate('/admin/business-view')}
+        />
+
+        <DashboardButton
+          icon={<EngineeringIcon />}
+          label="Worker Management"
+          onClick={() => navigate('/admin/worker-management')}
         />
       </div>
     </div>
