@@ -22,22 +22,7 @@ namespace backend.Server.Controllers
         [HttpPost]
         public async Task<ActionResult<User>> CreateEmployee([FromBody] UserCreateDTO request)
         {
-            var employee = new User
-            {
-                Name = request.Name,
-                Surname = request.Surname,
-                Email = request.Email,
-                Password = request.Password,
-                UserType = request.UserType,
-                Address = request.Address,
-                Telephone = request.Telephone,
-                PlanId = request.PlanId,
-                Salary = request.Salary,
-                BossId = request.BossId,
-                BankAccount = request.BankAccount
-            };
-
-            await _employeesService.CreateEmployeeAsync(employee);
+            var employee = await _employeesService.CreateEmployeeAsync(request);
 
             return CreatedAtAction(nameof(GetEmployeeBynid), new { nid = employee.Nid }, employee);
         }
@@ -54,19 +39,7 @@ namespace backend.Server.Controllers
         {
             var existingEmployee = await _employeesService.GetEmployeeByNidAsync(nid);
 
-            if (request.Name != null) existingEmployee.Name = request.Name;
-            if (request.Surname != null) existingEmployee.Surname = request.Surname;
-            if (request.Email != null) existingEmployee.Email = request.Email;
-            if (request.Password != null) existingEmployee.Password = request.Password;
-            if (request.UserType.HasValue) existingEmployee.UserType = request.UserType.Value;
-            if (request.Address != null) existingEmployee.Address = request.Address;
-            if (request.Telephone != null) existingEmployee.Telephone = request.Telephone;
-            if (request.PlanId.HasValue) existingEmployee.PlanId = request.PlanId;
-            if (request.Salary.HasValue) existingEmployee.Salary = request.Salary;
-            if (request.BossId.HasValue) existingEmployee.BossId = request.BossId;
-            if (request.BankAccount != null) existingEmployee.BankAccount = request.BankAccount;
-
-            await _employeesService.UpdateEmployeeAsync(existingEmployee);
+            await _employeesService.UpdateEmployeeAsync(request, existingEmployee);
 
             return NoContent();
         }

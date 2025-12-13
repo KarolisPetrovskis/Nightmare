@@ -3,6 +3,7 @@ using backend.Server.Database;
 using backend.Server.Exceptions;
 using backend.Server.Interfaces;
 using backend.Server.Models.DatabaseObjects;
+using backend.Server.Models.DTOs.User;
 using Microsoft.EntityFrameworkCore;
 
 namespace backend.Server.Services
@@ -35,16 +36,33 @@ namespace backend.Server.Services
                 .ToListAsync();
         }
 
-        public async Task CreateEmployeeAsync(User employee)
+        public async Task<User> CreateEmployeeAsync(UserCreateDTO request)
         {
-            if (await _context.Users.AnyAsync(u => u.Email == employee.Email))
+            if (await _context.Users.AnyAsync(u => u.Email == request.Email))
             {
-                throw new ApiException(409, $"Employee with Email {employee.Email} already exists.");
+                throw new ApiException(409, $"Employee with Email {request.Email} already exists.");
             }
+
+            var employee = new User
+            {
+                Name = request.Name,
+                Surname = request.Surname,
+                Email = request.Email,
+                Password = request.Password,
+                UserType = request.UserType,
+                Address = request.Address,
+                Telephone = request.Telephone,
+                PlanId = request.PlanId,
+                Salary = request.Salary,
+                BossId = request.BossId,
+                BankAccount = request.BankAccount
+            };
 
             _context.Users.Add(employee);
 
             await Helper.SaveChangesOrThrowAsync(_context, "Failed to create employee.");
+
+            return employee;
         }
 
         public async Task<User> GetEmployeeByNidAsync(long nid)
@@ -54,18 +72,28 @@ namespace backend.Server.Services
                 throw new ApiException(400, "Nid must be a positive number");
             }
 
-            var employee = await _context.Users
-                .AsNoTracking()
-                .FirstOrDefaultAsync(u => u.Nid == nid) ?? throw new ApiException(404, $"Employee with Nid {nid} not found.");
+            var employee = await _context.Users.FindAsync(nid) ?? throw new ApiException(404, $"Employee with Nid {nid} not found.");
             return employee;
         }
 
-        public async Task UpdateEmployeeAsync(User employee)
+        public async Task UpdateEmployeeAsync(UserUpdateDTO request, User employee)
         {
             if (employee == null || employee.Nid <= 0)
             {
                 throw new ApiException(400, "Invalid employee data");
             }
+
+            if (request.Name != null) employee.Name = request.Name;
+            if (request.Surname != null) employee.Surname = request.Surname;
+            if (request.Email != null) employee.Email = request.Email;
+            if (request.Password != null) employee.Password = request.Password;
+            if (request.UserType.HasValue) employee.UserType = request.UserType.Value;
+            if (request.Address != null) employee.Address = request.Address;
+            if (request.Telephone != null) employee.Telephone = request.Telephone;
+            if (request.PlanId.HasValue) employee.PlanId = request.PlanId;
+            if (request.Salary.HasValue) employee.Salary = request.Salary;
+            if (request.BossId.HasValue) employee.BossId = request.BossId;
+            if (request.BankAccount != null) employee.BankAccount = request.BankAccount;
 
             _context.Users.Update(employee);
 
