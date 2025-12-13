@@ -6,7 +6,7 @@ import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import RoomServiceIcon from '@mui/icons-material/RoomService';
 import EventNoteIcon from '@mui/icons-material/EventNote';
 import TodayIcon from '@mui/icons-material/Today';
-
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 
 import './Home.css';
 
@@ -50,6 +50,12 @@ export default function Home() {
           onClick={() =>
             navigate(`/current-schedule-management/${new Date().toISOString().slice(0, 10)}`)
           }
+        />
+
+        <DashboardButton
+          icon={<AdminPanelSettingsIcon />}
+          label="Admin Business View"
+          onClick={() => navigate('/admin/business-view')}
         />
       </div>
     </div>
