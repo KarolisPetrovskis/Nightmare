@@ -72,9 +72,18 @@
   opacity: 0.45 !important;
   color: #ffffff !important;
 }
-.day-number { font-size: 20px; font-weight: 700; color: #ffffff }
 
-.calendar-actions { display:flex; justify-content:space-between; margin-top:12px; gap: 16px; }
+.day-number { 
+  font-size: 20px; 
+  font-weight: 700; 
+  color: #ffffff; 
+}
+
+.calendar-actions { 
+  display:flex;
+  justify-content:space-between; 
+  margin-top:12px; gap: 16px; 
+}
 
 @media (max-width: 700px) {
   .calendar { width: 100%; }
