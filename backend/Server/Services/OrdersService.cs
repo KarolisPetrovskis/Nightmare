@@ -2,7 +2,9 @@ using backend.Server._helpers;
 using backend.Server.Database;
 using backend.Server.Exceptions;
 using backend.Server.Interfaces;
+using backend.Server.Models;
 using backend.Server.Models.DatabaseObjects;
+using backend.Server.Models.DTOs.Order;
 using Microsoft.EntityFrameworkCore;
 
 namespace backend.Server.Services
@@ -14,18 +16,20 @@ namespace backend.Server.Services
         {
             if (page < 0)
             {
-                throw new ApiException(400, "Page number must be greater than zero");
+                throw new ApiException(400, "Page number must be greater than or equal to zero");
             }
             if (perPage <= 0)
             {
                 throw new ApiException(400, "PerPage value must be greater than zero");
             }
+
             if (page == 0)
             {
                 return await _context.Orders
                     .AsNoTracking()
                     .ToListAsync();
             }
+
             return await _context.Orders
                 .Skip((page - 1) * perPage)
                 .Take(perPage)
@@ -55,28 +59,81 @@ namespace backend.Server.Services
             return await Task.FromResult(filtered);
         }
 
-        public async Task CreateOrderAsync(Order order)
+        public async Task<Order> CreateOrderAsync(OrderCreateDTO request)
         {
-            if (order == null)
+            var order = new Order
             {
-                throw new ApiException(400, "Order cannot be null");
-            }
+                Code = request.Code,
+                VatId = request.VatId,
+                StatusId = request.StatusId,
+                Total = request.Total,
+                DateCreated = DateTime.UtcNow,
+                BusinessId = request.BusinessId,
+                WorkerId = request.WorkerId,
+            };
 
             _context.Orders.Add(order);
 
             await Helper.SaveChangesOrThrowAsync(_context, "Failed to create order.");
+
+            var orderDetails = await CreateOrderDetailsAsync(request.OrderDetails, order.Nid);
+
+            var orderDetailAddOns = new List<OrderDetailAddOn>();
+            foreach (var detailRequest in request.OrderDetails)
+            {
+                if (detailRequest.Addons != null)
+                {
+                    foreach (var addonRequest in detailRequest.Addons)
+                    {
+                        var orderAddOn = new OrderDetailAddOn
+                        {
+                            DetailId = orderDetails.First(od => od.ItemId == detailRequest.ItemId && od.OrderId == order.Nid).Nid,
+                            IngredientId = addonRequest.IngredientId,
+                            Price_wo_vat = addonRequest.PriceWoVat
+                        };
+                        orderDetailAddOns.Add(orderAddOn);
+                    }
+                }
+            }
+
+            if (orderDetailAddOns.Count > 0)
+            {
+                await CreateOrderDetailAddOnsAsync(orderDetailAddOns);
+            }
+
+            return order;
         }
 
-        public async Task CreateOrderDetailsAsync(List<OrderDetail> orderDetails)
+        public async Task<List<OrderDetail>> CreateOrderDetailsAsync(List<OrderDetailRequest> orderDetailsRequest, long orderNid)
         {
-            if (orderDetails == null || orderDetails.Count == 0)
+            if (orderDetailsRequest == null || orderDetailsRequest.Count == 0)
             {
                 throw new ApiException(400, "Order details cannot be null or empty");
+            }
+
+            if (orderNid <= 0)
+            {
+                throw new ApiException(400, "OrderNid must be a positive number");
+            }
+            
+            var orderDetails = new List<OrderDetail>();
+            foreach (var detailRequest in orderDetailsRequest)
+            {
+                var orderDetail = new OrderDetail
+                {
+                    OrderId = orderNid,
+                    ItemId = detailRequest.ItemId,
+                    Price_wo_vat = detailRequest.PriceWoVat,
+                    Price_w_vat = detailRequest.PriceWtVat
+                };
+                orderDetails.Add(orderDetail);
             }
 
             _context.OrderDetails.AddRange(orderDetails);
 
             await Helper.SaveChangesOrThrowAsync(_context, "Failed to create order details.");
+
+            return orderDetails;
         }
 
         public async Task CreateOrderDetailAddOnsAsync(List<OrderDetailAddOn> orderDetailAddOns)
@@ -112,12 +169,10 @@ namespace backend.Server.Services
                 throw new ApiException(400, "OrderNid must be a positive number");
             }
 
-            var orderDetails = await _context.OrderDetails
+            return await _context.OrderDetails
                 .AsNoTracking()
                 .Where(od => od.OrderId == orderNid)
-                .ToListAsync() ?? throw new ApiException(404, $"Order details for OrderNid {orderNid} not found");
-
-            return orderDetails;
+                .ToListAsync();
         }
 
         public async Task<List<OrderDetailAddOn>> GetOrderDetailAddOnsByDetailId(long detailNid)
@@ -127,26 +182,23 @@ namespace backend.Server.Services
                 throw new ApiException(400, "DetailNid must be a positive number");
             }
 
-            var orderDetailAddOns = await _context.OrderDetailAddOns
+            return await _context.OrderDetailAddOns
                 .AsNoTracking()
                 .Where(oda => oda.DetailId == detailNid)
-                .ToListAsync() ?? throw new ApiException(404, $"Order detail add-ons for DetailNid {detailNid} not found");
-
-            return orderDetailAddOns;
+                .ToListAsync();
         }
 
-        public async Task<Order> GetOrderByBusinessIdAsync(long businessId)
+        public async Task<List<Order>> GetOrderByBusinessIdAsync(long businessId)
         {
             if (businessId <= 0)
             {
                 throw new ApiException(400, "BusinessId must be a positive number");
             }
 
-            var order = await _context.Orders
+            return await _context.Orders
                 .AsNoTracking()
-                .FirstOrDefaultAsync(o => o.BusinessId == businessId) ?? throw new ApiException(404, $"Order with BusinessId {businessId} not found");
-
-            return order;
+                .Where(o => o.BusinessId == businessId)
+                .ToListAsync();
         }
 
         public async Task UpdateOrderAsync(Order order)

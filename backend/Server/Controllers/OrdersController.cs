@@ -32,56 +32,7 @@ namespace backend.Server.Controllers
         [HttpPost]
         public async Task<ActionResult<Order>> CreateOrder([FromBody] OrderCreateDTO request)
         {
-            var order = new Order
-            {
-                Code = request.Code,
-                VatId = request.VatId,
-                StatusId = request.StatusId,
-                Total = request.Total,
-                DateCreated = DateTime.UtcNow,
-                BusinessId = request.BusinessId,
-                WorkerId = request.WorkerId,
-            };
-
-            await _ordersService.CreateOrderAsync(order);
-
-            var orderDetails = new List<OrderDetail>();
-            foreach (var detailRequest in request.OrderDetails)
-            {
-                var orderDetail = new OrderDetail
-                {
-                    OrderId = order.Nid,
-                    ItemId = detailRequest.ItemId,
-                    Price_wo_vat = detailRequest.PriceWoVat,
-                    Price_w_vat = detailRequest.PriceWtVat
-                };
-                orderDetails.Add(orderDetail);
-            }
-
-            await _ordersService.CreateOrderDetailsAsync(orderDetails);
-
-            var orderAddOns = new List<OrderDetailAddOn>();
-            foreach (var detailRequest in request.OrderDetails)
-            {
-                if (detailRequest.Addons != null)
-                {
-                    foreach (var addonRequest in detailRequest.Addons)
-                    {
-                        var orderAddOn = new OrderDetailAddOn
-                        {
-                            DetailId = orderDetails.First(od => od.ItemId == detailRequest.ItemId && od.OrderId == order.Nid).Nid,
-                            IngredientId = addonRequest.IngredientId,
-                            Price_wo_vat = addonRequest.PriceWoVat
-                        };
-                        orderAddOns.Add(orderAddOn);
-                    }
-                }
-            }
-
-            if (orderAddOns.Count > 0)
-            {
-                await _ordersService.CreateOrderDetailAddOnsAsync(orderAddOns);
-            }
+            var order = await _ordersService.CreateOrderAsync(request);
 
             return CreatedAtAction(nameof(GetOrderByNid), new { nid = order.Nid }, order);
         }
@@ -119,10 +70,10 @@ namespace backend.Server.Controllers
         }
 
         [HttpGet("business/{businessnid}")]
-        public async Task<ActionResult<Order>> GetOrdersByBusinessnid(long businessnid)
+        public async Task<ActionResult<List<Order>>> GetOrdersByBusinessnid(long businessnid)
         {
-            var order = await _ordersService.GetOrderByBusinessIdAsync(businessnid);
-            return Ok(order);
+            var orders = await _ordersService.GetOrderByBusinessIdAsync(businessnid);
+            return Ok(orders);
         }
 
         [HttpPut("{nid}")]
