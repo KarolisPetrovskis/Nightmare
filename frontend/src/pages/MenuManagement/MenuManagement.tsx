@@ -94,6 +94,38 @@ export default function MenuManagement() {
   const handleSave = () => {
     if (!editableItem) return;
 
+    let errorMessage = '';
+    if (!editableItem.name.trim() || isNaN(editableItem.price) || editableItem.price <= 0) {
+      errorMessage = 'Dish name and a valid price (>0) are required.';
+    } else {
+      for (const group of editableItem.optionGroups) {
+        if (!group.name.trim()) {
+          errorMessage = 'All option trees must have a name.';
+          break;
+        }
+        if (group.options.length === 0) {
+          errorMessage = 'All option trees must have at least one option.';
+          break;
+        }
+        for (const opt of group.options) {
+          if (!opt.name.trim() || isNaN(opt.price) || opt.price < 0) {
+            errorMessage = 'All options must have a name and a valid price (>=0).';
+            break;
+          }
+        }
+        if (errorMessage) break;
+      }
+    }
+
+    if (errorMessage) {
+      setSnackbar({
+        open: true,
+        message: errorMessage,
+        type: 'error',
+      });
+      return;
+    }
+
     if (editableItem.id === -1) {
       const newItem = { ...editableItem, id: Date.now() };
       setItems(prev => [...prev, newItem]);
@@ -222,6 +254,7 @@ export default function MenuManagement() {
                 <input
                   type="number"
                   placeholder="0.00"
+                  min="0"
                   value={editableItem?.price ?? ""}
                   onChange={(e) => updateField("price", parseFloat(e.target.value))}
                 />
@@ -232,6 +265,8 @@ export default function MenuManagement() {
                 <input
                   type="number"
                   placeholder="%"
+                  min="0"
+                  max="100"
                   value={editableItem?.discount ?? ""}
                   onChange={(e) => updateField("discount", parseFloat(e.target.value))}
                 />
@@ -351,6 +386,7 @@ export default function MenuManagement() {
                               type="number"
                               value={opt.price}
                               placeholder="Price (€)"
+                              min="0"
                               onChange={(e) => {
                                 const updated = [...editableItem.optionGroups];
                                 updated[realIndex].options[optIndex].price = parseFloat(e.target.value);
