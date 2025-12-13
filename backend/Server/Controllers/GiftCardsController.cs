@@ -15,22 +15,14 @@ namespace backend.Server.Controllers
         [HttpGet]
         public async Task<ActionResult<List<GiftCard>>> GetAllGiftCards([FromQuery] GiftCardGetAllDTO request)
         {
-            var giftCards = await _giftCardsService.GetAllGiftCardsAsync(request.BusinessId, request.Page, request.PerPage);
+            var giftCards = await _giftCardsService.GetAllGiftCardsAsync(request);
             return Ok(giftCards);
         }
 
         [HttpPost]
         public async Task<ActionResult<GiftCard>> CreateGiftCard([FromBody] GiftCardCreateDTO request)
         {
-            var giftCard = new GiftCard
-            {
-                Code = request.Code,
-                Value = request.Value,
-                DateCreated = DateTime.UtcNow,
-                BusinessId = request.BusinessId
-            };
-
-            await _giftCardsService.CreateGiftCardAsync(giftCard);
+            var giftCard = await _giftCardsService.CreateGiftCardAsync(request);
 
             return CreatedAtAction(nameof(GetGiftCardBynid), new { nid = giftCard.Nid }, giftCard);
         } 
