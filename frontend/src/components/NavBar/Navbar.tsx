@@ -18,6 +18,9 @@ export default function Navbar() {
     if (location.pathname.startsWith('/current-schedule-management/')) {
       return 'Current Schedule Management';
     }
+    if (location.pathname === '/admin/business-view') {
+      return 'Business Management';
+    }
     return links.find(link => link.to === location.pathname)?.label || 'Home';
   };
 
