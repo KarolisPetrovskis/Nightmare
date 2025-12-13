@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using backend.Server._helpers;
 using backend.Server.Database;
 using backend.Server.Exceptions;
