@@ -388,7 +388,7 @@ useEffect(() => {
                                 .map((it) => (
                                     <div key={it.id} className="option-tree-box">
                                         <div className="option-row">
-                                            <span>{it.menuItem.name}</span>
+                                            <span className="fixed-name">{it.menuItem.name}</span>
                                             <input type="text" value={`€ ${it.menuItem.price.toFixed(2)}`} readOnly style={{ width: 100, flexShrink: 0 }} />
 
                                             <Button className="details-button" onClick={() => openDetails(it)}>Details</Button>

@@ -6,7 +6,7 @@
   min-width: 0;
 }
 
-.option-row span {
+.fixed-name{  
   flex: 0 0 140px;
   white-space: nowrap;
   overflow: hidden;
