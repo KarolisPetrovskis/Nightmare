@@ -1,4 +1,6 @@
+using System.Threading.Tasks;
 using backend.Server.Interfaces;
+using backend.Server.Models.DatabaseObjects;
 using backend.Server.Models.DTOs.GiftCard;
 using Microsoft.AspNetCore.Mvc;
 
@@ -6,41 +8,37 @@ namespace backend.Server.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class GiftCardsController : ControllerBase
+    public class GiftCardsController(IGiftCardsService giftCardsService) : ControllerBase
     {
-        private readonly IGiftCardsService _giftCardsService;
-
-        public GiftCardsController(IGiftCardsService giftCardsService)
-        {
-            _giftCardsService = giftCardsService;
-        }
+        private readonly IGiftCardsService _giftCardsService = giftCardsService;
 
         [HttpGet]
-        public IActionResult GetGiftCards([FromQuery] GiftCardGetAllDTO request)
+        public async Task<ActionResult<List<GiftCard>>> GetAllGiftCards([FromQuery] GiftCardGetAllDTO request)
         {
-            _giftCardsService.placeholderMethod();
-            return Ok("Gift cards fetched successfully.");
+            var giftCards = await _giftCardsService.GetAllGiftCardsAsync(request);
+            return Ok(giftCards);
         }
 
         [HttpPost]
-        public IActionResult CreateGiftCard([FromBody] GiftCardCreateDTO request)
+        public async Task<ActionResult<GiftCard>> CreateGiftCard([FromBody] GiftCardCreateDTO request)
         {
-            _giftCardsService.placeholderMethod();
-            return Ok("Gift card created successfully.");
+            var giftCard = await _giftCardsService.CreateGiftCardAsync(request);
+
+            return CreatedAtAction(nameof(GetGiftCardBynid), new { nid = giftCard.Nid }, giftCard);
         } 
 
         [HttpGet("{nid}")]
-        public IActionResult GetGiftCardBynid(long nid)
+        public async Task<ActionResult<GiftCard>> GetGiftCardBynid(long nid)
         {
-            _giftCardsService.placeholderMethod();
-            return Ok($"Gift card {nid} fetched successfully.");
+            var giftCard = await _giftCardsService.GetGiftCardByNidAsync(nid);
+            return Ok(giftCard);
         }
 
         [HttpDelete("{nid}")]
-        public IActionResult DeleteGiftCard(long nid)
+        public async Task<IActionResult> DeleteGiftCard(long nid)
         {
-            _giftCardsService.placeholderMethod();
-            return Ok($"Gift card {nid} deleted successfully.");
+            await _giftCardsService.DeleteGiftCardAsync(nid);
+            return NoContent();
         }
     }
 }
