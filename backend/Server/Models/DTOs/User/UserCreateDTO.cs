@@ -39,6 +39,8 @@ public class UserCreateDTO
 
     [Range(1, long.MaxValue, ErrorMessage = "BossId must be a positive number")]
     public long? BossId { get; set; } = null;
+    [StringLength(50)]
+    public string? BankAccount { get; set; }
 
     [StringLength(50)]
     public string? WorkStart { get; set; }

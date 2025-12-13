@@ -12,6 +12,8 @@ public class UserUpdateDTO
     [EmailAddress(ErrorMessage = "Invalid email format")]
     [StringLength(100)]
     public string? Email { get; set; }
+    [StringLength(255, MinimumLength = 8, ErrorMessage = "Password must be at least 8 characters")]
+    public string? Password { get; set; }
 
     [Range(1, long.MaxValue, ErrorMessage = "UserType must be a positive number")]
     public long? UserType { get; set; }
@@ -31,6 +33,8 @@ public class UserUpdateDTO
 
     [Range(1, long.MaxValue, ErrorMessage = "BossId must be a positive number")]
     public long? BossId { get; set; }
+    [StringLength(50)]
+    public string? BankAccount { get; set; }
 
     [StringLength(50)]
     public string? WorkStart { get; set; }

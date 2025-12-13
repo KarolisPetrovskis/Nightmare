@@ -1,4 +1,6 @@
+using System.Threading.Tasks;
 using backend.Server.Interfaces;
+using backend.Server.Models.DatabaseObjects;
 using backend.Server.Models.DTOs.User;
 using Microsoft.AspNetCore.Mvc;
 
@@ -6,48 +8,75 @@ namespace backend.Server.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class EmployeesController : ControllerBase
+    public class EmployeesController(IEmployeesService employeesService) : ControllerBase
     {
-        private readonly IEmployeesService _employeesService;
-
-        public EmployeesController(IEmployeesService employeesService)
-        {
-            _employeesService = employeesService;
-        }
+        private readonly IEmployeesService _employeesService = employeesService;
 
         [HttpGet]
-        public IActionResult GetEmployees([FromQuery] UserGetAllDTO request)
+        public async Task<ActionResult<List<User>>> GetAllEmployees([FromQuery] UserGetAllDTO request)
         {
-            _employeesService.placeholderMethod();
-            return Ok("Employees fetched successfully.");
+            var employees = await _employeesService.GetAllEmployeesAsync(request.Page, request.PerPage);
+            return Ok(employees);
         }
 
         [HttpPost]
-        public IActionResult CreateEmployee([FromBody] UserCreateDTO request)
+        public async Task<ActionResult<User>> CreateEmployee([FromBody] UserCreateDTO request)
         {
-            _employeesService.placeholderMethod();
-            return Ok("Employee created successfully.");
+            var employee = new User
+            {
+                Name = request.Name,
+                Surname = request.Surname,
+                Email = request.Email,
+                Password = request.Password,
+                UserType = request.UserType,
+                Address = request.Address,
+                Telephone = request.Telephone,
+                PlanId = request.PlanId,
+                Salary = request.Salary,
+                BossId = request.BossId,
+                BankAccount = request.BankAccount
+            };
+
+            await _employeesService.CreateEmployeeAsync(employee);
+
+            return CreatedAtAction(nameof(GetEmployeeBynid), new { nid = employee.Nid }, employee);
         }
 
         [HttpGet("{nid}")]
-        public IActionResult GetEmployeeBynid(long nid)
+        public async Task<ActionResult<User>> GetEmployeeBynid(long nid)
         {
-            _employeesService.placeholderMethod();
-            return Ok($"Employee {nid} fetched successfully.");
+            var employee = await _employeesService.GetEmployeeByNidAsync(nid);
+            return Ok(employee);
         }
 
         [HttpPut("{nid}")]
-        public IActionResult UpdateEmployee([FromBody] UserUpdateDTO request, long nid)
+        public async Task<IActionResult> UpdateEmployee([FromBody] UserUpdateDTO request, long nid)
         {
-            _employeesService.placeholderMethod();
-            return Ok($"Employee {nid} updated successfully.");
+            var existingEmployee = await _employeesService.GetEmployeeByNidAsync(nid);
+
+            if (request.Name != null) existingEmployee.Name = request.Name;
+            if (request.Surname != null) existingEmployee.Surname = request.Surname;
+            if (request.Email != null) existingEmployee.Email = request.Email;
+            if (request.Password != null) existingEmployee.Password = request.Password;
+            if (request.UserType.HasValue) existingEmployee.UserType = request.UserType.Value;
+            if (request.Address != null) existingEmployee.Address = request.Address;
+            if (request.Telephone != null) existingEmployee.Telephone = request.Telephone;
+            if (request.PlanId.HasValue) existingEmployee.PlanId = request.PlanId;
+            if (request.Salary.HasValue) existingEmployee.Salary = request.Salary;
+            if (request.BossId.HasValue) existingEmployee.BossId = request.BossId;
+            if (request.BankAccount != null) existingEmployee.BankAccount = request.BankAccount;
+
+            await _employeesService.UpdateEmployeeAsync(existingEmployee);
+
+            return NoContent();
         }
 
         [HttpDelete("{nid}")]
-        public IActionResult DeleteEmployee(long nid)
+        public async Task<IActionResult> DeleteEmployee(long nid)
         {
-            _employeesService.placeholderMethod();
-            return Ok($"Employee {nid} deleted successfully.");
+            await _employeesService.DeleteEmployeeAsync(nid);
+            
+            return NoContent();
         }
     }
 }
