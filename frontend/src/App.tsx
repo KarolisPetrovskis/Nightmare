@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/NavBar/Navbar';
 import Home from './pages/Home/Home'
+// import Forecast from './pages/Forecast'
 import MenuManagement from './pages/MenuManagement/MenuManagement';
 import OrderManagement from './pages/OrderManagement/OrderManagement';
 import ServiceManagement from './pages/ServiceManagement/ServiceManagement';
@@ -11,6 +12,7 @@ import DishSelection from './pages/OrderManagement/DishSelection/DishSelection';
 import Login from './pages/Login/Login';
 import BusinessView from './pages/AdminPages/Business view/BusinessView';
 import WorkerManagement from './pages/AdminPages/Worker Management/WorkerManagement';
+import OrderHistory from './pages/OrderHistory/OrderHistory';
 
 export interface WeatherForecast {
   date: string;
@@ -47,6 +49,7 @@ export default function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/admin/business-view" element={<BusinessView />} />
               <Route path="/admin/worker-management" element={<WorkerManagement />} />
+              <Route path="/order-history" element={<OrderHistory />} />
             </Routes>
           </main>
           <div className="side-container" />
