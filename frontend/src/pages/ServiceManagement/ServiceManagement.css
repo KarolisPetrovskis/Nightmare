@@ -5,6 +5,34 @@
   margin-bottom: 16px;
 }
 
+.service-management .item-list-container {
+  flex: 0 0 300px; 
+  max-width: 320px;
+  min-width: 240px;
+}
+
+.service-management .info-container {
+  flex: 1 1 calc(100% - 340px);
+  min-width: 420px;
+}
+
+
+.service-management .item-card {
+  padding: 0.9rem;
+  font-size: 1rem;
+}
+
+
+.service-management .item-actions .item-action-button {
+  padding: 0.5rem 0 !important;
+  font-size: 0.95rem !important;
+}
+
+
+.service-management .item-list-pagination {
+  padding: 8px 0 14px;
+}
+
 .service-description {
   background-color: #2b2b2b;
   padding: 16px;

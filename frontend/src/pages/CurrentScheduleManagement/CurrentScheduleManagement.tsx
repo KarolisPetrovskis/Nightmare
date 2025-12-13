@@ -85,8 +85,11 @@ function getSlotIndex(time: string): number {
 
 export default function CurrentScheduleManagement() {
   const { date } = useParams<{ date: string }>();
+  // TODO: API call to fetch workers
   const [workers] = useState<Worker[]>(sampleWorkers);
+  // TODO: API call to fetch appointments for the selected date
   const [appointments, setAppointments] = useState<Appointment[]>(sampleAppointments);
+  // TODO: API call to fetch service types
   const [serviceTypes] = useState<ServiceType[]>(sampleServiceTypes);
   
   // Modal state
@@ -166,7 +169,8 @@ export default function CurrentScheduleManagement() {
       description: newAppointment.name,
     };
 
-  
+    // TODO: API call to create new appointment
+    
     // For now, update state directly (remove this when API is ready)
     setAppointments((prev) => [...prev, appointment]);
     

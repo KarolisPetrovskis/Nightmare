@@ -78,7 +78,7 @@ export default function ServiceManagement() {
     };
 
     return (
-        <div className="management">
+        <div className="management service-management">
             <div className="item-list-container">
                 <div className="item-actions">
                     <Button className="item-action-button new-item" onClick={handleNew}>New Service</Button>
