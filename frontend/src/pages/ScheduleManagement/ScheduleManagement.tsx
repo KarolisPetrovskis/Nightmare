@@ -1,5 +1,4 @@
 // TODO:
-// In the wireframe the ScheduleManagement does not display year, however when clicked on a day it navigates to CurrentScheduleManagement with year-month-day format (Probbably need to include year display here as well)
 // Improve Calendar design from aesthethics side
 
 import "./ScheduleManagement.css";
@@ -99,7 +98,7 @@ export default function ScheduleManagement() {
 
       <div className="calendar-wrapper">
         <div className="calendar">
-          <div className="calendar-month">{monthNames[month]}</div>
+          <div className="calendar-month">{monthNames[month]} {year}</div>
 
           <div className="calendar-grid">
             <div className="calendar-weekday">Mon</div>
