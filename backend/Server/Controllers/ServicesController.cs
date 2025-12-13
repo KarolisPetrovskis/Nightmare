@@ -1,4 +1,5 @@
 using backend.Server.Interfaces;
+using backend.Server.Models.DatabaseObjects;
 using backend.Server.Models.DTOs.Service;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,38 +17,37 @@ namespace backend.Server.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetServices([FromQuery] ServiceGetAllDTO request)
+        public async Task<ActionResult<List<Service>>> GetBusinessServices([FromQuery] ServiceGetAllDTO request)
         {
-            _servicesService.placeholderMethod();
-            return Ok("Services fetched successfully.");
+            var service = await _servicesService.GetServicesByBusinessId(request);
+            return Ok(service);
+        }
+        [HttpGet("{nid}")]
+        public async Task<ActionResult<Service>> GetServiceByNid(long nid)
+        {
+            var service = await _servicesService.GetServiceByNidAsync(nid);
+            return Ok(service);
         }
 
         [HttpPost]
-        public IActionResult CreateService([FromBody] ServiceCreateDTO request)
+        public async Task<ActionResult<Service>> CreateService([FromBody] ServiceCreateDTO request)
         {
-            _servicesService.placeholderMethod();
-            return Ok("Service created successfully.");
+            var service = await _servicesService.CreateServiceAsync(request);
+            return CreatedAtAction(nameof(GetServiceByNid), new { nid = service.Nid }, service);
         }
 
-        [HttpPut]
-        public IActionResult UpdateService([FromBody] ServiceUpdateDTO request)
+        [HttpPut("nid")]
+        public async Task<IActionResult> UpdateServiceAsync([FromBody] ServiceUpdateDTO request, long nid)
         {
-            _servicesService.placeholderMethod();
-            return Ok("Service updated successfully.");
-        }
-
-        [HttpGet("{nid}")]
-        public IActionResult GetServiceBynid(long nid)
-        {
-            _servicesService.placeholderMethod();
-            return Ok($"Service {nid} fetched successfully.");
+            await _servicesService.UpdateServiceAsync(request, nid);
+            return NoContent();
         }
 
         [HttpDelete("{nid}")]
-        public IActionResult DeleteService(long nid)         //Different from YAML, but DELETE with body is not a good practice
+        public async Task<IActionResult> DeleteService(long nid)         //Different from YAML, but DELETE with body is not a good practice
         {
-            _servicesService.placeholderMethod();
-            return Ok("Service deleted successfully.");
+            await _servicesService.DeleteServiceAsync(nid);
+            return NoContent();
         }
     }
 }
