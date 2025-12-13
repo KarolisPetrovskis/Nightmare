@@ -238,80 +238,76 @@ export default function CurrentScheduleManagement() {
       </div>
 
       {/* Add Appointment Modal */}
-      <Dialog 
-        open={isModalOpen} 
-        onClose={handleCloseModal}
-        PaperProps={{
-          className: "appointment-modal"
-        }}
-      >
-        <DialogContent className="appointment-modal-content">
-          <div className="info-box">
-            <label>Appointment name</label>
-            <input
-              type="text"
-              placeholder="name"
-              value={newAppointment.name}
-              onChange={(e) => handleInputChange("name", e.target.value)}
-            />
-          </div>
+      {isModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="info-box">
+              <label>Appointment name</label>
+              <input
+                type="text"
+                placeholder="name"
+                value={newAppointment.name}
+                onChange={(e) => handleInputChange("name", e.target.value)}
+              />
+            </div>
 
-          <div className="info-box">
-            <label>Serving employee</label>
-            <select
-              value={newAppointment.employeeId}
-              onChange={(e) => handleInputChange("employeeId", e.target.value)}
-            >
-              <option value="">employee from dropdown</option>
-              {workers.map((worker) => (
-                <option key={worker.id} value={worker.id}>
-                  {worker.name}
-                </option>
-              ))}
-            </select>
-          </div>
+            <div className="info-box">
+              <label>Serving employee</label>
+              <select
+                value={newAppointment.employeeId}
+                onChange={(e) => handleInputChange("employeeId", e.target.value)}
+              >
+                <option value="">employee from dropdown</option>
+                {workers.map((worker) => (
+                  <option key={worker.id} value={worker.id}>
+                    {worker.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          <div className="info-box">
-            <label>Service type</label>
-            <select
-              value={newAppointment.serviceTypeId}
-              onChange={(e) => handleInputChange("serviceTypeId", e.target.value)}
-            >
-              <option value="">service type from dropdown</option>
-              {serviceTypes.map((service) => (
-                <option key={service.id} value={service.id}>
-                  {service.name}
-                </option>
-              ))}
-            </select>
-          </div>
+            <div className="info-box">
+              <label>Service type</label>
+              <select
+                value={newAppointment.serviceTypeId}
+                onChange={(e) => handleInputChange("serviceTypeId", e.target.value)}
+              >
+                <option value="">service type from dropdown</option>
+                {serviceTypes.map((service) => (
+                  <option key={service.id} value={service.id}>
+                    {service.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          <div className="info-box">
-            <label>Service time start</label>
-            <input
-              type="time"
-              placeholder="time to start"
-              value={newAppointment.startTime}
-              onChange={(e) => handleInputChange("startTime", e.target.value)}
-              min={EARLIEST_SCHEDULED_TIME}
-              max={LATEST_SCHEDULED_TIME}
-            />
-          </div>
+            <div className="info-box">
+              <label>Service time start</label>
+              <input
+                type="time"
+                placeholder="time to start"
+                value={newAppointment.startTime}
+                onChange={(e) => handleInputChange("startTime", e.target.value)}
+                min={EARLIEST_SCHEDULED_TIME}
+                max={LATEST_SCHEDULED_TIME}
+              />
+            </div>
 
-          <div className="modal-actions">
-            <Button className="item-action-button new-item" onClick={handleCloseModal}>
-              Cancel
-            </Button>
-            <button
-              className={`save-button ${isFormValid ? "active" : ""}`}
-              onClick={handleSaveAppointment}
-              disabled={!isFormValid}
-            >
-              Save
-            </button>
+            <div className="modal-actions">
+              <Button className="item-action-button new-item" onClick={handleCloseModal}>
+                Cancel
+              </Button>
+              <button
+                className={`save-button ${isFormValid ? "active" : ""}`}
+                onClick={handleSaveAppointment}
+                disabled={!isFormValid}
+              >
+                Save
+              </button>
+            </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </div>
   );
 }

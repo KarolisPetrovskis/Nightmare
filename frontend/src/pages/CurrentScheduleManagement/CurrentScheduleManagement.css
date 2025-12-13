@@ -19,10 +19,10 @@
 }
 
 .add-appointment-btn {
+  background-color: #2d2d2d !important;
+  color: white !important;
   padding: 6px 12px !important;
   font-size: 0.75rem !important;
-  background-color: #2b2b2b !important;
-  color: #fff !important;
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
   border-radius: 4px !important;
   text-transform: none !important;
@@ -189,53 +189,34 @@
   }
 }
 
-/* Appointment Modal Styles */
-.appointment-modal {
-  background-color: #1a1a1a !important;
-  border-radius: 12px !important;
-  min-width: 400px;
+
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
 }
 
-.appointment-modal-content {
+.modal-content {
+  width: 340px;
+  max-width: calc(100% - 48px);
+  box-sizing: border-box;
+  max-height: 86vh;
+  overflow: auto;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 24px !important;
-  background-color: #1a1a1a;
-}
-
-.appointment-modal-content .info-box {
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background-color: #2b2b2b;
-  padding: 16px;
+  gap: 12px;
   border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.appointment-modal-content .info-box label {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #fff;
-  text-align: center;
-}
-
-.appointment-modal-content .info-box input,
-.appointment-modal-content .info-box select {
-  padding: 10px 12px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background-color: #fff;
-  color: #333;
-  font-size: 1rem;
-  text-align: center;
-}
-
-.appointment-modal-content .info-box input:focus,
-.appointment-modal-content .info-box select:focus {
-  outline: none;
-  border-color: #646cff;
+  padding: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  background-color: #2b2b2b;
+  border: 1px solid rgba(255,255,255,0.06);
+  flex: 0 0 auto;
 }
 
 .modal-actions {
@@ -244,7 +225,12 @@
   margin-top: 8px;
 }
 
-.modal-actions .save-button {
-  flex: 1;
-  margin-top: 0;
+.modal-close {
+  margin-left: 8px;
+  color: #ff5b5b;
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
 }
