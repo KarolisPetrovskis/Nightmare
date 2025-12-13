@@ -100,14 +100,11 @@ namespace backend.Server.Services
                     Addons = null
                 };
             }
-            else
-            {
-                return new MenuItemWithAddons
+            return new MenuItemWithAddons
                 {
                     MenuItem = menuItem,
                     Addons = addons.Result
                 };
-            }
         }
 
     }
