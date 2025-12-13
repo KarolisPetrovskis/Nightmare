@@ -5,21 +5,27 @@ import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 
+// TODO: In the wireframe there is no option for create business, only edit existing ones.
+// Need to confirm with team whether we should add this.
 interface Business {
   id: number;
+  address: string;
   name: string;
+  phone: string;
   email: string;
 }
 
 // Sample data
 const sampleBusinesses: Business[] = [
-  { id: 17138369, name: "Papa's cafeteria", email: "Papa.caf@gmail.com" },
-  { id: 15384654, name: "John's pizzeria", email: "Johnny.Cage@gmail.com" },
-  { id: 12374632, name: "KFC", email: "kfc@gmail.com" },
+  { id: 17138369, address: "123 Main St", name: "Papa's cafeteria", phone: "123-456-7890", email: "Papa.caf@gmail.com" },
+  { id: 15384654, address: "456 Elm St", name: "John's pizzeria", phone: "987-654-3210", email: "Johnny.Cage@gmail.com" },
+  { id: 12374632, address: "789 Oak St", name: "KFC", phone: "555-555-5555", email: "kfc@gmail.com" },
 ];
 
 const emptyBusiness = {
+  address: "",
   name: "",
+  phone: "",
   email: "",
 };
 
@@ -41,7 +47,9 @@ export default function BusinessView() {
     setIsEditMode(true);
     setEditingId(business.id);
     setFormData({
+      address: business.address,
       name: business.name,
+      phone: business.phone,
       email: business.email,
     });
     setIsModalOpen(true);
@@ -162,6 +170,26 @@ export default function BusinessView() {
           </div>
 
           <div className="info-box">
+            <label>Address *</label>
+            <input
+              type="text"
+              placeholder="Enter address"
+              value={formData.address}
+              onChange={(e) => handleInputChange("address", e.target.value)}
+            />
+          </div>
+
+          <div className="info-box">
+            <label>Phone *</label>
+            <input
+              type="text"
+              placeholder="Enter phone number"
+              value={formData.phone}
+              onChange={(e) => handleInputChange("phone", e.target.value)}
+            />
+          </div>
+
+          <div className="info-box">
             <label>Email *</label>
             <input
               type="email"
@@ -170,6 +198,7 @@ export default function BusinessView() {
               onChange={(e) => handleInputChange("email", e.target.value)}
             />
           </div>
+          
 
           <div className="modal-actions">
             <Button className="item-action-button delete-item" onClick={handleCloseModal}>
