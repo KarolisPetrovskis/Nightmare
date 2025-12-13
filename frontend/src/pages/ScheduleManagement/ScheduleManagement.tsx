@@ -3,8 +3,10 @@
 
 import "./ScheduleManagement.css";
 import "../../App.css";
+import "../Management.css";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Button from "@mui/material/Button";
 
 function getMonthMatrix(year: number, month: number) {
   // month: 0-11
@@ -112,21 +114,22 @@ export default function ScheduleManagement() {
             {matrix.map((row, ri) => (
               <div className="calendar-row" key={ri}>
                 {row.map((cell, ci) => (
-                  <div
+                  <Button
                     key={ci}
                     className={`day-cell ${cell.inMonth ? "in-month" : "out-month"}`}
                     onClick={() => handleDayClick(cell.day, cell.inMonth)}
-                    style={{ cursor: cell.inMonth ? "pointer" : "default" }}>
-                    <div className="day-number">{cell.day}</div>
-                  </div>
+                    disabled={!cell.inMonth}
+                  >
+                    <span className="day-number">{cell.day}</span>
+                  </Button>
                 ))}
               </div>
             ))}
           </div>
 
           <div className="calendar-actions">
-            <button className="calendar-btn" onClick={prev}>Previous month</button>
-            <button className="calendar-btn" onClick={next}>Next month</button>
+            <Button className="item-action-button new-item" onClick={prev}>Previous month</Button>
+            <Button className="item-action-button new-item" onClick={next}>Next month</Button>
           </div>
         </div>
       </div>
