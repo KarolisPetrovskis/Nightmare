@@ -71,7 +71,7 @@ public class VATService : IVATService
 
         if (vat == null)
         {
-            throw new ApiException(404, "Vat cannot be null");
+            throw new ApiException(404, "Vat rate not found");
         }  
 
         if (!string.IsNullOrEmpty(request.Name))
@@ -86,13 +86,13 @@ public class VATService : IVATService
         {
             vat.Percentage = request.Percentage;
         }
-
+        _context.Vats.Update(vat); 
         await Helper.SaveChangesOrThrowAsync(_context, "Internal server error", expectChanges: false);
     }
 
     public async Task<Vat> GetVatRateByNid(long nid)
     {   
-        var vat = await _context.Vats.Where(v => v.Nid == nid).FirstOrDefaultAsync() ?? throw new ApiException(404, $"Vat rate not found"); 
+        var vat = await _context.Vats.FindAsync(nid) ?? throw new ApiException(404, $"Vat rate not found"); 
         return vat;
     }
 
