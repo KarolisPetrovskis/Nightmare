@@ -2,6 +2,7 @@ import "./ServiceManagement.css";
 import "../Management.css";
 import Button from "@mui/material/Button";
 import { useState } from "react";
+import servicesData from "../servicesData.json";
 import PaginationComponent from "../../components/Pagination/PaginationComponent";
 import SnackbarNotification from "../../components/SnackBar/SnackNotification";
 
@@ -16,7 +17,7 @@ type Service = {
 };
 
 export default function ServiceManagement() {
-    const [services, setServices] = useState<Service[]>([]);
+    const [services, setServices] = useState<Service[]>(servicesData.services);
 
     const [selected, setSelected] = useState<Service | null>(null);
     const [deleteMode, setDeleteMode] = useState(false);
@@ -41,8 +42,7 @@ export default function ServiceManagement() {
     );
 
     const handleNew = () => {
-        const s: Service = { id: Date.now(), name: "", price: 0, discount: 0, durationMinutes: 30, description: "" };
-        setServices((p) => [...p, s]);
+        const s: Service = { id: -1, name: "", price: 0, discount: 0, durationMinutes: 30, description: "" };
         setSelected(s);
         setDirty(true);
     };
@@ -83,7 +83,14 @@ export default function ServiceManagement() {
             return;
         }
 
-        setServices((p) => p.map(s => s.id === selected.id ? selected : s));
+        if (selected.id === -1) {
+            const newService = { ...selected, id: Date.now() };
+            setServices((p) => [...p, newService]);
+            setSelected(newService);
+        } else {
+            setServices((p) => p.map(s => s.id === selected.id ? selected : s));
+        }
+
         setDirty(false);
         setSnackbar({
             open: true,
