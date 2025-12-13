@@ -7,7 +7,7 @@
   gap: 16px;
 }
 
-/* Main table area (left, dominant) */
+/* Main table area*/
 .worker-table-area {
   flex: 1;
   display: flex;
@@ -37,7 +37,7 @@
 .col-email { text-align: left }
 .col-action { text-align: center }
 
-/* Worker rows container (scrollable) */
+/* Worker rows container */
 .worker-table-rows {
   flex: 1;
   overflow-y: auto;
@@ -171,4 +171,108 @@
   .worker-table-row {
     grid-template-columns: 1fr 100px 120px auto;
   }
+}
+
+/* Modal styles */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+}
+
+.modal-content {
+  width: 500px;
+  max-width: calc(100% - 48px);
+  box-sizing: border-box;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  background-color: #2b2b2b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: #ffffff;
+}
+
+.modal-content .info-box {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: #1f1f1f;
+  padding: 12px;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.modal-content .info-box label {
+  font-size: 0.9rem;
+  color: #bdbdbd;
+  font-weight: 500;
+}
+
+.modal-content .info-box input {
+  padding: 8px;
+  border-radius: 4px;
+  border: none;
+  background-color: #2b2b2b;
+  color: white;
+  font-size: 1rem;
+}
+
+.modal-content .info-box input:focus {
+  outline: none;
+  background-color: #323232;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.modal-cancel-btn {
+  color: rgba(255, 255, 255, 0.87) !important;
+  text-transform: none !important;
+  font-weight: 500 !important;
+  font-size: 0.95rem !important;
+  background-color: #2d2d2d !important;
+  border-radius: 6px !important;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  padding: 10px 20px !important;
+}
+
+.modal-cancel-btn:hover {
+  background-color: #b33e3e !important;
+  color: #fff !important;
+}
+
+.modal-save-btn {
+  color: rgba(255, 255, 255, 0.87) !important;
+  text-transform: none !important;
+  font-weight: 500 !important;
+  font-size: 0.95rem !important;
+  background-color: #2d2d2d !important;
+  border-radius: 6px !important;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  padding: 10px 20px !important;
+}
+
+.modal-save-btn:hover {
+  background-color: #4caf50 !important;
+  color: #fff !important;
 }
