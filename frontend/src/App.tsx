@@ -13,6 +13,7 @@ import Login from './pages/Login/Login';
 import BusinessView from './pages/AdminPages/Business view/BusinessView';
 import WorkerManagement from './pages/AdminPages/Worker Management/WorkerManagement';
 import OrderHistory from './pages/OrderHistory/OrderHistory';
+import { OrderProvider } from './context/OrderContext';
 
 export interface WeatherForecast {
   date: string;
@@ -33,6 +34,7 @@ export default function App() {
 
   return (
     <>
+    <OrderProvider>
       <div className="root-container">
         {location.pathname !== '/login' && <Navbar />}
         <div className="content-wrapper">
@@ -55,6 +57,7 @@ export default function App() {
           <div className="side-container" />
         </div>
       </div>
+      </OrderProvider>
     </>
   );
 }
