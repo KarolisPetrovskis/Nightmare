@@ -9,5 +9,7 @@ namespace backend.Server.Interfaces
         Task<MenuItemIngredient> GetMenuAddonByNidAsync(long nid);
         Task UpdateMenuAddonAsync(MenuItemIngredient menuAddon);
         Task DeleteMenuAddonAsync(long nid);
+        Task<List<MenuItemIngredient>> GetMenuAddonsByMenuItemNidAsync(long menuItemNid);
+
     }
 }

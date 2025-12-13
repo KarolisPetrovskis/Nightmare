@@ -4,13 +4,14 @@ using backend.Server.Models.DatabaseObjects;
 using Microsoft.EntityFrameworkCore;
 using backend.Server.Exceptions;
 using backend.Server._helpers;
+using backend.Server.Models.Helper;
 
 namespace backend.Server.Services
 {
-    public class MenuService(ApplicationDbContext context) : IMenuService
+    public class MenuService(ApplicationDbContext context, MenuAddonsService service) : IMenuService
     {
         private readonly ApplicationDbContext _context = context;
-
+        private readonly MenuAddonsService _menuAddonsService = service;
         public async Task<List<MenuItem>> GetMenuItemsAsync(long businessId, int page, int perPage)
         {
             if (businessId <= 0)
@@ -78,5 +79,32 @@ namespace backend.Server.Services
 
             await Helper.SaveChangesOrThrowAsync(_context, "Failed to delete menu item.");
         }
+
+        public async Task<MenuItemWithAddons> GetMenuItemWithAddonsAsync(long nid)
+        {
+            var menuItem = await GetMenuItemByNidAsync(nid);
+            if (menuItem == null)
+            {
+                throw new ApiException(404, $"Menu item {nid} not found.");
+            }
+            var addons = _menuAddonsService.GetMenuAddonsByMenuItemNidAsync(nid);
+            if (addons == null || addons.Result.Count == 0)
+            {
+                return new MenuItemWithAddons
+                {
+                    MenuItem = menuItem,
+                    Addons = null
+                };
+            }
+            else
+            {
+                return new MenuItemWithAddons
+                {
+                    MenuItem = menuItem,
+                    Addons = addons.Result
+                };
+            }
+        }
+
     }
 }
