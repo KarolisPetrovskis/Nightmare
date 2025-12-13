@@ -1,5 +1,5 @@
 import { AppBar, Toolbar, Button, Box, Typography } from '@mui/material';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import styles from './Navbar.module.css';
 import NightlightRoundIcon from '@mui/icons-material/NightlightRound';
 
@@ -12,6 +12,7 @@ const links = [
 
 export default function Navbar() {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const getCurrentPageTitle = () => {
     if (location.pathname.startsWith('/current-schedule-management/')) {
@@ -25,7 +26,7 @@ export default function Navbar() {
   return (
     <AppBar position="sticky" className={styles.appBar}>
       <Toolbar className={styles.toolbar}>
-        <Typography variant="h6" className={styles.businessName} sx={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <Typography variant="h6" className={styles.businessName} sx={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => navigate('/')}>
           <NightlightRoundIcon fontSize="large"/> Nightmare 
         </Typography>
 
@@ -35,7 +36,7 @@ export default function Navbar() {
 
         <Box className={styles.rightButtons}>
           <Button className={styles.navButton} onClick={() => {}}>Options</Button>
-          <Button className={styles.navButton} onClick={() => {}}>Sign out</Button>
+          <Button className={styles.navButton} onClick={() => navigate('/login')}>Log out</Button>
         </Box>
       </Toolbar>
     </AppBar>
