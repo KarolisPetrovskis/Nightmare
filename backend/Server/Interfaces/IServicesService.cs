@@ -6,14 +6,14 @@ namespace backend.Server.Interfaces
     public interface IServicesService
         {
 
-        Task<List<Service>> GetServicesByBusinessId(long businessId, int page, int perPage);
+        Task<List<Service>> GetServicesByBusinessId(ServiceGetAllDTO request);
 
-        Task CreateServiceAsync(Service service);
+        Task<Service> CreateServiceAsync(ServiceCreateDTO request);
 
         Task UpdateServiceAsync(ServiceUpdateDTO request, long nid);
 
         Task DeleteServiceAsync(long serviceId);
 
-        Task<Service> GetServiceByNid(long serviceId);
+        Task<Service?> GetServiceByNid(long serviceId);
         }
-    }       
+    }
