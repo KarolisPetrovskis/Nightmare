@@ -14,7 +14,7 @@ namespace backend.Server.Controllers
         [HttpGet]
         public async Task<ActionResult<List<MenuItemIngredient>>> GetMenuAddons([FromQuery] MenuAddonsGetAllDTO request)
         {
-            var result = await _menuAddonsService.GetAllMenuAddonsAsync(request.Page, request.PerPage);
+            var result = await _menuAddonsService.GetAllMenuAddonsAsync(request);
             
             return Ok(result);
         }
@@ -22,14 +22,7 @@ namespace backend.Server.Controllers
         [HttpPost]
         public async Task<ActionResult<MenuItemIngredient>> CreateMenuAddon([FromBody] MenuAddonCreateDTO request)
         {
-            MenuItemIngredient menuAddon = new()
-            {
-                Name = request.Name,
-                ItemId = request.ItemId,
-                Price = request.Price
-            };
-
-            await _menuAddonsService.CreateMenuAddonAsync(menuAddon);
+            var menuAddon = await _menuAddonsService.CreateMenuAddonAsync(request);
 
             return CreatedAtAction(nameof(GetMenuAddonByNid), new { nid = menuAddon.Nid }, menuAddon);
         }
@@ -38,19 +31,14 @@ namespace backend.Server.Controllers
         public async Task<ActionResult<MenuItemIngredient>> GetMenuAddonByNid(long nid)
         {
             var result = await _menuAddonsService.GetMenuAddonByNidAsync(nid);
+
             return Ok(result);
         }
 
         [HttpPut("{nid}")]
         public async Task<IActionResult> UpdateMenuAddon(long nid, [FromBody] MenuAddonUpdateDTO request)
         {
-            var menuAddon = await _menuAddonsService.GetMenuAddonByNidAsync(nid);
-
-            if (request.Name != null) menuAddon.Name = request.Name;
-            if (request.ItemId.HasValue) menuAddon.ItemId = request.ItemId.Value;
-            if (request.Price.HasValue) menuAddon.Price = request.Price.Value;
-
-            await _menuAddonsService.UpdateMenuAddonAsync(menuAddon);
+            await _menuAddonsService.UpdateMenuAddonAsync(request, nid);
 
             return NoContent();
         }
@@ -59,6 +47,7 @@ namespace backend.Server.Controllers
         public async Task<IActionResult> DeleteMenuAddon(long nid)
         {
             await _menuAddonsService.DeleteMenuAddonAsync(nid);
+
             return NoContent();
         }
     }

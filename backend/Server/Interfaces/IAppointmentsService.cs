@@ -1,4 +1,5 @@
 using backend.Server.Models.DatabaseObjects;
+using backend.Server.Models.DTOs.Appointment;
 
 namespace backend.Server.Interfaces
 {
@@ -7,9 +8,9 @@ namespace backend.Server.Interfaces
         Task<List<Appointment>> GetAllAppointmentsAsync(int page, int perPage);
         Task<List<Appointment>> TrimAppointmentsByEmployeeIdAsync(List<Appointment> appointments, long employeeId);
         Task<List<Appointment>> TrimAppointmentsByDateAsync(List<Appointment> appointments, DateTime date);
-        Task CreateAppointmentAsync(Appointment appointment);
+        Task<Appointment> CreateAppointmentAsync(AppointmentCreateDTO request);
         Task<Appointment> GetAppointmentByNidAsync(long nid);
-        Task UpdateAppointmentAsync(Appointment appointment);
+        Task UpdateAppointmentAsync(AppointmentUpdateDTO request, long nid);
         Task DeleteAppointmentAsync(long nid);
     }
 }
