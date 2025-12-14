@@ -12,7 +12,7 @@ import DishSelection from './pages/OrderManagement/DishSelection/DishSelection';
 import Login from './pages/Login/Login';
 import BusinessView from './pages/AdminPages/Business view/BusinessView';
 import WorkerManagement from './pages/AdminPages/Worker Management/WorkerManagement';
-import OrderHistory from './pages/OrderHistory/OrderHistory';
+import OrderHistory from './pages/AdminPages/OrderHistory/OrderHistory';
 import { OrderProvider } from './context/OrderContext';
 
 export interface WeatherForecast {

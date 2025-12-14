@@ -34,10 +34,10 @@ namespace backend.Server.Services
         }
         public async Task<Business> CreateBusiness(BusinessCreateDTO request)
         {
-            if (string.IsNullOrWhiteSpace(request.Name) || request.OwnerId < 0 || request.Type < 0 )
+            if (string.IsNullOrWhiteSpace(request.Name) || request.OwnerId <= 0 || request.Type <= 0 )
                 throw new ApiException(400, "Bad Data imputed");
             
-            var  bus = new Business
+            var bus = new Business
             {
                 Name = request.Name,
                 OwnerId = request.OwnerId,
