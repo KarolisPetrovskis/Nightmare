@@ -11,6 +11,6 @@ namespace backend.Server.Interfaces
         Task UpdateMenuAddonAsync(MenuAddonUpdateDTO request, long nid);
         Task DeleteMenuAddonAsync(long nid);
         Task<List<MenuItemIngredient>> GetMenuAddonsByMenuItemNidAsync(long menuItemNid);
-
+        Task<List<MenuItemIngredient>> GetMenuAddonsByGroupNidAsync(long groupNid);
     }
 }

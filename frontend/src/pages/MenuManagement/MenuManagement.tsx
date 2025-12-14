@@ -2,9 +2,10 @@ import '../Management.css';
 import './MenuManagement.css';
 import Button from '@mui/material/Button';
 import { useState, useEffect } from "react";
-import dishesData from '../dishesData.json';
 import PaginationComponent from '../../components/Pagination/PaginationComponent';
 import SnackbarNotification from '../../components/SnackBar/SnackNotification';
+import { menuApi, type MenuCreateDTO, type MenuUpdateDTO } from '../../services/menuService';
+import { menuAddonsApi, ingredientGroupsApi, type MenuAddonCreateDTO, type MenuAddonUpdateDTO, type MenuItemIngredientGroupCreateDTO } from '../../services/menuAddonsService';
 
 type Option = {
   id: number;
@@ -28,11 +29,12 @@ type MenuItem = {
   optionGroups: OptionGroup[];
 };
 
+const BUSINESS_ID = 1; // TODO: Get from auth context
+const VAT_ID_STANDARD = 1; // TODO: Map VAT types properly
 
 export default function MenuManagement() {
-  const [items, setItems] = useState<MenuItem[]>(
-    dishesData.dishes.map(d => ({ ...d, optionGroups: d.optionTrees || [] }))
-  );
+  const [items, setItems] = useState<MenuItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [editableItem, setEditableItem] = useState<MenuItem | null>(null);
   const [itemDirty, setItemDirty] = useState(false);
@@ -55,6 +57,35 @@ export default function MenuManagement() {
   const [treePage, setTreePage] = useState(1);
   const treesPerPage = 3;
 
+  useEffect(() => {
+    loadMenuItems();
+  }, []);
+
+  const loadMenuItems = async () => {
+    try {
+      setLoading(true);
+      const apiItems = await menuApi.getMenu(BUSINESS_ID);
+      const transformedItems = apiItems.map(item => ({
+        id: item.nid,
+        name: item.name,
+        price: item.price,
+        discount: item.discount || 0,
+        discountExpiration: item.discountTime || "",
+        vat: "standard",
+        optionGroups: []
+      }));
+      setItems(transformedItems);
+    } catch (error) {
+      console.error('Failed to load menu items:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to load menu items',
+        type: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const toggleDeleteMode = () => {
     setDeleteMode((prev) => !prev);
@@ -91,7 +122,7 @@ export default function MenuManagement() {
   }, [editableItem, selectedItem]);
 
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!editableItem) return;
 
     let errorMessage = '';
@@ -108,8 +139,8 @@ export default function MenuManagement() {
           break;
         }
         for (const opt of group.options) {
-          if (!opt.name.trim() || isNaN(opt.price) || opt.price < 0) {
-            errorMessage = 'All options must have a name and a valid price (>=0).';
+          if (!opt.name.trim() || isNaN(opt.price) || opt.price <= 0) {
+            errorMessage = 'All options must have a name and a valid price (>0).';
             break;
           }
         }
@@ -126,47 +157,223 @@ export default function MenuManagement() {
       return;
     }
 
-    if (editableItem.id === -1) {
-      const newItem = { ...editableItem, id: Date.now() };
-      setItems(prev => [...prev, newItem]);
-      setSelectedItem(newItem);
-    } else {
-      setItems(prev =>
-        prev.map(i => i.id === editableItem.id ? editableItem : i)
-      );
-    }
+    try {
+      if (editableItem.id === -1) {
+        const createData: MenuCreateDTO = {
+          name: editableItem.name,
+          businessId: BUSINESS_ID,
+          price: editableItem.price,
+          discount: editableItem.discount || null,
+          vatId: VAT_ID_STANDARD,
+          discountTime: editableItem.discountExpiration || null
+        };
+        const newItem = await menuApi.createMenuItem(createData);
 
-    setItemDirty(false);
-    setOptionsDirty(false);
-    setSnackbar({
-      open: true,
-      message: 'Dish saved successfully!',
-      type: 'success',
-    });
-  };
+        // Create ingredient groups and addons on backend
+        const createdGroups: OptionGroup[] = [];
+        for (const group of editableItem.optionGroups) {
+          // Create the group
+          const groupData: MenuItemIngredientGroupCreateDTO = {
+            name: group.name,
+            menuItemId: newItem.nid
+          };
+          const createdGroup = await ingredientGroupsApi.createGroup(groupData);
 
+          // Create addons for this group
+          const createdAddons: Array<{ nid: number; name: string; price: number }> = [];
+          for (const addon of group.options) {
+            const addonData: MenuAddonCreateDTO = {
+              name: addon.name,
+              groupId: createdGroup.nid,
+              price: addon.price
+            };
+            const created = await menuAddonsApi.createAddon(addonData);
+            createdAddons.push(created);
+          }
 
-  const handleItemClick = (item: MenuItem) => {
-    if (!deleteMode) {
-      setSelectedItem(item);
-      setEditableItem({ ...item });
-      setItemDirty(false);
-    }
-  };
+          createdGroups.push({
+            id: createdGroup.nid,
+            name: createdGroup.name,
+            options: createdAddons.map(addon => ({
+              id: addon.nid,
+              name: addon.name,
+              price: addon.price
+            }))
+          });
+        }
 
-  const handleDeleteDish = (id: number) => {
-    setItems(prev => prev.filter(i => i.id !== id));
-    if (selectedItem?.id === id) {
-      setSelectedItem(null);
-      setEditableItem(null);
+        const localItem = {
+          id: newItem.nid,
+          name: newItem.name,
+          price: newItem.price,
+          discount: newItem.discount || 0,
+          discountExpiration: newItem.discountTime || "",
+          vat: "standard",
+          optionGroups: createdGroups
+        };
+        setItems(prev => [...prev, localItem]);
+        setSelectedItem(localItem);
+        setEditableItem(localItem);
+      } else {
+        const updateData: MenuUpdateDTO = {
+          name: editableItem.name,
+          price: editableItem.price,
+          discount: editableItem.discount || null,
+          vatId: VAT_ID_STANDARD,
+          discountTime: editableItem.discountExpiration || null
+        };
+        await menuApi.updateMenuItem(editableItem.id, updateData);
+
+        // Sync groups and addons with backend
+        if (optionsDirty && selectedItem) {
+          const existingGroups = await ingredientGroupsApi.getGroupsByMenuItemNid(editableItem.id);
+          const existingGroupIds = new Set(existingGroups.map(g => g.nid));
+          const currentGroupIds = new Set(editableItem.optionGroups.filter(g => g.id > 0).map(g => g.id));
+
+          // Delete removed groups (this will cascade delete addons)
+          for (const group of existingGroups) {
+            if (!currentGroupIds.has(group.nid)) {
+              await ingredientGroupsApi.deleteGroup(group.nid);
+            }
+          }
+
+          // Process each group
+          for (const group of editableItem.optionGroups) {
+            if (group.id <= 0) {
+              // Create new group
+              const groupData: MenuItemIngredientGroupCreateDTO = {
+                name: group.name,
+                menuItemId: editableItem.id
+              };
+              const createdGroup = await ingredientGroupsApi.createGroup(groupData);
+              
+              // Create addons for new group
+              for (const option of group.options) {
+                const addonData: MenuAddonCreateDTO = {
+                  name: option.name,
+                  groupId: createdGroup.nid,
+                  price: option.price
+                };
+                await menuAddonsApi.createAddon(addonData);
+              }
+            } else {
+              // Update existing group
+              // Get existing addons for this group
+              const existingAddons = await menuAddonsApi.getAddonsByGroupNid(group.id);
+              const existingAddonIds = new Set(existingAddons.map(a => a.nid));
+              const currentAddonIds = new Set(group.options.filter(o => o.id > 0).map(o => o.id));
+
+              // Delete removed addons
+              for (const addon of existingAddons) {
+                if (!currentAddonIds.has(addon.nid)) {
+                  await menuAddonsApi.deleteAddon(addon.nid);
+                }
+              }
+
+              // Create/update addons
+              for (const option of group.options) {
+                if (option.id <= 0) {
+                  // Create new addon
+                  const addonData: MenuAddonCreateDTO = {
+                    name: option.name,
+                    groupId: group.id,
+                    price: option.price
+                  };
+                  await menuAddonsApi.createAddon(addonData);
+                } else if (existingAddonIds.has(option.id)) {
+                  // Update existing addon
+                  const addonData: MenuAddonUpdateDTO = {
+                    name: option.name,
+                    price: option.price
+                  };
+                  await menuAddonsApi.updateAddon(option.id, addonData);
+                }
+              }
+            }
+          }
+        }
+
+        setItems(prev =>
+          prev.map(i => i.id === editableItem.id ? editableItem : i)
+        );
+      }
+
       setItemDirty(false);
       setOptionsDirty(false);
+      setSnackbar({
+        open: true,
+        message: 'Dish saved successfully!',
+        type: 'success',
+      });
+    } catch (error) {
+      console.error('Save error:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to save dish',
+        type: 'error',
+      });
     }
-    setSnackbar({
-      open: true,
-      message: 'Dish deleted successfully.',
-      type: 'success',
-    });
+  };
+
+
+  const handleItemClick = async (item: MenuItem) => {
+    if (!deleteMode) {
+      try {
+        // Load ingredient groups for this menu item
+        const groups = await ingredientGroupsApi.getGroupsByMenuItemNid(item.id);
+        
+        // Load addons for each group
+        const optionGroups: OptionGroup[] = await Promise.all(
+          groups.map(async (group) => {
+            const addons = await menuAddonsApi.getAddonsByGroupNid(group.nid);
+            return {
+              id: group.nid,
+              name: group.name,
+              options: addons.map(addon => ({
+                id: addon.nid,
+                name: addon.name,
+                price: addon.price
+              }))
+            };
+          })
+        );
+
+        const itemWithAddons = { ...item, optionGroups };
+        setSelectedItem(itemWithAddons);
+        setEditableItem({ ...itemWithAddons });
+        setItemDirty(false);
+      } catch (error) {
+        console.error('Failed to load groups and addons:', error);
+        setSelectedItem(item);
+        setEditableItem({ ...item });
+        setItemDirty(false);
+      }
+    }
+  };
+
+  const handleDeleteDish = async (id: number) => {
+    try {
+      await menuApi.deleteMenuItem(id);
+      setItems(prev => prev.filter(i => i.id !== id));
+      if (selectedItem?.id === id) {
+        setSelectedItem(null);
+        setEditableItem(null);
+        setItemDirty(false);
+        setOptionsDirty(false);
+      }
+      setSnackbar({
+        open: true,
+        message: 'Dish deleted successfully.',
+        type: 'success',
+      });
+    } catch (error) {
+      console.error('Delete error:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to delete dish',
+        type: 'error',
+      });
+    }
   };
 
 
@@ -199,7 +406,11 @@ export default function MenuManagement() {
 
         <h3 className="item-list-label">Dish List</h3>
         <div className="item-list">
-          {items
+          {loading ? (
+            <p style={{ opacity: 0.5, padding: '20px' }}>Loading...</p>
+          ) : items.length === 0 ? (
+            <p style={{ opacity: 0.5, padding: '20px' }}>No dishes found. Create one!</p>
+          ) : items
             .slice((page - 1) * itemsPerPage, page * itemsPerPage)
             .map((item) => (
               <div

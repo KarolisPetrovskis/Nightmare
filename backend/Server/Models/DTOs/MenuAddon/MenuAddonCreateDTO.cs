@@ -8,10 +8,11 @@ public class MenuAddonCreateDTO
     public required string Name { get; set; }
 
     [Required]
-    [Range(1, long.MaxValue, ErrorMessage = "ItemId must be a positive number")]
-    public required long ItemId { get; set; }
+    [Range(1, long.MaxValue, ErrorMessage = "GroupId must be a positive number")]
+    public required long GroupId { get; set; }
 
     [Required]
     [Range(0, double.MaxValue, ErrorMessage = "Price must be non-negative")]
     public required decimal Price { get; set; }
 }
+

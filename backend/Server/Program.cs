@@ -49,6 +49,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IBusinessService, BusinessService>();
 builder.Services.AddScoped<IEmployeesService, EmployeesService>();
 builder.Services.AddScoped<IGiftCardsService, GiftCardsService>();
+builder.Services.AddScoped<IMenuItemIngredientGroupService, MenuItemIngredientGroupService>();
 builder.Services.AddScoped<IMenuAddonsService, MenuAddonsService>();
 builder.Services.AddScoped<IMenuService, MenuService>();
 builder.Services.AddScoped<IOrdersService, OrdersService>();

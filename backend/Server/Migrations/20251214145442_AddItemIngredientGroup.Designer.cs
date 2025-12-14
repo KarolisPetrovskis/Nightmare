@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using backend.Server.Database;
@@ -11,9 +12,11 @@ using backend.Server.Database;
 namespace Server.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251214145442_AddItemIngredientGroup")]
+    partial class AddItemIngredientGroup
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -147,6 +150,27 @@ namespace Server.Migrations
                     b.ToTable("GiftCard");
                 });
 
+            modelBuilder.Entity("backend.Server.Models.DatabaseObjects.ItemIngredientGroup", b =>
+                {
+                    b.Property<long>("Nid")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Nid"));
+
+                    b.Property<long>("MenuItemId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Nid");
+
+                    b.ToTable("ItemIngredientGroups");
+                });
+
             modelBuilder.Entity("backend.Server.Models.DatabaseObjects.MenuItem", b =>
                 {
                     b.Property<long>("Nid")
@@ -190,6 +214,9 @@ namespace Server.Migrations
                     b.Property<long?>("GroupId")
                         .HasColumnType("bigint");
 
+                    b.Property<long?>("ItemId")
+                        .HasColumnType("bigint");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
@@ -200,27 +227,6 @@ namespace Server.Migrations
                     b.HasKey("Nid");
 
                     b.ToTable("MenuItemIngredients");
-                });
-
-            modelBuilder.Entity("backend.Server.Models.DatabaseObjects.MenuItemIngredientGroup", b =>
-                {
-                    b.Property<long>("Nid")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Nid"));
-
-                    b.Property<long>("MenuItemId")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.HasKey("Nid");
-
-                    b.ToTable("MenuItemIngredientGroups");
                 });
 
             modelBuilder.Entity("backend.Server.Models.DatabaseObjects.Order", b =>

@@ -16,6 +16,7 @@ namespace backend.Server.Database
         public DbSet<GiftCard> GiftCard { get; set; }
         public DbSet<MenuItem> MenuItems { get; set; }
         public DbSet<MenuItemIngredient> MenuItemIngredients { get; set; }
+        public DbSet<MenuItemIngredientGroup> MenuItemIngredientGroups { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderDetail> OrderDetails { get; set; }
         public DbSet<OrderDetailAddOn> OrderDetailAddOns { get; set; }
