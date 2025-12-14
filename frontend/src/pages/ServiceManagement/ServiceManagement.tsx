@@ -1,23 +1,29 @@
 import "./ServiceManagement.css";
 import "../Management.css";
 import Button from "@mui/material/Button";
-import { useState } from "react";
-import servicesData from "../servicesData.json";
+import { useEffect, useState } from "react";
 import PaginationComponent from "../../components/Pagination/PaginationComponent";
 import SnackbarNotification from "../../components/SnackBar/SnackNotification";
 
 type Service = {
-    id: number;
+    nid?: number;
     name: string;
     price: number;
-    discount: number;
-    durationMinutes: number;
-    discountExpires?: string;
+    discount?: number;
+    timeMin: number;
+    vatId?: number;
+    businessId?: number;
+    discountTime?: string; // ISO datetime string (e.g., "2025-12-25T00:00:00Z")
     description?: string;
 };
 
+// Mock businessId - in production, get this from user context/auth
+const MOCK_BUSINESS_ID = 1;
+const MOCK_VAT_ID = 1;
+
 export default function ServiceManagement() {
-    const [services, setServices] = useState<Service[]>(servicesData.services);
+    const [services, setServices] = useState<Service[]>([]);
+    const [loading, setLoading] = useState(true);
 
     const [selected, setSelected] = useState<Service | null>(null);
     const [deleteMode, setDeleteMode] = useState(false);
@@ -36,13 +42,45 @@ export default function ServiceManagement() {
         type: 'success',
     });
 
+    // Fetch services from API on component mount
+    useEffect(() => {
+        const fetchServices = async () => {
+            setLoading(true);
+            try {
+                const response = await fetch(`/api/services?businessId=${MOCK_BUSINESS_ID}&page=1&perPage=100`);
+                if (!response.ok) throw new Error('Failed to fetch services');
+                const data = await response.json();
+                setServices(data);
+            } catch (error) {
+                console.error('Error fetching services:', error);
+                setSnackbar({
+                    open: true,
+                    message: 'Failed to load services',
+                    type: 'error',
+                });
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchServices();
+    }, []);
+
     const paginatedServices = services.slice(
         (page - 1) * servicesPerPage,
         page * servicesPerPage
     );
 
     const handleNew = () => {
-        const s: Service = { id: -1, name: "", price: 0, discount: 0, durationMinutes: 30, description: "" };
+        const s: Service = { 
+            nid: -1, 
+            name: "", 
+            price: 0, 
+            discount: 0, 
+            timeMin: 30, 
+            vatId: MOCK_VAT_ID,
+            businessId: MOCK_BUSINESS_ID,
+            description: "" 
+        };
         setSelected(s);
         setDirty(true);
     };
@@ -51,8 +89,26 @@ export default function ServiceManagement() {
 
     const handleServiceClick = (s: Service) => {
         if (deleteMode) {
-            setServices((p) => p.filter(x => x.id !== s.id));
-            if (selected?.id === s.id) setSelected(null);
+            if (!s.nid) return;
+            // Delete from API
+            fetch(`/api/services/${s.nid}`, { method: 'DELETE' })
+                .then(() => {
+                    setServices((p) => p.filter(x => x.nid !== s.nid));
+                    if (selected?.nid === s.nid) setSelected(null);
+                    setSnackbar({
+                        open: true,
+                        message: 'Service deleted',
+                        type: 'success',
+                    });
+                })
+                .catch((error) => {
+                    console.error('Error deleting service:', error);
+                    setSnackbar({
+                        open: true,
+                        message: 'Failed to delete service',
+                        type: 'error',
+                    });
+                });
         } else {
             setSelected({ ...s });
             setDirty(false);
@@ -66,11 +122,11 @@ export default function ServiceManagement() {
         setDirty(true);
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!selected) return;
 
         let errorMessage = '';
-        if (!selected.name.trim() || isNaN(selected.price) || selected.price <= 0 || isNaN(selected.durationMinutes) || selected.durationMinutes <= 0) {
+        if (!selected.name.trim() || isNaN(selected.price) || selected.price <= 0 || isNaN(selected.timeMin) || selected.timeMin <= 0) {
             errorMessage = 'Service name, valid price (>0), and service time (>0) are required.';
         }
 
@@ -83,20 +139,64 @@ export default function ServiceManagement() {
             return;
         }
 
-        if (selected.id === -1) {
-            const newService = { ...selected, id: Date.now() };
-            setServices((p) => [...p, newService]);
-            setSelected(newService);
-        } else {
-            setServices((p) => p.map(s => s.id === selected.id ? selected : s));
-        }
+        try {
 
-        setDirty(false);
-        setSnackbar({
-            open: true,
-            message: 'Service saved successfully!',
-            type: 'success',
-        });
+            if (selected.nid === -1 || !selected.nid) {
+                // Create new service
+                const createPayload = {
+                    name: selected.name,
+                    price: selected.price,
+                    discount: selected.discount || 0,
+                    timeMin: selected.timeMin,
+                    vatId: MOCK_VAT_ID,
+                    businessId: MOCK_BUSINESS_ID,
+                    description: selected.description || null,
+                    ...(selected.discountTime && { discountTime: selected.discountTime }),
+                };
+                const response = await fetch('/api/services', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(createPayload),
+                });
+                if (!response.ok) throw new Error('Failed to create service');
+                const newService = await response.json();
+                setServices((p) => [...p, newService]);
+                setSelected(newService);
+            } else {
+                // Update existing service
+                const updatePayload = {
+                    name: selected.name,
+                    price: selected.price,
+                    discount: selected.discount,
+                    timeMin: selected.timeMin,
+                    vatId: MOCK_VAT_ID,
+                    description: selected.description || null,
+                    ...(selected.discountTime && { discountTime: selected.discountTime }),
+                };
+                const response = await fetch(`/api/services/${selected.nid}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatePayload),
+                });
+                if (!response.ok) throw new Error('Failed to update service');
+                setServices((p) => p.map(s => s.nid === selected.nid ? selected : s));
+                setSelected(selected);
+            }
+
+            setDirty(false);
+            setSnackbar({
+                open: true,
+                message: 'Service saved successfully!',
+                type: 'success',
+            });
+        } catch (error) {
+            console.error('Error saving service:', error);
+            setSnackbar({
+                open: true,
+                message: 'Failed to save service',
+                type: 'error',
+            });
+        }
     };
 
     return (
@@ -110,28 +210,44 @@ export default function ServiceManagement() {
                 <h3 className="item-list-label">Services</h3>
 
                 <div className="item-list">
-                    {paginatedServices.map(s => (
-                        <div key={s.id} className={`item-card ${selected?.id === s.id ? 'selected' : ''}`} onClick={() => handleServiceClick(s)}>
-                            {s.name}
-                            {deleteMode && (
-                                <span
-                                    className="delete-x"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setServices((p) => p.filter(x => x.id !== s.id));
-                                        if (selected?.id === s.id) setSelected(null);
-                                        setSnackbar({
-                                            open: true,
-                                            message: 'Service deleted',
-                                            type: 'success',
-                                        });
-                                    }}
-                                >
-                                    ✖
-                                </span>
-                            )}
-                        </div>
-                    ))}
+                    {loading ? (
+                        <p style={{ opacity: 0.5 }}>Loading services...</p>
+                    ) : (
+                        paginatedServices.map(s => (
+                            <div key={s.nid} className={`item-card ${selected?.nid === s.nid ? 'selected' : ''}`} onClick={() => handleServiceClick(s)}>
+                                {s.name}
+                                {deleteMode && (
+                                    <span
+                                        className="delete-x"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (!s.nid) return;
+                                            fetch(`/api/services/${s.nid}`, { method: 'DELETE' })
+                                                .then(() => {
+                                                    setServices((p) => p.filter(x => x.nid !== s.nid));
+                                                    if (selected?.nid === s.nid) setSelected(null);
+                                                    setSnackbar({
+                                                        open: true,
+                                                        message: 'Service deleted',
+                                                        type: 'success',
+                                                    });
+                                                })
+                                                .catch((error) => {
+                                                    console.error('Error deleting service:', error);
+                                                    setSnackbar({
+                                                        open: true,
+                                                        message: 'Failed to delete service',
+                                                        type: 'error',
+                                                    });
+                                                });
+                                        }}
+                                    >
+                                        ✖
+                                    </span>
+                                )}
+                            </div>
+                        ))
+                    )}
                 </div>
 
                 <div className="item-list-pagination">
@@ -168,12 +284,24 @@ export default function ServiceManagement() {
 
                             <div className="info-box">
                                 <label>Service time to complete (min)</label>
-                                <input type="number" value={selected.durationMinutes} onChange={(e) => updateField('durationMinutes', parseInt(e.target.value || '0'))} />
+                                <input type="number" value={selected.timeMin} onChange={(e) => updateField('timeMin', parseInt(e.target.value || '0'))} />
                             </div>
 
                             <div className="info-box">
-                                <label>Discount expiration date</label>
-                                <input type="date" value={selected.discountExpires || ''} onChange={(e) => updateField('discountExpires', e.target.value)} />
+                                <label>Discount expiration date & time</label>
+                                <input 
+                                    type="datetime-local" 
+                                    value={selected.discountTime ? new Date(selected.discountTime).toISOString().slice(0, 16) : ''} 
+                                    onChange={(e) => {
+                                        if (e.target.value) {
+                                            // Convert datetime-local to ISO datetime string
+                                            const localDate = new Date(e.target.value);
+                                            updateField('discountTime', localDate.toISOString());
+                                        } else {
+                                            updateField('discountTime', undefined);
+                                        }
+                                    }} 
+                                />
                             </div>
                         </div>
 

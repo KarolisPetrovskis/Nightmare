@@ -23,6 +23,7 @@ namespace backend.Server.Services
                 {
                 BusinessId = request.BusinessId,
                 Discount = request.Discount,
+                DiscountTime = request.DiscountTime,
                 Name = request.Name,
                 Price = request.Price,
                 TimeMin = request.TimeMin,
@@ -103,6 +104,8 @@ namespace backend.Server.Services
                 service.VatId = request.VatId;
             if (request.TimeMin > 0)
                 service.TimeMin = request.TimeMin;
+            if (request.DiscountTime.HasValue)
+                service.DiscountTime = request.DiscountTime;
             request.Description = request.Description;
 
             _context.Services.Update(service);

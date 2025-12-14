@@ -14,7 +14,6 @@ public class ServiceCreateDTO
     [Required]
     [Range(1, int.MaxValue, ErrorMessage = "TimeMin must be at least 1 minute")]
     public required int TimeMin { get; set; }
-    // Should we add discount time so we can arrange its starting time?
 
     [Required]
     [Range(0, 100, ErrorMessage = "Discount must be between 0 and 100")]
@@ -27,6 +26,9 @@ public class ServiceCreateDTO
     [Required]
     [Range(1, long.MaxValue, ErrorMessage = "BusinessId must be a positive number")]
     public required long BusinessId { get; set; }
+
+    public DateTime? DiscountTime { get; set; }
+    // Need to add validation.
     [StringLength(1000, ErrorMessage = "Description can't be longer than 1000 characters")]
     public string? Description { get; set; }
 }

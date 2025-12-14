@@ -11,7 +11,6 @@ public class ServiceUpdateDTO
 
     [Range(1, int.MaxValue, ErrorMessage = "TimeMin must be at least 1 minute")]
     public int TimeMin { get; set; }
-    // Same problem with DiscountTIme as in ServiceCreateDTO
 
     [Range(0, 100, ErrorMessage = "Discount must be between 0 and 100")]
     public decimal? Discount { get; set; }
@@ -20,4 +19,7 @@ public class ServiceUpdateDTO
     public long VatId { get; set; }
     [StringLength(1000, ErrorMessage = "Description can't be longer than 1000 characters")]
     public string? Description { get; set; }
+
+    public DateTime? DiscountTime { get; set; }
+    //Need to add validation.
 }
