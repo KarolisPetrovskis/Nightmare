@@ -1,4 +1,6 @@
+using System.Threading.Tasks;
 using backend.Server.Interfaces;
+using backend.Server.Models.DatabaseObjects;
 using backend.Server.Models.DTOs.Business;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,38 +18,38 @@ namespace backend.Server.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetBusinesses([FromQuery] BusinessGetAllDTO request)
+        public async Task<ActionResult<List<Business>>> GetBusinessesByOwnerNid([FromQuery] BusinessGetAllByOwnerNidDTO request)
         {
-            _businessService.placeholderMethod();
-            return Ok("Businesses fetched successfully.");
+            var list = await _businessService.RetrieveAllBusinessbyOwnerNid(request);
+            return Ok(list);
         }
 
         [HttpPost]
-        public IActionResult CreateBusiness([FromBody] BusinessCreateDTO request)
+        public async Task<ActionResult<Business>> CreateBusiness([FromBody] BusinessCreateDTO request)
         {
-            _businessService.placeholderMethod();
-            return Ok("Business created successfully.");
+            var bus = await _businessService.CreateBusiness(request);
+            return CreatedAtAction(nameof(GetBusinessByNidAsync), new { nid = bus.Nid }, bus);
         }
 
         [HttpGet("{nid}")]
-        public IActionResult GetBusinessBynid(long nid)
+        public async Task<ActionResult<Business>> GetBusinessByNidAsync(long nid)
         {
-            _businessService.placeholderMethod();
-            return Ok($"Business {nid} fetched successfully.");
+            var bus = await _businessService.GetBusinessByNid(nid);
+            return Ok(bus);
         }
 
         [HttpPut("{nid}")]
-        public IActionResult UpdateBusiness([FromBody] BusinessUpdateDTO request, long nid)
+        public async Task<IActionResult> UpdateBusiness([FromBody] BusinessUpdateDTO request, long nid)
         {
-            _businessService.placeholderMethod();
-            return Ok($"Business {nid} updated successfully.");
+            await _businessService.UpdateBussiness(request, nid);
+            return NoContent();
         }
 
         [HttpDelete("{nid}")]
-        public IActionResult DeleteBusiness(long nid)
+        public async Task<IActionResult> DeleteBusiness(long nid)
         {
-            _businessService.placeholderMethod();
-            return Ok($"Business {nid} deleted successfully.");
+            await _businessService.DeleteBusiness(nid);
+            return NoContent();
         }
     }
 }

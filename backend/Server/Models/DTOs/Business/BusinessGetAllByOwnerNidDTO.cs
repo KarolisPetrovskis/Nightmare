@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 
 namespace backend.Server.Models.DTOs.Business;
-public class BusinessGetAllDTO
+public class BusinessGetAllByOwnerNidDTO
 {
     [Required]
     [Range(1, long.MaxValue, ErrorMessage = "OwnerId must be a positive number")]

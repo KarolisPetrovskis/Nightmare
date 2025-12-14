@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using backend.Server.Interfaces;
 using backend.Server.Models.DTOs.VAT;
 using Microsoft.AspNetCore.Mvc;
@@ -6,48 +7,52 @@ namespace backend.Server.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class VATController : ControllerBase
+    public class VatController : ControllerBase
     {
-        private readonly IVATService _vatService;
+        private readonly IVatService _vatService;
 
-        public VATController(IVATService vatService)
+        public VatController(IVatService vatService)
         {
             _vatService = vatService;
         }
 
         [HttpGet]
-        public IActionResult GetVATRates([FromQuery] VatGetAllDTO request)
+        public async Task<IActionResult> GetVatRatesAsync([FromQuery] VatGetAllDTO request)
         {
-            _vatService.placeholderMethod();
-            return Ok("VAT rates fetched successfully.");
+            var list = await _vatService.GetVatRates(request);
+            return Ok(list);
         }
 
         [HttpPost]
-        public IActionResult CreateVATRate([FromBody] VatCreateDTO request)
+        public async Task<IActionResult> CreateVatRateAsync([FromBody] VatCreateDTO request)
         {
-            _vatService.placeholderMethod();
-            return Ok("VAT rate created successfully.");
+            var vat = await _vatService.CreateVatRate(request);
+            return CreatedAtAction(nameof(GetVatRateBYNid), new { nid = vat.Nid }, vat);
+;
         }
 
-        [HttpPut]
-        public IActionResult UpdateVATRate([FromBody] VatUpdateDTO request)
+        [HttpPut("{nid}")]
+        public async Task<IActionResult> UpdateVatRate([FromBody] VatUpdateDTO request, long nid)
         {
-            _vatService.placeholderMethod();
-            return Ok("VAT rate updated successfully.");
+            await _vatService.UpdateVatRate(request, nid);
+            return NoContent();
         }
 
         [HttpGet("{nid}")]
-        public IActionResult GetVATRateBynid(long nid)
+        public async Task<IActionResult> GetVatRateBYNid(long nid)
         {
-            _vatService.placeholderMethod();
-            return Ok($"VAT rate {nid} fetched successfully.");
+            var vat = await _vatService.GetVatRateByNid(nid);
+            if (vat == null)
+                return NotFound();
+            else
+                return Ok(vat);
         }
 
         [HttpDelete("{nid}")]
-        public IActionResult DeleteVATRate(long nid)         //Different from YAML, but DELETE with body is not a good practice
+        public async Task<IActionResult> DeleteVATRate(long nid)         //Different from YAML, but DELETE with body is not a good practice
         {
-            _vatService.placeholderMethod();
-            return Ok("VAT rate deleted successfully.");
+            await _vatService.DeleteVatRate(nid);
+            return NoContent();
         }
     }
 }
