@@ -9,10 +9,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace backend.Server.Services
 {
-    public class MenuService(ApplicationDbContext context, MenuAddonsService service) : IMenuService
-    {
-        private readonly ApplicationDbContext _context = context;
-        private readonly MenuAddonsService _menuAddonsService = service;
+
+public class MenuService(ApplicationDbContext context, IMenuAddonsService menuAddonsService) : IMenuService
+{
+    private readonly ApplicationDbContext _context = context;
+    private readonly IMenuAddonsService _menuAddonsService = menuAddonsService;
+        
         public async Task<List<MenuItem>> GetMenuItemsAsync(long businessId, int page, int perPage)
         {
             if (businessId <= 0)
