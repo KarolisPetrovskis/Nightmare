@@ -1,22 +1,22 @@
+using backend.Server._helpers;
 using backend.Server.Database;
 using backend.Server.Exceptions;
 using backend.Server.Interfaces;
 using backend.Server.Models.DatabaseObjects;
 using backend.Server.Models.DTOs.VAT;
-using backend.Server.Models.Helpers;
 using Microsoft.EntityFrameworkCore;
 namespace backend.Server.Services;
 
-public class VatService : IVatService
+public class VATService : IVATService
 {
     private readonly ApplicationDbContext _context;
 
-    public VatService(ApplicationDbContext context)
+    public VATService(ApplicationDbContext context)
     {
         _context = context;
     }
 
-    public async Task<AllItems<Vat>> GetVatRates(VatGetAllDTO request)
+    public async Task<List<Vat>> GetVatRates(VatGetAllDTO request)
     {
 
         if (request.Page < 0)
@@ -27,22 +27,18 @@ public class VatService : IVatService
             {
                 throw new ApiException(400, "PerPage value must be greater than zero");
             }
-            AllItems<Vat> list = new AllItems<Vat>();
             if (request.Page == 0)
             {
-                list.List = await _context.Vats.ToListAsync();
-                list.Page = request.Page;
-                list.PerPage = request.PerPage;
-                return list;
+                return await _context.Vats
+                    .AsNoTracking()
+                    .ToListAsync();
             }
-            list.List = await _context.Vats
+
+            return await _context.Vats
                 .Skip((request.Page - 1) * request.PerPage)
                 .Take(request.PerPage)
                 .AsNoTracking()
                 .ToListAsync();
-            list.Page = request.Page;
-            list.PerPage = request.PerPage;
-            return list;
     }
 
     public async Task<Vat> CreateVatRate(VatCreateDTO request)
@@ -62,12 +58,7 @@ public class VatService : IVatService
         };
 
         _context.Vats.Add(vat);
-        int rowsAffected = await _context.SaveChangesAsync();
-
-        if (!(rowsAffected > 0))
-        {
-            throw new ApiException(500, "Internal server error");
-        }
+        await Helper.SaveChangesOrThrowAsync(_context, "Internal server error", expectChanges: true);
         return vat;
     }
 
@@ -76,11 +67,11 @@ public class VatService : IVatService
         if (request.Percentage < 0 || request.Percentage > 100 || string.IsNullOrWhiteSpace(request.Name))
             throw new ApiException(400, "Bad Data imputed");
 
-        var vat = await _context.Vats.Where(v => v.Nid == nid).FirstOrDefaultAsync();
+        var vat = await _context.Vats.FindAsync(nid);
 
         if (vat == null)
         {
-            throw new ApiException(404, "Vat cannot be null");
+            throw new ApiException(404, "Vat rate not found");
         }  
 
         if (!string.IsNullOrEmpty(request.Name))
@@ -95,19 +86,14 @@ public class VatService : IVatService
         {
             vat.Percentage = request.Percentage;
         }
-
-        int rowsAffected = await _context.SaveChangesAsync();
-
-        if (!(rowsAffected > 0))
-        {
-            throw new ApiException(500, "Internal server error");
-        }
-
+        _context.Vats.Update(vat); 
+        await Helper.SaveChangesOrThrowAsync(_context, "Internal server error", expectChanges: false);
     }
 
-    public async Task<Vat?> GetVatRateByNid(long nid)
+    public async Task<Vat> GetVatRateByNid(long nid)
     {   
-        return await _context.Vats.Where(v => v.Nid == nid).FirstOrDefaultAsync();
+        var vat = await _context.Vats.FindAsync(nid) ?? throw new ApiException(404, $"Vat rate not found"); 
+        return vat;
     }
 
     public async Task DeleteVatRate(long nid)
@@ -118,7 +104,7 @@ public class VatService : IVatService
             throw new ApiException(404, "Vat rate not found");
         }
         _context.Vats.Remove(vat);
-        await _context.SaveChangesAsync();
+        await Helper.SaveChangesOrThrowAsync(_context, "Internal server error", expectChanges: true);
     }
 
 }
