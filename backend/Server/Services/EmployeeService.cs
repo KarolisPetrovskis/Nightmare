@@ -129,17 +129,9 @@ namespace backend.Server.Services
             }
             var employee = await _context.Users.FindAsync(nid) ?? throw new ApiException(404, $"Employee with Nid {nid} not found.");
 
-            if (request.Name != null) employee.Name = request.Name;
-            if (request.Surname != null) employee.Surname = request.Surname;
             if (request.Email != null) employee.Email = request.Email;
             if (request.Password != null) employee.Password = request.Password;
             if (request.UserType.HasValue) employee.UserType = request.UserType.Value;
-            if (request.Address != null) employee.Address = request.Address;
-            if (request.Telephone != null) employee.Telephone = request.Telephone;
-            if (request.PlanId.HasValue) employee.PlanId = request.PlanId;
-            if (request.Salary.HasValue) employee.Salary = request.Salary;
-            if (request.BossId.HasValue) employee.BossId = request.BossId;
-            if (request.BankAccount != null) employee.BankAccount = request.BankAccount;
             if (request.BusinessId.HasValue) employee.BusinessId = request.BusinessId.Value;
 
             _context.Users.Update(employee);
