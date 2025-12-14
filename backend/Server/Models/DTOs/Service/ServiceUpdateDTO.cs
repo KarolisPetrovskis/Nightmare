@@ -18,4 +18,6 @@ public class ServiceUpdateDTO
 
     [Range(1, long.MaxValue, ErrorMessage = "VatId must be a positive number")]
     public long VatId { get; set; }
+    [StringLength(1000, ErrorMessage = "Description can't be longer than 1000 characters")]
+    public string? Description { get; set; }
 }
