@@ -28,11 +28,11 @@ namespace backend.Server.Controllers
         public async Task<ActionResult<Business>> CreateBusiness([FromBody] BusinessCreateDTO request)
         {
             var bus = await _businessService.CreateBusiness(request);
-            return CreatedAtAction(nameof(GetBusinessByNidAsync), new { nid = bus.Nid }, bus);
+            return CreatedAtAction(nameof(GetBusinessByNid), new { nid = bus.Nid }, bus);
         }
 
         [HttpGet("{nid}")]
-        public async Task<ActionResult<Business>> GetBusinessByNidAsync(long nid)
+        public async Task<ActionResult<Business>> GetBusinessByNid(long nid)
         {
             var bus = await _businessService.GetBusinessByNid(nid);
             return Ok(bus);

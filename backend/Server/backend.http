@@ -419,3 +419,148 @@ Accept: application/json
 DELETE {{backend_HostAddress}}/api/giftcards/1
 
 ###
+
+####################
+# BUSINESS TESTS
+####################
+
+# Create Business - Restaurant
+POST {{backend_HostAddress}}/api/business
+Content-Type: application/json
+
+{
+  "name": "The Golden Fork Restaurant",
+  "type": 1,
+  "ownerId": 1,
+  "address": "123 Main Street, Downtown",
+  "phone": "+1234567890",
+  "email": "contact@goldenfork.com"
+}
+
+###
+
+# Create Business - Cafe (minimal required fields)
+POST {{backend_HostAddress}}/api/business
+Content-Type: application/json
+
+{
+  "name": "Sunrise Cafe",
+  "type": 1,
+  "ownerId": 1
+}
+
+###
+
+# Create Business - Beauty Salon
+POST {{backend_HostAddress}}/api/business
+Content-Type: application/json
+
+{
+  "name": "Elegant Beauty Salon",
+  "type": 2,
+  "ownerId": 2,
+  "address": "456 Oak Avenue, Suite 200",
+  "phone": "+9876543210",
+  "email": "info@elegantbeauty.com"
+}
+
+###
+
+# Create Business - Spa & Wellness
+POST {{backend_HostAddress}}/api/business
+Content-Type: application/json
+
+{
+  "name": "Tranquility Spa",
+  "type": 2,
+  "ownerId": 1,
+  "address": "789 Pine Road",
+  "phone": "+1122334455",
+  "email": "bookings@tranquilityspa.com"
+}
+
+###
+
+# Get Business by Nid
+GET {{backend_HostAddress}}/api/business/1
+Accept: application/json
+
+###
+
+# Get All Businesses by Owner ID
+GET {{backend_HostAddress}}/api/business?ownerNid=1
+Accept: application/json
+
+###
+
+# Get All Businesses by Owner ID - Different owner
+GET {{backend_HostAddress}}/api/business?ownerNid=2
+Accept: application/json
+
+###
+
+# Get All Businesses by Owner ID with pagination
+GET {{backend_HostAddress}}/api/business?ownerNid=1&page=0&perPage=10
+Accept: application/json
+
+###
+
+# Update Business - Change name and contact info
+PUT {{backend_HostAddress}}/api/business/1
+Content-Type: application/json
+
+{
+  "name": "The Golden Fork Restaurant & Bar",
+  "address": "123 Main Street, Downtown District",
+  "phone": "+1234567899",
+  "email": "reservations@goldenfork.com"
+}
+
+###
+
+# Update Business - Change only name
+PUT {{backend_HostAddress}}/api/business/1
+Content-Type: application/json
+
+{
+  "name": "Golden Fork Bistro"
+}
+
+###
+
+# Update Business - Change only type
+PUT {{backend_HostAddress}}/api/business/1
+Content-Type: application/json
+
+{
+  "type": 2
+}
+
+###
+
+# Update Business - Change owner
+PUT {{backend_HostAddress}}/api/business/1
+Content-Type: application/json
+
+{
+  "ownerId": 3
+}
+
+###
+
+# Update Business - Update contact details only
+PUT {{backend_HostAddress}}/api/business/1
+Content-Type: application/json
+
+{
+  "address": "999 New Street, City Center",
+  "phone": "+1111222333",
+  "email": "newemail@goldenfork.com"
+}
+
+###
+
+# Delete Business
+DELETE {{backend_HostAddress}}/api/business/1
+
+###
