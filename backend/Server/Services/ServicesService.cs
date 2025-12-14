@@ -27,6 +27,7 @@ namespace backend.Server.Services
                 Price = request.Price,
                 TimeMin = request.TimeMin,
                 VatId = request.VatId,
+                Description = request.Description,
                 };
 
             _context.Services.Add(service);
@@ -102,6 +103,7 @@ namespace backend.Server.Services
                 service.VatId = request.VatId;
             if (request.TimeMin > 0)
                 service.TimeMin = request.TimeMin;
+            request.Description = request.Description;
 
             _context.Services.Update(service);
             await Helper.SaveChangesOrThrowAsync(_context, "Internal server error", expectChanges: false);

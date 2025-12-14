@@ -12,4 +12,5 @@ public class Service
     public DateTime? DiscountTime { get; set; }
     public required int TimeMin { get; set; }
     public required long BusinessId { get; set; }
+    public string? Description { get; set; }
     }

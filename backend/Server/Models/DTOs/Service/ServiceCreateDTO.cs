@@ -27,4 +27,6 @@ public class ServiceCreateDTO
     [Required]
     [Range(1, long.MaxValue, ErrorMessage = "BusinessId must be a positive number")]
     public required long BusinessId { get; set; }
+    [StringLength(1000, ErrorMessage = "Description can't be longer than 1000 characters")]
+    public string? Description { get; set; }
 }
