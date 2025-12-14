@@ -90,10 +90,27 @@
   text-transform: none !important;
   border-radius: 4px !important;
   transition: background-color 0.2s;
+  margin-right: 8px;
 }
 
 .more-details-btn:hover {
   background-color: #3e44b3 !important;
+}
+
+/* Delete button */
+.delete-btn {
+  padding: 6px 12px !important;
+  font-size: 0.85rem !important;
+  font-weight: 500 !important;
+  background-color: #2d2d2d !important;
+  color: #ff6b6b !important;
+  text-transform: none !important;
+  border-radius: 4px !important;
+  transition: background-color 0.2s;
+}
+
+.delete-btn:hover {
+  background-color: #5a3838 !important;
 }
 
 /* Right sidebar */
