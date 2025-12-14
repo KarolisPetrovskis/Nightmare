@@ -61,6 +61,11 @@
   text-transform: none !important;
 }
 
+.login-button:hover {
+  background-color: #6669ff !important;
+  color: #fff !important;
+}
+
 .login-button.Mui-disabled {
   background-color: #2f2f2f !important;
   color: #777 !important;

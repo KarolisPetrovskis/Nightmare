@@ -1,4 +1,4 @@
-import { AppBar, Toolbar, Button, Box, Typography } from '@mui/material';
+import { AppBar, Toolbar, Button, Box, Typography, colors } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import styles from './Navbar.module.css';
 import NightlightRoundIcon from '@mui/icons-material/NightlightRound';
@@ -32,7 +32,7 @@ export default function Navbar() {
   return (
     <AppBar position="sticky" className={styles.appBar}>
       <Toolbar className={styles.toolbar}>
-        <Typography variant="h6" className={styles.businessName} sx={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => navigate('/')}>
+        <Typography variant="h6" className={styles.businessName} sx={{ display: 'flex', alignItems: 'center', gap: '0.5rem'}} onClick={() => navigate('/')}>
           <NightlightRoundIcon fontSize="large"/> Nightmare 
         </Typography>
 
