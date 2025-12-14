@@ -11,6 +11,8 @@ public class BusinessUpdateDTO
 
     [Range(1, long.MaxValue, ErrorMessage = "OwnerId must be a positive number")]
     public long? OwnerId { get; set; }
+    public DateTime? WorkStart { get; set; }
+    public DateTime? WorkEnd { get; set; }
 
     [StringLength(500)]
     public string? Address { get; set; }

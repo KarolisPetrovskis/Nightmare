@@ -434,7 +434,9 @@ Content-Type: application/json
   "ownerId": 1,
   "address": "123 Main Street, Downtown",
   "phone": "+1234567890",
-  "email": "contact@goldenfork.com"
+  "email": "contact@goldenfork.com",
+  "workStart": "2025-12-15T09:00:00Z",
+  "workEnd": "2025-12-15T21:00:00Z"
 }
 
 ###
@@ -461,7 +463,9 @@ Content-Type: application/json
   "ownerId": 2,
   "address": "456 Oak Avenue, Suite 200",
   "phone": "+9876543210",
-  "email": "info@elegantbeauty.com"
+  "email": "info@elegantbeauty.com",
+  "workStart": "2025-12-15T09:00:00Z",
+  "workEnd": "2025-12-15T21:00:00Z"
 }
 
 ###
@@ -476,13 +480,15 @@ Content-Type: application/json
   "ownerId": 1,
   "address": "789 Pine Road",
   "phone": "+1122334455",
-  "email": "bookings@tranquilityspa.com"
+  "email": "bookings@tranquilityspa.com",
+  "workStart": "2025-12-15T10:00:00Z",
+  "workEnd": "2025-12-15T20:00:00Z"
 }
 
 ###
 
 # Get Business by Nid
-GET {{backend_HostAddress}}/api/business/1
+GET {{backend_HostAddress}}/api/business/14
 Accept: application/json
 
 ###

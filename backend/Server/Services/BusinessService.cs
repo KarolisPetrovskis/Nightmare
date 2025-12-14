@@ -36,17 +36,19 @@ namespace backend.Server.Services
         {
             if (string.IsNullOrWhiteSpace(request.Name) || request.OwnerId <= 0 || request.Type <= 0 )
                 throw new ApiException(400, "Bad Data imputed");
-            
+
             var bus = new Business
             {
                 Name = request.Name,
                 OwnerId = request.OwnerId,
                 Type = request.Type,
+                WorkStart = request.WorkStart,
+                WorkEnd = request.WorkEnd,
+                Address = request.Address,
+                Phone = request.Phone,
+                Email = request.Email
             };
-            bus.Address = request.Address;
-            bus.Phone = request.Phone;
-            bus.Email = request.Email;
-            
+
             _context.Businesses.Add(bus);
 
             await Helper.SaveChangesOrThrowAsync(_context, "Internal server error", expectChanges: true);
@@ -74,6 +76,14 @@ namespace backend.Server.Services
             if (request.Type != null)
             {
                 bus.Type = (long)request.Type;
+            }
+            if (request.WorkStart != null)
+            {
+                bus.WorkStart = (DateTime)request.WorkStart;
+            }
+            if (request.WorkEnd != null)
+            {
+                bus.WorkEnd = (DateTime)request.WorkEnd;
             }
             bus.Address = request.Address;
             bus.Phone = request.Phone;

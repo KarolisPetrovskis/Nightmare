@@ -9,6 +9,8 @@ public class Business
     // This is business type id
     public long Type { get; set; }
     public long OwnerId { get; set; }
+    public DateTime WorkStart { get; set; }
+    public DateTime WorkEnd { get; set; }
     public string? Address { get; set; }
     public string? Phone { get; set; }
     public string? Email { get; set; }
