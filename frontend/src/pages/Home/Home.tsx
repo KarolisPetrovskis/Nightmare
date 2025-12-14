@@ -75,7 +75,7 @@ export default function Home() {
 
         <DashboardButton
           icon={<HistoryIcon />}
-          label="Ordedr History"
+          label="Order History"
           color="#c9a0dc"
           onClick={() => navigate('/admin/order-history')}
         />
