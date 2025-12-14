@@ -14,6 +14,8 @@ interface Business {
   email?: string;
   type?: number;
   ownerId?: number;
+  workStart?: string;
+  workEnd?: string;
 }
 
 interface FormData {
@@ -23,6 +25,8 @@ interface FormData {
   email: string;
   type: number;
   ownerId: number;
+  workStart: string;
+  workEnd: string;
 }
 
 // Mock owner ID - in production, get this from user context/auth
@@ -36,6 +40,8 @@ const emptyBusiness: FormData = {
   email: "",
   type: MOCK_TYPE,
   ownerId: MOCK_OWNER_ID,
+  workStart: "09:00",
+  workEnd: "17:00",
 };
 
 export default function BusinessView() {
@@ -86,6 +92,17 @@ export default function BusinessView() {
   };
 
   const handleOpenEditModal = (business: Business) => {
+    // Extract HH:mm from workStart/workEnd if they contain full datetime
+    const extractTimeFromTimestamp = (timestamp?: string): string => {
+      if (!timestamp) return "09:00";
+      // Try to match HH:mm format
+      const timeMatch = timestamp.match(/(\d{2}):(\d{2})/);
+      if (timeMatch) {
+        return `${timeMatch[1]}:${timeMatch[2]}`;
+      }
+      return "09:00";
+    };
+
     setIsEditMode(true);
     setEditingId(business.nid);
     setFormData({
@@ -95,6 +112,8 @@ export default function BusinessView() {
       email: business.email || "",
       type: business.type || MOCK_TYPE,
       ownerId: business.ownerId || MOCK_OWNER_ID,
+      workStart: extractTimeFromTimestamp(business.workStart),
+      workEnd: extractTimeFromTimestamp(business.workEnd),
     });
     setIsModalOpen(true);
   };
@@ -113,6 +132,11 @@ export default function BusinessView() {
     try {
       if (isEditMode && editingId) {
         // Update existing business
+        // Convert time strings to ISO datetime (using today's date)
+        const today = new Date().toISOString().split('T')[0];
+        const workStartDateTime = `${today}T${formData.workStart}:00Z`;
+        const workEndDateTime = `${today}T${formData.workEnd}:00Z`;
+
         const response = await fetch(`/api/business/${editingId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -123,6 +147,8 @@ export default function BusinessView() {
             email: formData.email,
             type: formData.type,
             ownerId: formData.ownerId,
+            workStart: workStartDateTime,
+            workEnd: workEndDateTime,
           }),
         });
         if (!response.ok) throw new Error('Failed to update business');
@@ -140,6 +166,11 @@ export default function BusinessView() {
         });
       } else {
         // Create new business
+        // Convert time strings to ISO datetime (using today's date)
+        const today = new Date().toISOString().split('T')[0];
+        const workStartDateTime = `${today}T${formData.workStart}:00Z`;
+        const workEndDateTime = `${today}T${formData.workEnd}:00Z`;
+
         const response = await fetch('/api/business', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -150,6 +181,8 @@ export default function BusinessView() {
             email: formData.email,
             type: formData.type,
             ownerId: formData.ownerId,
+            workStart: workStartDateTime,
+            workEnd: workEndDateTime,
           }),
         });
         if (!response.ok) throw new Error('Failed to create business');
@@ -311,6 +344,34 @@ export default function BusinessView() {
               placeholder="Enter email address"
               value={formData.email}
               onChange={(e) => handleInputChange("email", e.target.value)}
+            />
+          </div>
+
+          <div className="info-box">
+            <label>Business Type</label>
+            <input
+              type="number"
+              placeholder="Enter business type"
+              value={formData.type}
+              onChange={(e) => handleInputChange("type", e.target.value)}
+            />
+          </div>
+
+          <div className="info-box">
+            <label>Work Starts</label>
+            <input
+              type="time"
+              value={formData.workStart}
+              onChange={(e) => handleInputChange("workStart", e.target.value)}
+            />
+          </div>
+
+          <div className="info-box">
+            <label>Work Ends</label>
+            <input
+              type="time"
+              value={formData.workEnd}
+              onChange={(e) => handleInputChange("workEnd", e.target.value)}
             />
           </div>
 

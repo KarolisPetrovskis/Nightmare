@@ -38,7 +38,7 @@ export default function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/admin/business-view" element={<BusinessView />} />
               <Route path="/admin/worker-management" element={<WorkerManagement />} />
-              <Route path="/order-history" element={<OrderHistory />} />
+              <Route path="/admin/order-history" element={<OrderHistory />} />
             </Routes>
           </main>
           <div className="side-container" />

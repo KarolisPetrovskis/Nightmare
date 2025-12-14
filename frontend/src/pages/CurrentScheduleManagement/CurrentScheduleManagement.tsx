@@ -1,23 +1,16 @@
-//TODO:
-// Decide on what format? AM/PM or 24h to display (in wireframe schedule displays AM/PM, but time input uses 24h format)
-// Decide on time slot intervals (currently 30min based on wireframe, but need to confirm)
-// Implemented Add Appointment as a popup, but from documentation it is not clear if they intended it to be a separate page or a modal.
-
 import "./CurrentScheduleManagement.css";
 import "../Management.css";
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import Button from "@mui/material/Button";
-import Dialog from "@mui/material/Dialog";
-import DialogContent from "@mui/material/DialogContent";
 import SnackbarNotification from "../../components/SnackBar/SnackNotification";
 
 interface Appointment {
   nid: number;
   code: string;
   employeeId: number;
-  appointmentStart: string; // ISO datetime
-  appointmentEnd: string;   // ISO datetime
+  appointmentStart: string; // UTC ISO datetime from API
+  appointmentEnd: string;   // UTC ISO datetime from API
   customerName?: string;
   businessId: number;
   serviceId: number;
@@ -33,28 +26,24 @@ interface Employee {
 interface Service {
   nid: number;
   name: string;
-  timeMin: number; // in minutes
+  timeMin: number;
 }
 
-// Mock business ID - in production, get from context/auth
-const MOCK_BUSINESS_ID = 1;
-
-const sampleAppointments: Appointment[] = [];
-
-// Time slots from 8am to 2pm (based on wireframe example, need to discuss on which interval to use)
-const timeSlots = [
-  "8 am", "8:30 am", "9 am", "9:30 am", "10 am", "10:30 am",
-  "11 am", "11:30 am", "12 am", "12:30 am", "1 pm", "1:30 pm", "2 pm"
-];
-
-// Schedule time boundaries - users can only pick times within these bounds
-const EARLIEST_SCHEDULED_TIME = "08:00";
-const LATEST_SCHEDULED_TIME = "14:00";
-
-function timeToMinutes(time: string): number {
-  const [hours, minutes] = time.split(":").map(Number);
-  return hours * 60 + minutes;
+interface Business {
+  nid: number;
+  name: string;
+  address: string;
+  phone: string;
+  email: string;
+  type: string;
+  ownerId: number;
+  workStart?: string; // UTC ISO datetime from API
+  workEnd?: string;   // UTC ISO datetime from API
 }
+
+const MOCK_BUSINESS_ID = 12;
+const DEFAULT_EARLIEST_TIME = "09:00";
+const DEFAULT_LATEST_TIME = "18:00";
 
 function minutesToTime(minutes: number): string {
   const hours = Math.floor(minutes / 60);
@@ -62,26 +51,38 @@ function minutesToTime(minutes: number): string {
   return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
 }
 
-function getSlotIndex(time: string): number {
-  const minutes = timeToMinutes(time);
-  const baseMinutes = 8 * 60; // 8:00 AM
-  return (minutes - baseMinutes) / 30;
+function timeToMinutes(time: string): number {
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
 }
 
-// Extract time from ISO datetime
-function extractTimeFromISO(isoString: string): string {
-  const date = new Date(isoString);
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  return `${hours}:${minutes}`;
+function extractTimeAsIs(dateTimeString: string): string {
+  if (!dateTimeString) return "09:00";
+  const timeMatch = dateTimeString.match(/(\d{2}):(\d{2})/);
+  if (timeMatch) {
+    return `${timeMatch[1]}:${timeMatch[2]}`;
+  }
+  return "09:00";
+}
+
+function getSlotIndex(time: string, businessStartTime: string = DEFAULT_EARLIEST_TIME): number {
+  const minutes = timeToMinutes(time);
+  const baseMinutes = timeToMinutes(businessStartTime);
+  return (minutes - baseMinutes) / 30;
 }
 
 export default function CurrentScheduleManagement() {
   const { date } = useParams<{ date: string }>();
+  const [business, setBusiness] = useState<Business | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [services, setServices] = useState<Service[]>([]);
+  const [timeSlots, setTimeSlots] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [businessHours, setBusinessHours] = useState<{ start: string; end: string }>({
+    start: DEFAULT_EARLIEST_TIME,
+    end: DEFAULT_LATEST_TIME,
+  });
   
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -103,37 +104,64 @@ export default function CurrentScheduleManagement() {
     type: 'success',
   });
 
-  // Fetch employees, services, and appointments on component mount
+  // Generate time slots based on business hours
+  const generateTimeSlots = (workStart: string, workEnd: string): string[] => {
+    const slots: string[] = [];
+    const startMinutes = timeToMinutes(workStart);
+    const endMinutes = timeToMinutes(workEnd);
+    
+    for (let minutes = startMinutes; minutes < endMinutes; minutes += 30) {
+      slots.push(minutesToTime(minutes));
+    }
+    return slots;
+  };
+
+  // Fetch business, employees, services, and appointments
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [empRes, servRes] = await Promise.all([
+        const [busRes, empRes, servRes] = await Promise.all([
+          fetch(`/api/business/${MOCK_BUSINESS_ID}`),
           fetch(`/api/employees?businessId=${MOCK_BUSINESS_ID}&page=1&perPage=100`),
           fetch(`/api/services?businessId=${MOCK_BUSINESS_ID}&page=1&perPage=100`),
         ]);
 
-        if (!empRes.ok || !servRes.ok) throw new Error('Failed to fetch data');
+        if (!busRes.ok || !empRes.ok || !servRes.ok) throw new Error('Failed to fetch data');
 
+        const businessData = await busRes.json();
         const employeesData = await empRes.json();
         const servicesData = await servRes.json();
 
+        setBusiness(businessData);
         setEmployees(employeesData);
         setServices(servicesData);
+        
+        // Extract business hours AS-IS (don't convert timezone)
+        // Business owner set these hours and they should display exactly as entered
+        let workStart = DEFAULT_EARLIEST_TIME;
+        let workEnd = DEFAULT_LATEST_TIME;
+        
+        if (businessData?.workStart && businessData?.workEnd) {
+          workStart = extractTimeAsIs(businessData.workStart);
+          workEnd = extractTimeAsIs(businessData.workEnd);
+        }
+        
+        setBusinessHours({ start: workStart, end: workEnd });
+        const slots = generateTimeSlots(workStart, workEnd);
+        setTimeSlots(slots);
 
         // Fetch appointments for the selected date
         if (date) {
-          // Convert date string (YYYY-MM-DD) to ISO datetime at midnight
-          const appointmentDate = new Date(date);
-          appointmentDate.setHours(0, 0, 0, 0);
-          const res = await fetch(`/api/appointment?AppointmentDate=${appointmentDate.toISOString()}&page=1&perPage=100`);
+          const res = await fetch(`/api/appointment?AppointmentDate=${date}&page=1&perPage=100`);
           if (res.ok) {
             const appointmentsData = await res.json();
             setAppointments(appointmentsData);
           }
         }
       } catch (error) {
-        console.error('Error fetching data:', error);
+        const slots = generateTimeSlots(DEFAULT_EARLIEST_TIME, DEFAULT_LATEST_TIME);
+        setTimeSlots(slots);
         setSnackbar({
           open: true,
           message: 'Failed to load schedule data',
@@ -147,7 +175,6 @@ export default function CurrentScheduleManagement() {
     fetchData();
   }, [date]);
 
-  // Parse date from URL or use today
   const parseDate = (dateStr: string | undefined): Date => {
     if (dateStr) {
       const [year, month, day] = dateStr.split("-").map(Number);
@@ -165,19 +192,19 @@ export default function CurrentScheduleManagement() {
     return `${year}-${month}-${day}`;
   };
 
-  // Calculate appointment position and height
+  // Calculate appointment position and height (extract times as-is)
   const getAppointmentStyle = (appointment: Appointment) => {
-    const startTime = extractTimeFromISO(appointment.appointmentStart);
-    const endTime = extractTimeFromISO(appointment.appointmentEnd);
-    const startSlot = getSlotIndex(startTime);
-    const endSlot = getSlotIndex(endTime);
-    const slotHeight = 50; // matches CSS .time-row height
+    const startTime = extractTimeAsIs(appointment.appointmentStart);
+    const endTime = extractTimeAsIs(appointment.appointmentEnd);
+    
+    const startSlot = getSlotIndex(startTime, businessHours.start);
+    const endSlot = getSlotIndex(endTime, businessHours.start);
+    const slotHeight = 50;
     const top = startSlot * slotHeight;
     const height = (endSlot - startSlot) * slotHeight;
     return { top: `${top}px`, height: `${height}px` };
   };
 
-  // Get appointments for a specific employee
   const getEmployeeAppointments = (employeeId: number) => {
     return appointments.filter((a) => a.employeeId === employeeId);
   };
@@ -192,7 +219,7 @@ export default function CurrentScheduleManagement() {
   const handleOpenEditModal = (appointment: Appointment) => {
     setIsEditMode(true);
     setSelectedAppointmentId(appointment.nid);
-    const startTime = extractTimeFromISO(appointment.appointmentStart);
+    const startTime = extractTimeAsIs(appointment.appointmentStart);
     setNewAppointment({
       customerName: appointment.customerName || "",
       employeeId: String(appointment.employeeId),
@@ -230,7 +257,6 @@ export default function CurrentScheduleManagement() {
           type: 'success',
         });
       } catch (error) {
-        console.error('Error deleting appointment:', error);
         setSnackbar({
           open: true,
           message: 'Failed to delete appointment',
@@ -241,28 +267,25 @@ export default function CurrentScheduleManagement() {
   };
 
   const handleSaveAppointment = async () => {
-    // Find the selected service to get its duration
     const selectedService = services.find(
       (s) => s.nid === Number(newAppointment.serviceId)
     );
     
     if (!selectedService) return;
 
-    // Calculate end time based on service duration
+    // Calculate end time based on service duration (all in local time)
     const startMinutes = timeToMinutes(newAppointment.startTime);
     const endMinutes = startMinutes + selectedService.timeMin;
     const endTime = minutesToTime(endMinutes);
 
-    // Create appointment date from URL date and times
     const dateObj = parseDate(date);
+    const dateStr = formatDate(dateObj);
     const [startHours, startMins] = newAppointment.startTime.split(":").map(Number);
     const [endHours, endMins] = endTime.split(":").map(Number);
     
-    const appointmentStart = new Date(dateObj);
-    appointmentStart.setHours(startHours, startMins, 0, 0);
-    
-    const appointmentEnd = new Date(dateObj);
-    appointmentEnd.setHours(endHours, endMins, 0, 0);
+    const appointmentStartISO = `${dateStr}T${String(startHours).padStart(2, '0')}:${String(startMins).padStart(2, '0')}:00.000Z`;
+    const appointmentEndISO = `${dateStr}T${String(endHours).padStart(2, '0')}:${String(endMins).padStart(2, '0')}:00.000Z`;
+    const appointmentDateISO = `${dateStr}T00:00:00.000Z`;
 
     try {
       if (isEditMode && selectedAppointmentId) {
@@ -274,8 +297,8 @@ export default function CurrentScheduleManagement() {
             customerName: newAppointment.customerName,
             employeeId: Number(newAppointment.employeeId),
             serviceId: Number(newAppointment.serviceId),
-            appointmentStart: appointmentStart.toISOString(),
-            appointmentEnd: appointmentEnd.toISOString(),
+            appointmentStart: appointmentStartISO,
+            appointmentEnd: appointmentEndISO,
           }),
         });
 
@@ -301,9 +324,9 @@ export default function CurrentScheduleManagement() {
             businessId: MOCK_BUSINESS_ID,
             serviceId: Number(newAppointment.serviceId),
             employeeId: Number(newAppointment.employeeId),
-            appointmentDate: dateObj,
-            appointmentStart: appointmentStart.toISOString(),
-            appointmentEnd: appointmentEnd.toISOString(),
+            appointmentDate: appointmentDateISO,
+            appointmentStart: appointmentStartISO,
+            appointmentEnd: appointmentEndISO,
             customerName: newAppointment.customerName,
             total: 0,
             statusId: 1,
@@ -324,7 +347,6 @@ export default function CurrentScheduleManagement() {
       
       handleCloseModal();
     } catch (error) {
-      console.error('Error saving appointment:', error);
       setSnackbar({
         open: true,
         message: 'Failed to save appointment',
@@ -343,12 +365,13 @@ export default function CurrentScheduleManagement() {
         </Button>
         <span className="current-date">{formatDate(currentDate)}</span>
         
-        {/* Time labels under date */}
         <div className="time-labels">
-          {/* Empty space to align with worker headers */}
           <div className="time-label-header-spacer"></div>
           {timeSlots.map((slot, index) => (
-            <div key={index} className={`time-label ${index % 2 === 0 ? "full-hour" : "half-hour"}`}>
+            <div 
+              key={index} 
+              className={`time-label ${index % 2 === 0 ? "full-hour" : "half-hour"}`}
+            >
               {slot}
             </div>
           ))}
@@ -356,7 +379,6 @@ export default function CurrentScheduleManagement() {
       </div>
 
       <div className="schedule-main">
-        {/* Header row with employees */}
         <div className="schedule-header">
           {loading ? (
             <div style={{ opacity: 0.5 }}>Loading employees...</div>
@@ -376,13 +398,11 @@ export default function CurrentScheduleManagement() {
           )}
         </div>
 
-        {/* Schedule grid */}
         <div className="schedule-grid">
-          {/* Employee columns with appointments */}
           {employees.map((employee) => (
             <div key={employee.nid} className="worker-column">
-              {/* Time grid lines */}
-              {timeSlots.map((_, index) => (
+              {/* Time grid lines - one row per slot */}
+              {timeSlots.map((slot, index) => (
                 <div key={index} className={`time-row ${index % 2 === 0 ? "full-hour" : "half-hour"}`}></div>
               ))}
               
@@ -403,7 +423,6 @@ export default function CurrentScheduleManagement() {
         </div>
       </div>
 
-      {/* Add Appointment Modal */}
       {isModalOpen && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -456,8 +475,8 @@ export default function CurrentScheduleManagement() {
                 placeholder="time to start"
                 value={newAppointment.startTime}
                 onChange={(e) => handleInputChange("startTime", e.target.value)}
-                min={EARLIEST_SCHEDULED_TIME}
-                max={LATEST_SCHEDULED_TIME}
+                min={businessHours.start}
+                max={businessHours.end}
               />
             </div>
 

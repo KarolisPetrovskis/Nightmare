@@ -18,7 +18,7 @@ type Service = {
 };
 
 // Mock businessId - in production, get this from user context/auth
-const MOCK_BUSINESS_ID = 1;
+const MOCK_BUSINESS_ID = 12;
 const MOCK_VAT_ID = 1;
 
 export default function ServiceManagement() {
