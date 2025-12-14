@@ -28,7 +28,8 @@ namespace backend.Server.Controllers
         public async Task<ActionResult<Business>> CreateBusiness([FromBody] BusinessCreateDTO request)
         {
             var bus = await _businessService.CreateBusiness(request);
-            return CreatedAtAction(nameof(GetBusinessByNidAsync), new { nid = bus.Nid }, bus);
+            return Ok(bus); //Something wrong with CreatedAtAction route, with Ok(bus) it works.
+            // return CreatedAtAction(nameof(GetBusinessByNidAsync), new { nid = bus.Nid }, bus);
         }
 
         [HttpGet("{nid}")]
