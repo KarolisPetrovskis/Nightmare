@@ -7,5 +7,5 @@ public class OrderDetailAddOn
     public long Nid { get; set; }
     public long DetailId { get; set; }
     public long IngredientId { get; set; }
-    public decimal Price_wo_vat { get; set; }
+    public decimal PriceWoVat { get; set; }
 }

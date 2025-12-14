@@ -15,22 +15,9 @@ import WorkerManagement from './pages/AdminPages/Worker Management/WorkerManagem
 import OrderHistory from './pages/AdminPages/OrderHistory/OrderHistory';
 import { OrderProvider } from './context/OrderContext';
 
-export interface WeatherForecast {
-  date: string;
-  temperatureC: number;
-  summary: string;
-}
 
 export default function App() {
   const location = useLocation();
-  const [_data, setData] = useState<WeatherForecast[]>([]);
-
-  useEffect(() => {
-    fetch('/api/weatherforecast')
-      .then((res) => res.json())
-      .then((data) => setData(data))
-      .catch(console.error);
-  }, []);
 
   return (
     <>

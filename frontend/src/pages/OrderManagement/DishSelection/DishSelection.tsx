@@ -1,27 +1,28 @@
-import React, { useMemo, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../../Management.css";
-import "../OrderManagement.css"; // reuse your existing order styles for modal, item-card, etc.
-import "./DishSelection.css"; // new styles for grid
+import "../OrderManagement.css";
+import "./DishSelection.css";
 import Button from "@mui/material/Button";
-import dishesData from "../../dishesData.json";
 import PaginationComponent from "../../../components/Pagination/PaginationComponent";
+import { menuApi } from "../../../services/menuService";
+import { menuAddonsApi, addonGroupsApi } from "../../../services/menuAddonsService";
 
-type Option = { id: number; name: string; price: number; };
-type OptionGroup = { id: number; name: string; options: Option[]; };
+const BUSINESS_ID = 1; // TODO: Get from auth context
+
+type Option = { nid: number; name: string; price: number; };
+type OptionGroup = { nid: number; name: string; options: Option[]; };
 type MenuItem = {
-  id: number;
+  nid: number;
   name: string;
   price: number;
-  discount?: number;
-  discountExpiration?: string;
-  vat?: string;
-  optionTrees?: OptionGroup[];
-  optionGroups?: OptionGroup[];
+  discount?: number | null;
+  vatId: number;
+  addonGroups?: OptionGroup[];
 };
 
 type OrderDishPayload = {
-  id: number;
+  nid: number;
   menuItem: MenuItem;
   quantity: number;
   selectedOptions?: Record<number, number>;
@@ -30,20 +31,85 @@ type OrderDishPayload = {
 export default function DishSelectionPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const allDishes: MenuItem[] = useMemo(() =>
-    dishesData.dishes.map(d => ({ ...d, optionTrees: d.optionTrees || [] })), []
-  );
+  const [allDishes, setAllDishes] = useState<MenuItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Get the order ID from the navigation state
   const orderId = (location as any).state?.orderId;
 
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
-  const perPage = 12; // e.g. 3 rows of 4
+  const perPage = 12;
   const [modalOpen, setModalOpen] = useState(false);
   const [modalDish, setModalDish] = useState<MenuItem | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [modalSelections, setModalSelections] = useState<Record<number, number>>({});
+
+  // Fetch menu items from backend
+  useEffect(() => {
+    const fetchMenuItems = async () => {
+      try {
+        setLoading(true);
+        const items = await menuApi.getMenu(BUSINESS_ID, 0, 1000);
+        
+        // Fetch addon groups for each item
+        const itemsWithAddons = await Promise.all(
+          items.map(async (item) => {
+            try {
+              const groups = await addonGroupsApi.getGroupsByMenuItemNid(item.nid);
+              
+              // Fetch addons for each group
+              const addonGroups = await Promise.all(
+                groups.map(async (group) => {
+                  const addons = await menuAddonsApi.getAddonsByGroupNid(group.nid);
+                  return {
+                    nid: group.nid,
+                    name: group.name,
+                    options: addons.map(addon => {
+                      if (addon.price === undefined || addon.price === null) {
+                        console.warn('Addon missing price:', addon);
+                      }
+                      return {
+                        nid: addon.nid,
+                        name: addon.name,
+                        price: addon.price || 0,
+                      };
+                    })
+                  };
+                })
+              );
+              
+              return {
+                nid: item.nid,
+                name: item.name,
+                price: item.price,
+                discount: item.discount,
+                vatId: item.vatId,
+                addonGroups,
+              };
+            } catch (error) {
+              return {
+                nid: item.nid,
+                name: item.name,
+                price: item.price,
+                discount: item.discount,
+                vatId: item.vatId,
+                addonGroups: [],
+              };
+            }
+          })
+        );
+        
+        setAllDishes(itemsWithAddons);
+      } catch (error) {
+        console.error('Failed to fetch menu items:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMenuItems();
+  }, []);
 
   const filtered = allDishes.filter(d =>
     d.name.toLowerCase().includes(query.trim().toLowerCase())
@@ -80,12 +146,8 @@ const saveDish = (): OrderDishPayload | null => {
   if (!modalDish) return null;
 
   return {
-    id: Date.now(),
-    menuItem: {
-      ...modalDish,
-      // normalize field name so OrderManagement can read optionGroups
-      optionGroups: (modalDish as any).optionGroups ?? modalDish.optionTrees ?? []
-    },
+    nid: Date.now(),
+    menuItem: modalDish,
     quantity: Math.max(1, Math.floor(quantity)),
     selectedOptions: { ...modalSelections }
   };
@@ -101,6 +163,14 @@ const saveDish = (): OrderDishPayload | null => {
     returnToOrder(payload);
   };
 
+
+  if (loading) {
+    return (
+      <div className="management">
+        <div style={{ padding: 20, textAlign: 'center' }}>Loading menu items...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="management">
@@ -134,13 +204,13 @@ const saveDish = (): OrderDishPayload | null => {
 
         <div className="dish-grid">
           {visible.map(d => (
-            <div key={d.id} className="item-card dish-card" onClick={() => openDish(d)}>
+            <div key={d.nid} className="item-card dish-card" onClick={() => openDish(d)}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div style={{ fontWeight: 600 }}>{d.name}</div>
                 <div style={{ fontWeight: 700 }}>€ {d.price.toFixed(2)}</div>
               </div>
               <div style={{ marginTop: 8, color: "#bdbdbd", fontSize: "0.9rem" }}>
-                {d.optionTrees && d.optionTrees.length > 0 ? `${d.optionTrees.length} option group(s)` : "No options"}
+                {d.addonGroups && d.addonGroups.length > 0 ? `${d.addonGroups.length} option group(s)` : "No options"}
               </div>
             </div>
           ))}
@@ -176,22 +246,22 @@ const saveDish = (): OrderDishPayload | null => {
             </div>
 
             <div className="option-list">
-              {(modalDish.optionTrees || []).map(group => (
-                <div key={group.id} className="option-tree-box" style={{ padding: 10 }}>
+              {(modalDish.addonGroups || []).map(group => (
+                <div key={group.nid} className="option-tree-box" style={{ padding: 10 }}>
                   <div style={{ fontWeight: 600, marginBottom: 6 }}>{group.name}</div>
                   <div className="option-list" style={{ gap: 6 }}>
                     {group.options.map(opt => {
-                      const selected = modalSelections[group.id] === opt.id;
+                      const selected = modalSelections[group.nid] === opt.nid;
                       return (
-                        <label key={opt.id} className="option-row" style={{ alignItems: "center" }}>
+                        <label key={opt.nid} className="option-row" style={{ alignItems: "center" }}>
                           <input
                             type="radio"
-                            name={`group-${group.id}`}
+                            name={`group-${group.nid}`}
                             checked={selected}
-                            onChange={() => toggleSelectOption(group.id, opt.id)}
+                            onChange={() => toggleSelectOption(group.nid, opt.nid)}
                           />
-                          <input type="text" value={opt.name} readOnly />
-                          <input type="text" value={`€ ${opt.price.toFixed(2)}`} readOnly style={{ width: 90, textAlign: 'right' }} />
+                          <input type="text" value={opt.name} readOnly style={{ flex: 1, minWidth: 0 }} />
+                          <input type="text" value={`€ ${opt.price.toFixed(2)}`} readOnly style={{ width: 90, textAlign: 'right', flexShrink: 0 }} />
                         </label>
                       );
                     })}

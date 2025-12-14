@@ -7,6 +7,7 @@ public class OrderDetail
     public long Nid { get; set; }
     public long OrderId { get; set; }
     public long ItemId { get; set; }
-    public decimal Price_wo_vat { get; set; }
-    public decimal Price_w_vat { get; set; }
+    public decimal PriceWoVat { get; set; }
+    public decimal PriceWtVat { get; set; }
+    public int Quantity { get; set; } = 1;
 }

@@ -1,4 +1,4 @@
-import type { WeatherForecast } from '../App';
+/*import type { WeatherForecast } from '../App';
 
 const API_BASE_URL = '/api';
 
@@ -8,4 +8,4 @@ export const fetchWeatherForecast = async (): Promise<WeatherForecast[]> => {
     throw new Error('Network response was not ok');
   }
   return response.json();
-};
+};*/
