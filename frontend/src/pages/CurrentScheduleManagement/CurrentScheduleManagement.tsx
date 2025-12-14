@@ -1,60 +1,45 @@
 //TODO:
-// Update handleSaveAppointment to call backend API, once we have it.
 // Decide on what format? AM/PM or 24h to display (in wireframe schedule displays AM/PM, but time input uses 24h format)
 // Decide on time slot intervals (currently 30min based on wireframe, but need to confirm)
 // Implemented Add Appointment as a popup, but from documentation it is not clear if they intended it to be a separate page or a modal.
 
 import "./CurrentScheduleManagement.css";
 import "../Management.css";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
+import SnackbarNotification from "../../components/SnackBar/SnackNotification";
 
 interface Appointment {
-  id: number;
-  workerId: number;
-  startTime: string; // "HH:MM" format
-  endTime: string;   // "HH:MM" format
-  description: string;
+  nid: number;
+  code: string;
+  employeeId: number;
+  appointmentStart: string; // ISO datetime
+  appointmentEnd: string;   // ISO datetime
+  customerName?: string;
+  businessId: number;
+  serviceId: number;
+  appointmentDate: string;
 }
 
-interface Worker {
-  id: number;
+interface Employee {
+  nid: number;
   name: string;
+  surname?: string;
 }
 
-interface ServiceType {
-  id: number;
+interface Service {
+  nid: number;
   name: string;
-  duration: number; // in minutes
+  timeMin: number; // in minutes
 }
 
-// Sample data
-const sampleWorkers: Worker[] = [
-  { id: 1, name: "Worker name" },
-  { id: 2, name: "Worker name" },
-  { id: 3, name: "Worker name" },
-  { id: 4, name: "Worker name" },
-  { id: 5, name: "Worker name" },
-];
+// Mock business ID - in production, get from context/auth
+const MOCK_BUSINESS_ID = 1;
 
-const sampleServiceTypes: ServiceType[] = [
-  { id: 1, name: "Haircut", duration: 30 },
-  { id: 2, name: "Beard Trim", duration: 15 },
-  { id: 3, name: "Full Service", duration: 60 },
-];
-
-const sampleAppointments: Appointment[] = [
-  // { id: 1, workerId: 1, startTime: "08:00", endTime: "09:30", description: "Work description" },
-  // { id: 2, workerId: 2, startTime: "08:30", endTime: "10:00", description: "Work description" },
-  // { id: 3, workerId: 3, startTime: "09:30", endTime: "11:00", description: "Work description" },
-  // { id: 4, workerId: 4, startTime: "09:00", endTime: "10:00", description: "Work description" },
-  // { id: 5, workerId: 1, startTime: "11:00", endTime: "12:00", description: "Work description" },
-  // { id: 6, workerId: 2, startTime: "12:00", endTime: "13:00", description: "Work description" },
-  // { id: 7, workerId: 5, startTime: "12:00", endTime: "13:30", description: "Work description" },
-];
+const sampleAppointments: Appointment[] = [];
 
 // Time slots from 8am to 2pm (based on wireframe example, need to discuss on which interval to use)
 const timeSlots = [
@@ -83,23 +68,84 @@ function getSlotIndex(time: string): number {
   return (minutes - baseMinutes) / 30;
 }
 
+// Extract time from ISO datetime
+function extractTimeFromISO(isoString: string): string {
+  const date = new Date(isoString);
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
+}
+
 export default function CurrentScheduleManagement() {
   const { date } = useParams<{ date: string }>();
-  // TODO: API call to fetch workers
-  const [workers] = useState<Worker[]>(sampleWorkers);
-  // TODO: API call to fetch appointments for the selected date
-  const [appointments, setAppointments] = useState<Appointment[]>(sampleAppointments);
-  // TODO: API call to fetch service types
-  const [serviceTypes] = useState<ServiceType[]>(sampleServiceTypes);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
   
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState<number | null>(null);
   const [newAppointment, setNewAppointment] = useState({
-    name: "",
+    customerName: "",
     employeeId: "",
-    serviceTypeId: "",
+    serviceId: "",
     startTime: "",
   });
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+  }>({
+    open: false,
+    message: '',
+    type: 'success',
+  });
+
+  // Fetch employees, services, and appointments on component mount
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [empRes, servRes] = await Promise.all([
+          fetch(`/api/employees?businessId=${MOCK_BUSINESS_ID}&page=1&perPage=100`),
+          fetch(`/api/services?businessId=${MOCK_BUSINESS_ID}&page=1&perPage=100`),
+        ]);
+
+        if (!empRes.ok || !servRes.ok) throw new Error('Failed to fetch data');
+
+        const employeesData = await empRes.json();
+        const servicesData = await servRes.json();
+
+        setEmployees(employeesData);
+        setServices(servicesData);
+
+        // Fetch appointments for the selected date
+        if (date) {
+          // Convert date string (YYYY-MM-DD) to ISO datetime at midnight
+          const appointmentDate = new Date(date);
+          appointmentDate.setHours(0, 0, 0, 0);
+          const res = await fetch(`/api/appointment?AppointmentDate=${appointmentDate.toISOString()}&page=1&perPage=100`);
+          if (res.ok) {
+            const appointmentsData = await res.json();
+            setAppointments(appointmentsData);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setSnackbar({
+          open: true,
+          message: 'Failed to load schedule data',
+          type: 'error',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [date]);
 
   // Parse date from URL or use today
   const parseDate = (dateStr: string | undefined): Date => {
@@ -121,63 +167,173 @@ export default function CurrentScheduleManagement() {
 
   // Calculate appointment position and height
   const getAppointmentStyle = (appointment: Appointment) => {
-    const startSlot = getSlotIndex(appointment.startTime);
-    const endSlot = getSlotIndex(appointment.endTime);
+    const startTime = extractTimeFromISO(appointment.appointmentStart);
+    const endTime = extractTimeFromISO(appointment.appointmentEnd);
+    const startSlot = getSlotIndex(startTime);
+    const endSlot = getSlotIndex(endTime);
     const slotHeight = 50; // matches CSS .time-row height
     const top = startSlot * slotHeight;
     const height = (endSlot - startSlot) * slotHeight;
     return { top: `${top}px`, height: `${height}px` };
   };
 
-  // Get appointments for a specific worker
-  const getWorkerAppointments = (workerId: number) => {
-    return appointments.filter((a) => a.workerId === workerId);
+  // Get appointments for a specific employee
+  const getEmployeeAppointments = (employeeId: number) => {
+    return appointments.filter((a) => a.employeeId === employeeId);
   };
 
   const handleOpenModal = () => {
+    setIsEditMode(false);
+    setSelectedAppointmentId(null);
+    setNewAppointment({ customerName: "", employeeId: "", serviceId: "", startTime: "" });
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEditModal = (appointment: Appointment) => {
+    setIsEditMode(true);
+    setSelectedAppointmentId(appointment.nid);
+    const startTime = extractTimeFromISO(appointment.appointmentStart);
+    setNewAppointment({
+      customerName: appointment.customerName || "",
+      employeeId: String(appointment.employeeId),
+      serviceId: String(appointment.serviceId),
+      startTime: startTime,
+    });
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setNewAppointment({ name: "", employeeId: "", serviceTypeId: "", startTime: "" });
+    setIsEditMode(false);
+    setSelectedAppointmentId(null);
+    setNewAppointment({ customerName: "", employeeId: "", serviceId: "", startTime: "" });
   };
 
   const handleInputChange = (field: string, value: string) => {
     setNewAppointment((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleDeleteAppointment = async (appointmentId: number) => {
+    if (confirm("Are you sure you want to delete this appointment?")) {
+      try {
+        const response = await fetch(`/api/appointment/${appointmentId}`, {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) throw new Error('Failed to delete appointment');
+        
+        setAppointments((prev) => prev.filter((a) => a.nid !== appointmentId));
+        
+        setSnackbar({
+          open: true,
+          message: 'Appointment deleted successfully!',
+          type: 'success',
+        });
+      } catch (error) {
+        console.error('Error deleting appointment:', error);
+        setSnackbar({
+          open: true,
+          message: 'Failed to delete appointment',
+          type: 'error',
+        });
+      }
+    }
+  };
+
   const handleSaveAppointment = async () => {
     // Find the selected service to get its duration
-    const selectedService = serviceTypes.find(
-      (s) => s.id === Number(newAppointment.serviceTypeId)
+    const selectedService = services.find(
+      (s) => s.nid === Number(newAppointment.serviceId)
     );
     
     if (!selectedService) return;
 
     // Calculate end time based on service duration
     const startMinutes = timeToMinutes(newAppointment.startTime);
-    const endMinutes = startMinutes + selectedService.duration;
+    const endMinutes = startMinutes + selectedService.timeMin;
     const endTime = minutesToTime(endMinutes);
 
-    // Create the new appointment object
-    const appointment: Appointment = {
-      id: Date.now(), // Temporary ID, backend should return real ID
-      workerId: Number(newAppointment.employeeId),
-      startTime: newAppointment.startTime,
-      endTime: endTime,
-      description: newAppointment.name,
-    };
+    // Create appointment date from URL date and times
+    const dateObj = parseDate(date);
+    const [startHours, startMins] = newAppointment.startTime.split(":").map(Number);
+    const [endHours, endMins] = endTime.split(":").map(Number);
+    
+    const appointmentStart = new Date(dateObj);
+    appointmentStart.setHours(startHours, startMins, 0, 0);
+    
+    const appointmentEnd = new Date(dateObj);
+    appointmentEnd.setHours(endHours, endMins, 0, 0);
 
-    // TODO: API call to create new appointment
-    
-    // For now, update state directly (remove this when API is ready)
-    setAppointments((prev) => [...prev, appointment]);
-    
-    handleCloseModal();
+    try {
+      if (isEditMode && selectedAppointmentId) {
+        // Update existing appointment
+        const response = await fetch(`/api/appointment/${selectedAppointmentId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customerName: newAppointment.customerName,
+            employeeId: Number(newAppointment.employeeId),
+            serviceId: Number(newAppointment.serviceId),
+            appointmentStart: appointmentStart.toISOString(),
+            appointmentEnd: appointmentEnd.toISOString(),
+          }),
+        });
+
+        if (!response.ok) throw new Error('Failed to update appointment');
+        
+        const updatedApt = await response.json();
+        setAppointments((prev) =>
+          prev.map((a) => (a.nid === selectedAppointmentId ? updatedApt : a))
+        );
+        
+        setSnackbar({
+          open: true,
+          message: 'Appointment updated successfully!',
+          type: 'success',
+        });
+      } else {
+        // Create new appointment
+        const response = await fetch('/api/appointment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: `APT-${Date.now()}`,
+            businessId: MOCK_BUSINESS_ID,
+            serviceId: Number(newAppointment.serviceId),
+            employeeId: Number(newAppointment.employeeId),
+            appointmentDate: dateObj,
+            appointmentStart: appointmentStart.toISOString(),
+            appointmentEnd: appointmentEnd.toISOString(),
+            customerName: newAppointment.customerName,
+            total: 0,
+            statusId: 1,
+          }),
+        });
+
+        if (!response.ok) throw new Error('Failed to create appointment');
+        
+        const newApt = await response.json();
+        setAppointments((prev) => [...prev, newApt]);
+        
+        setSnackbar({
+          open: true,
+          message: 'Appointment created successfully!',
+          type: 'success',
+        });
+      }
+      
+      handleCloseModal();
+    } catch (error) {
+      console.error('Error saving appointment:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to save appointment',
+        type: 'error',
+      });
+    }
   };
 
-  const isFormValid = newAppointment.name && newAppointment.employeeId && newAppointment.serviceTypeId && newAppointment.startTime;
+  const isFormValid = newAppointment.customerName && newAppointment.employeeId && newAppointment.serviceId && newAppointment.startTime;
 
   return (
     <div className="management day-schedule-page">
@@ -200,40 +356,46 @@ export default function CurrentScheduleManagement() {
       </div>
 
       <div className="schedule-main">
-        {/* Header row with workers */}
+        {/* Header row with employees */}
         <div className="schedule-header">
-          {workers.map((worker) => (
-            <div key={worker.id} className="worker-column-header">
-              <div className="worker-avatar">
-                <svg viewBox="0 0 100 100" className="avatar-placeholder">
-                  <rect width="100" height="100" fill="none" stroke="currentColor" strokeWidth="2" />
-                  <line x1="0" y1="0" x2="100" y2="100" stroke="currentColor" strokeWidth="2" />
-                  <line x1="100" y1="0" x2="0" y2="100" stroke="currentColor" strokeWidth="2" />
-                </svg>
+          {loading ? (
+            <div style={{ opacity: 0.5 }}>Loading employees...</div>
+          ) : (
+            employees.map((employee) => (
+              <div key={employee.nid} className="worker-column-header">
+                <div className="worker-avatar">
+                  <svg viewBox="0 0 100 100" className="avatar-placeholder">
+                    <rect width="100" height="100" fill="none" stroke="currentColor" strokeWidth="2" />
+                    <line x1="0" y1="0" x2="100" y2="100" stroke="currentColor" strokeWidth="2" />
+                    <line x1="100" y1="0" x2="0" y2="100" stroke="currentColor" strokeWidth="2" />
+                  </svg>
+                </div>
+                <span className="worker-name">{employee.name}</span>
               </div>
-              <span className="worker-name">{worker.name}</span>
-            </div>
-          ))}
+            ))
+          )}
         </div>
 
         {/* Schedule grid */}
         <div className="schedule-grid">
-          {/* Worker columns with appointments */}
-          {workers.map((worker) => (
-            <div key={worker.id} className="worker-column">
+          {/* Employee columns with appointments */}
+          {employees.map((employee) => (
+            <div key={employee.nid} className="worker-column">
               {/* Time grid lines */}
               {timeSlots.map((_, index) => (
                 <div key={index} className={`time-row ${index % 2 === 0 ? "full-hour" : "half-hour"}`}></div>
               ))}
               
               {/* Appointments overlay */}
-              {getWorkerAppointments(worker.id).map((appointment) => (
+              {getEmployeeAppointments(employee.nid).map((appointment) => (
                 <div
-                  key={appointment.id}
+                  key={appointment.nid}
                   className="appointment-block"
                   style={getAppointmentStyle(appointment)}
+                  onClick={() => handleOpenEditModal(appointment)}
+                  title="Click to edit or delete"
                 >
-                  <span className="appointment-text">{appointment.description}</span>
+                  <span className="appointment-text">{appointment.customerName || "Appointment"}</span>
                 </div>
               ))}
             </div>
@@ -245,13 +407,15 @@ export default function CurrentScheduleManagement() {
       {isModalOpen && (
         <div className="modal-overlay">
           <div className="modal-content">
+            <h3>{isEditMode ? "Edit Appointment" : "Add New Appointment"}</h3>
+            
             <div className="info-box">
-              <label>Appointment name</label>
+              <label>Customer name</label>
               <input
                 type="text"
                 placeholder="name"
-                value={newAppointment.name}
-                onChange={(e) => handleInputChange("name", e.target.value)}
+                value={newAppointment.customerName}
+                onChange={(e) => handleInputChange("customerName", e.target.value)}
               />
             </div>
 
@@ -261,10 +425,10 @@ export default function CurrentScheduleManagement() {
                 value={newAppointment.employeeId}
                 onChange={(e) => handleInputChange("employeeId", e.target.value)}
               >
-                <option value="">employee from dropdown</option>
-                {workers.map((worker) => (
-                  <option key={worker.id} value={worker.id}>
-                    {worker.name}
+                <option value="">Select employee</option>
+                {employees.map((employee) => (
+                  <option key={employee.nid} value={employee.nid}>
+                    {employee.name}
                   </option>
                 ))}
               </select>
@@ -273,13 +437,13 @@ export default function CurrentScheduleManagement() {
             <div className="info-box">
               <label>Service type</label>
               <select
-                value={newAppointment.serviceTypeId}
-                onChange={(e) => handleInputChange("serviceTypeId", e.target.value)}
+                value={newAppointment.serviceId}
+                onChange={(e) => handleInputChange("serviceId", e.target.value)}
               >
-                <option value="">service type from dropdown</option>
-                {serviceTypes.map((service) => (
-                  <option key={service.id} value={service.id}>
-                    {service.name}
+                <option value="">Select service</option>
+                {services.map((service) => (
+                  <option key={service.nid} value={service.nid}>
+                    {service.name} ({service.timeMin} min)
                   </option>
                 ))}
               </select>
@@ -298,6 +462,17 @@ export default function CurrentScheduleManagement() {
             </div>
 
             <div className="modal-actions">
+              {isEditMode && selectedAppointmentId && (
+                <Button 
+                  className="item-action-button delete-item" 
+                  onClick={() => {
+                    handleDeleteAppointment(selectedAppointmentId);
+                    handleCloseModal();
+                  }}
+                >
+                  Delete
+                </Button>
+              )}
               <Button className="item-action-button new-item" onClick={handleCloseModal}>
                 Cancel
               </Button>
@@ -306,12 +481,19 @@ export default function CurrentScheduleManagement() {
                 onClick={handleSaveAppointment}
                 disabled={!isFormValid}
               >
-                Save
+                {isEditMode ? "Update" : "Save"}
               </button>
             </div>
           </div>
         </div>
       )}
+
+      <SnackbarNotification
+        open={snackbar.open}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        message={snackbar.message}
+        type={snackbar.type}
+      />
     </div>
   );
 }
