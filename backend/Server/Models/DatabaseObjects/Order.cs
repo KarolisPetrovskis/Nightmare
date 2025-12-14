@@ -5,7 +5,7 @@ public class Order
 {
     [Key]
     public long Nid { get; set; }
-    public string Code { get; set; }
+    public string? Code { get; set; }
     public long VatId { get; set; }
     public long StatusId { get; set; }
     public decimal Total { get; set; }
