@@ -1,27 +1,52 @@
+// INSERT INTO public."Orders" 
+// ("Nid", "Code", "VatId", "StatusId", "Total", "DateCreated", "BusinessId", "WorkerId", "Discount")
+// VALUES
+// -- Row 1
+// (1, 'ORD-001', '1', 1, 100.50, '2025-12-14 10:30:00', 12, 201, 5.00),
+// -- Row 2
+// (2, 'ORD-002', '2', 2, 250.00, '2025-12-13 14:15:00', 12, 202, 10.00),
+// -- Row 3
+// (3, 'ORD-003', '3', 1, 75.25, '2025-12-12 09:00:00', 12, 203, 0.00),
+// -- Row 4
+// (4, 'ORD-004', '4', 3, 500.00, '2025-12-10 16:45:00', 12, 201, 20.00),
+// -- Row 5
+// (5, 'ORD-005', '5', 2, 320.75, '2025-12-11 11:20:00', 12, 204, 15.00);
+// Insert this for testing purposes.
+
+
 import "./OrderHistory.css";
 import "../../Management.css";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Button from "@mui/material/Button";
+import SnackbarNotification from "../../../components/SnackBar/SnackNotification";
+
+const MOCK_BUSINESS_ID = 12;
+const REFUNDED_STATUS_ID = 3; // Status ID for refunded (may vary by database)
 
 interface OrderRecord {
-  id: number;
-  name: string;
+  nid: number;
+  code?: string;
   total: number;
-  employeeId: number;
+  workerId?: number;
   dateCreated: string;
-  status: string;
-  code: string;
+  statusId: number;
+  businessId: number;
+  statusName?: string; // Display name for status
 }
 
-// Mock data
-const SAMPLE_ORDERS: OrderRecord[] = [
-  { id: 50, name: "ORD2510000001", total: 12.10, employeeId: 16185, dateCreated: "2025-10-09", status: "Finished", code: "ORD50" },
-  { id: 51, name: "ORD2510000002", total: 12.10, employeeId: 16184, dateCreated: "2025-10-10", status: "Unfinished", code: "ORD51" },
-  { id: 49, name: "ORD2510000003", total: 25.60, employeeId: 16184, dateCreated: "2025-10-08", status: "Finished", code: "ORD49" },
-];
-
 export default function OrderHistory() {
-  const [orders, setOrders] = useState<OrderRecord[]>(SAMPLE_ORDERS);
+  const [orders, setOrders] = useState<OrderRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [statusMap, setStatusMap] = useState<{ [key: number]: string }>({
+    1: "Finished",
+    2: "Unfinished",
+    4: "Refunded",
+  });
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    type: 'info' as 'success' | 'error' | 'warning' | 'info',
+  });
   const [searchQuery, setSearchQuery] = useState("");
   
   // Filter states
@@ -33,29 +58,82 @@ export default function OrderHistory() {
   const [filterName, setFilterName] = useState("");
   const [filterState, setFilterState] = useState("");
 
-  // TODO: On component mount, fetch all orders from API: GET /api/orders
-  // TODO: Set orders state with API response data
+  // Fetch orders from API on component mount
+  useEffect(() => {
+    fetchOrders();
+  }, []);
 
-  // Filter orders based on all criteria specified in the
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/orders/business/${MOCK_BUSINESS_ID}`);
+      if (!response.ok) throw new Error('Failed to fetch orders');
+      const data = await response.json();
+      
+      // Map statusId to statusName for display
+      const ordersWithStatus = data.map((order: OrderRecord) => ({
+        ...order,
+        statusName: statusMap[order.statusId] || `Status ${order.statusId}`,
+      }));
+      
+      setOrders(ordersWithStatus);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      showSnackbar('Failed to load orders', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const showSnackbar = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
+    setSnackbar({ open: true, message, type });
+  };
+
+  const closeSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
+
+  // Filter orders based on all criteria
   const filteredOrders = orders.filter((order) => {
     const matchesSearch = searchQuery === "" || 
-      order.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.id.toString().includes(searchQuery);
+      (order.code && order.code.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      order.nid.toString().includes(searchQuery);
     
     const matchesDateFrom = new Date(order.dateCreated) >= new Date(dateFrom);
     const matchesDateTo = new Date(order.dateCreated) <= new Date(dateTo);
     const matchesTotal = order.total >= parseFloat(totalMin || "0") && order.total <= parseFloat(totalMax || "999999");
-    const matchesId = filterId === "" || order.id.toString() === filterId;
-    const matchesName = filterName === "" || order.name.includes(filterName);
+    const matchesId = filterId === "" || order.nid.toString() === filterId;
+    const matchesName = filterName === "" || (order.code && order.code.includes(filterName));
     
-    const statusMatches = filterState === "" || filterState === order.status.toLowerCase();
+    const statusMatches = filterState === "" || filterState === (order.statusName?.toLowerCase() || '');
 
     return matchesSearch && matchesDateFrom && matchesDateTo && matchesTotal && matchesId && matchesName && statusMatches;
   });
 
-  const handleRefund = (orderId: number) => {
-    setOrders(orders.map(o => o.id === orderId ? { ...o, status: "Refunded" } : o));
-    // TODO: Call API to update order status
+  const handleRefund = async (orderNid: number) => {
+    try {
+      const response = await fetch(`/api/orders/${orderNid}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          statusId: REFUNDED_STATUS_ID,
+        }),
+      });
+      
+      if (!response.ok) throw new Error('Failed to refund order');
+      
+      // Update local state
+      setOrders(orders.map(o => 
+        o.nid === orderNid 
+          ? { ...o, statusId: REFUNDED_STATUS_ID, statusName: 'Refunded' } 
+          : o
+      ));
+      
+      showSnackbar('Order refunded successfully', 'success');
+    } catch (error) {
+      console.error('Error refunding order:', error);
+      showSnackbar('Failed to refund order', 'error');
+    }
   };
 
   return (
@@ -180,44 +258,49 @@ export default function OrderHistory() {
             <thead>
               <tr>
                 <th>Order ID</th>
-                <th>Name</th>
+                <th>Code</th>
                 <th>Total</th>
-                <th>Employee ID</th>
+                <th>Worker ID</th>
                 <th>Date created</th>
                 <th>Status</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {filteredOrders.map((order) => (
-                <tr key={order.id}>
-                  <td>{order.id}</td>
-                  <td>{order.name}</td>
-                  <td>${order.total.toFixed(2)}</td>
-                  <td>{order.employeeId}</td>
-                  <td>{order.dateCreated}</td>
-                  <td>{order.status}</td>
-                  <td>
-                    {order.status === "Finished" && (
-                      <Button
-                        className="refund-btn"
-                        variant="contained"
-                        size="small"
-                        onClick={() => handleRefund(order.id)}
-                      >
-                        Refund
-                      </Button>
-                    )}
-                    {order.status === "Refunded" && <span className="refunded-badge">Refunded</span>}
+              {filteredOrders.length > 0 ? (
+                filteredOrders.map((order) => (
+                  <tr key={order.nid}>
+                    <td>{order.nid}</td>
+                    <td>{order.code || '-'}</td>
+                    <td>${order.total.toFixed(2)}</td>
+                    <td>{order.workerId || '-'}</td>
+                    <td>{new Date(order.dateCreated).toLocaleDateString()}</td>
+                    <td>{order.statusName}</td>
+                    <td>
+                      {order.statusName === "Finished" && (
+                        <Button
+                          className="refund-btn"
+                          variant="contained"
+                          size="small"
+                          onClick={() => handleRefund(order.nid)}
+                          disabled={loading}
+                        >
+                          Refund
+                        </Button>
+                      )}
+                      {order.statusName === "Refunded" && <span className="refunded-badge">Refunded</span>}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={7} style={{ textAlign: 'center', padding: '20px', color: '#999' }}>
+                    {loading ? 'Loading orders...' : 'No orders found.'}
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
-          
-          {filteredOrders.length === 0 && (
-            <div className="no-orders">No orders found.</div>
-          )}
         </div>
       </div>
     </div>
