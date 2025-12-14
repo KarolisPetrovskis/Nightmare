@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using backend.Server.Models.Helper;
 
 namespace backend.Server.Models.DTOs.Service;
 public class ServiceUpdateDTO
@@ -19,7 +20,6 @@ public class ServiceUpdateDTO
     public long VatId { get; set; }
     [StringLength(1000, ErrorMessage = "Description can't be longer than 1000 characters")]
     public string? Description { get; set; }
-
+    [FutureOrPresentDate(ErrorMessage = "Discount time cannot be in the past")]
     public DateTime? DiscountTime { get; set; }
-    //Need to add validation.
 }

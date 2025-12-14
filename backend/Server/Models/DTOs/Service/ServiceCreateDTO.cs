@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using backend.Server.Models.Helper;
 
 namespace backend.Server.Models.DTOs.Service;
 public class ServiceCreateDTO
@@ -26,7 +27,7 @@ public class ServiceCreateDTO
     [Required]
     [Range(1, long.MaxValue, ErrorMessage = "BusinessId must be a positive number")]
     public required long BusinessId { get; set; }
-
+    [FutureOrPresentDate(ErrorMessage = "Discount time cannot be in the past")]
     public DateTime? DiscountTime { get; set; }
     // Need to add validation.
     [StringLength(1000, ErrorMessage = "Description can't be longer than 1000 characters")]
