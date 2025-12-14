@@ -24,6 +24,9 @@ export default function Navbar() {
     if (location.pathname === '/admin/worker-management') {
       return 'Worker Management'
     }
+    if (location.pathname === '/admin/order-history') {
+      return 'Order History'
+    }
     return links.find(link => link.to === location.pathname)?.label || 'Home';
   };
 

@@ -1,5 +1,5 @@
 import "./OrderHistory.css";
-import "../Management.css";
+import "../../Management.css";
 import { useState } from "react";
 import Button from "@mui/material/Button";
 
