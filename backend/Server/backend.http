@@ -4,3 +4,72 @@ GET {{backend_HostAddress}}/weatherforecast/
 Accept: application/json
 
 ###
+
+####################
+# GIFT CARD TESTS
+####################
+
+# Create Gift Card
+POST {{backend_HostAddress}}/api/giftcards
+Content-Type: application/json
+
+{
+  "code": "GC-2025-001",
+  "value": 50.00,
+  "businessId": 1
+}
+
+###
+
+# Create Gift Card - Higher value
+POST {{backend_HostAddress}}/api/giftcards
+Content-Type: application/json
+
+{
+  "code": "GC-2025-002",
+  "value": 100.00,
+  "businessId": 1
+}
+
+###
+
+# Create Gift Card - Different business
+POST {{backend_HostAddress}}/api/giftcards
+Content-Type: application/json
+
+{
+  "code": "GC-2025-003",
+  "value": 75.00,
+  "businessId": 2
+}
+
+###
+
+# Get Gift Card by Nid
+GET {{backend_HostAddress}}/api/giftcards/1
+Accept: application/json
+
+###
+
+# Get All Gift Cards for Business with pagination
+GET {{backend_HostAddress}}/api/giftcards?businessId=1&page=1&perPage=10
+Accept: application/json
+
+###
+
+# Get All Gift Cards for Business - Different business
+GET {{backend_HostAddress}}/api/giftcards?businessId=2&page=1&perPage=10
+Accept: application/json
+
+###
+
+# Get All Gift Cards - Custom pagination
+GET {{backend_HostAddress}}/api/giftcards?businessId=1&page=1&perPage=5
+Accept: application/json
+
+###
+
+# Delete Gift Card
+DELETE {{backend_HostAddress}}/api/giftcards/1
+
+###
