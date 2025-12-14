@@ -1,4 +1,5 @@
 using backend.Server.Interfaces;
+using backend.Server.Models.DatabaseObjects;
 using backend.Server.Models.DTOs.User;
 using Microsoft.AspNetCore.Mvc;
 
@@ -6,48 +7,64 @@ namespace backend.Server.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class EmployeesController : ControllerBase
+    public class EmployeesController(IEmployeesService employeesService) : ControllerBase
     {
-        private readonly IEmployeesService _employeesService;
-
-        public EmployeesController(IEmployeesService employeesService)
-        {
-            _employeesService = employeesService;
-        }
+        private readonly IEmployeesService _employeesService = employeesService;
 
         [HttpGet]
-        public IActionResult GetEmployees([FromQuery] UserGetAllDTO request)
+        public async Task<ActionResult<List<User>>> GetAllEmployees([FromQuery] UserGetAllDTO request)
         {
-            _employeesService.placeholderMethod();
-            return Ok("Employees fetched successfully.");
+            var employees = await _employeesService.GetAllEmployeesAsync(request.Page, request.PerPage);
+
+            return Ok(employees);
+        }
+
+        [HttpGet("business")]
+        public async Task<ActionResult<List<User>>> GetAllEmployeesByBusinessId([FromQuery] UserGetAllDTO request)
+        {
+            var employees = await _employeesService.GetAllEmployeesByBusinessIdAsync(request);
+
+            return Ok(employees);
         }
 
         [HttpPost]
-        public IActionResult CreateEmployee([FromBody] UserCreateDTO request)
+        public async Task<ActionResult<User>> CreateEmployee([FromBody] UserCreateDTO request)
         {
-            _employeesService.placeholderMethod();
-            return Ok("Employee created successfully.");
+            var employee = await _employeesService.CreateEmployeeAsync(request);
+
+            return CreatedAtAction(nameof(GetEmployeeBynid), new { nid = employee.Nid }, employee);
         }
 
         [HttpGet("{nid}")]
-        public IActionResult GetEmployeeBynid(long nid)
+        public async Task<ActionResult<User>> GetEmployeeBynid(long nid)
         {
-            _employeesService.placeholderMethod();
-            return Ok($"Employee {nid} fetched successfully.");
+            var employee = await _employeesService.GetEmployeeByNidAsync(nid);
+
+            return Ok(employee);
+        }
+
+        [HttpGet("{email}/by-email")]
+        public async Task<ActionResult<User>> GetEmployeeByEmail(string email)
+        {
+            var employee = await _employeesService.GetEmployeeByEmailAsync(email);
+
+            return Ok(employee);
         }
 
         [HttpPut("{nid}")]
-        public IActionResult UpdateEmployee([FromBody] UserUpdateDTO request, long nid)
+        public async Task<IActionResult> UpdateEmployee([FromBody] UserUpdateDTO request, long nid)
         {
-            _employeesService.placeholderMethod();
-            return Ok($"Employee {nid} updated successfully.");
+            await _employeesService.UpdateEmployeeAsync(request, nid);
+            
+            return NoContent();
         }
 
         [HttpDelete("{nid}")]
-        public IActionResult DeleteEmployee(long nid)
+        public async Task<IActionResult> DeleteEmployee(long nid)
         {
-            _employeesService.placeholderMethod();
-            return Ok($"Employee {nid} deleted successfully.");
+            await _employeesService.DeleteEmployeeAsync(nid);
+            
+            return NoContent();
         }
     }
 }

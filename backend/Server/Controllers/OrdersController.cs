@@ -1,4 +1,6 @@
+using System.Threading.Tasks;
 using backend.Server.Interfaces;
+using backend.Server.Models.DatabaseObjects;
 using backend.Server.Models.DTOs.Order;
 using Microsoft.AspNetCore.Mvc;
 
@@ -6,55 +8,86 @@ namespace backend.Server.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class OrdersController : ControllerBase
+    public class OrdersController(IOrdersService ordersService) : ControllerBase
     {
-        private readonly IOrdersService _ordersService;
-
-        public OrdersController(IOrdersService ordersService)
-        {
-            _ordersService = ordersService;
-        }
+        private readonly IOrdersService _ordersService = ordersService;
 
         [HttpGet]
-        public IActionResult GetOrders()        //They don't have it in YAML, but we should probably have it
+        public async Task<ActionResult<List<Order>>> GetAllOrders([FromQuery] OrderGetAllDTO request)
         {
-            _ordersService.placeholderMethod();
-            return Ok("Orders fetched successfully.");
+            var orders = await _ordersService.GetAllOrdersAsync(request.Page, request.PerPage);
+
+            if (request.WorkerId.HasValue && request.WorkerId > 0)
+            {
+                orders = await _ordersService.TrimOrdersByWorkerIdAsync(orders, request.WorkerId.Value);
+            }
+            if (request.DateCreated.HasValue)
+            {
+                orders = await _ordersService.TrimOrdersByDateAsync(orders, request.DateCreated.Value);
+            }
+
+            return Ok(orders);
         }
 
         [HttpPost]
-        public IActionResult CreateOrder([FromBody] OrderCreateDTO request)
+        public async Task<ActionResult<Order>> CreateOrder([FromBody] OrderCreateDTO request)
         {
-            _ordersService.placeholderMethod();
-            return Ok("Order created successfully.");
-        }
+            var order = await _ordersService.CreateOrderAsync(request);
 
-        [HttpPut]
-        public IActionResult UpdateOrder([FromBody] OrderUpdateDTO request)
-        {
-            _ordersService.placeholderMethod();
-            return Ok("Order updated successfully.");
+            return CreatedAtAction(nameof(GetOrderByNid), new { nid = order.Nid }, order);
         }
 
         [HttpGet("{nid}")]
-        public IActionResult GetOrderBynid(long nid)
+        public async Task<ActionResult<Order>> GetOrderByNid(long nid)
         {
-            _ordersService.placeholderMethod();
-            return Ok($"Order {nid} fetched successfully.");
+            var order = await _ordersService.GetOrderByNidAsync(nid);
+            return Ok(order);
         }
 
-        [HttpDelete("{nid}")]
-        public IActionResult DeleteOrder(long nid)         //Different from YAML, but DELETE with body is not a good practice
+        [HttpGet("item/{orderNid}")]
+        public async Task<ActionResult<List<OrderDetail>>> GetOrderDetailsByOrderNid(long orderNid)
         {
-            _ordersService.placeholderMethod();
-            return Ok("Order deleted successfully.");
+            var order = await _ordersService.GetOrderByNidAsync(orderNid);
+
+            var orderDetails = await _ordersService.GetOrderDetailsByOrderId(order.Nid);
+
+            return Ok(orderDetails);
+        }
+
+        [HttpGet("item/addons/{orderNid}")]
+        public async Task<ActionResult<List<OrderDetailAddOn>>> GetOrderDetailAddOnsByDetailNid(long orderNid)
+        {
+            var orderDetails = await _ordersService.GetOrderDetailsByOrderId(orderNid);
+
+            var addOns = new List<OrderDetailAddOn>();
+            foreach (var detail in orderDetails)
+            {
+                var detailAddOns = await _ordersService.GetOrderDetailAddOnsByDetailId(detail.Nid);
+                addOns.AddRange(detailAddOns);
+            }
+
+            return Ok(addOns);
         }
 
         [HttpGet("business/{businessnid}")]
-        public IActionResult GetOrdersByBusinessnid(long businessnid)
+        public async Task<ActionResult<List<Order>>> GetOrdersByBusinessnid(long businessnid)
         {
-            _ordersService.placeholderMethod();
-            return Ok($"Orders for business {businessnid} fetched successfully.");
+            var orders = await _ordersService.GetOrderByBusinessIdAsync(businessnid);
+            return Ok(orders);
+        }
+
+        [HttpPut("{nid}")]
+        public async Task<IActionResult> UpdateOrder(long nid, [FromBody] OrderUpdateDTO request)
+        {
+            await _ordersService.UpdateOrderAsync(request, nid);
+            return NoContent();
+        }
+
+        [HttpDelete("{nid}")]
+        public async Task<IActionResult> DeleteOrder(long nid)         //Different from YAML, but DELETE with body is not a good practice
+        {
+            await _ordersService.DeleteOrderAsync(nid);
+            return NoContent();
         }
     }
 }
