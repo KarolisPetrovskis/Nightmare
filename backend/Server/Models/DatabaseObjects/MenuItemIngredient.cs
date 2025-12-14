@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 
 namespace backend.Server.Models.DatabaseObjects;
-// MenuItemIngredient now belongs to a MenuItemIngredientGroup
+// MenuItemIngredient now belongs to a MenuAddonGroup
 public class MenuItemIngredient
 {
     [Key]

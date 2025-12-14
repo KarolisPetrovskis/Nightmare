@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace backend.Server.Models.DTOs.MenuItemIngredientGroup;
+namespace backend.Server.Models.DTOs.MenuAddonGroup;
 
-public class MenuItemIngredientGroupCreateDTO
+public class MenuAddonGroupCreateDTO
 {
     [Required(ErrorMessage = "Name is required")]
     [StringLength(200, MinimumLength = 1)]

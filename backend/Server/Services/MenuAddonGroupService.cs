@@ -1,18 +1,18 @@
 using backend.Server.Database;
 using backend.Server.Interfaces;
 using backend.Server.Models.DatabaseObjects;
-using backend.Server.Models.DTOs.MenuItemIngredientGroup;
+using backend.Server.Models.DTOs.MenuAddonGroup;
 using backend.Server.Exceptions;
 using backend.Server._helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace backend.Server.Services;
 
-public class MenuItemIngredientGroupService(ApplicationDbContext context) : IMenuItemIngredientGroupService
+public class MenuAddonGroupService(ApplicationDbContext context) : IMenuAddonGroupService
 {
     private readonly ApplicationDbContext _context = context;
 
-    public async Task<List<MenuItemIngredientGroup>> GetAllGroupsAsync(MenuItemIngredientGroupGetAllDTO request)
+    public async Task<List<MenuItemIngredientGroup>> GetAllGroupsAsync(MenuAddonGroupGetAllDTO request)
     {
         if (request.Page < 0)
         {
@@ -65,7 +65,7 @@ public class MenuItemIngredientGroupService(ApplicationDbContext context) : IMen
         return groups;
     }
 
-    public async Task<MenuItemIngredientGroup> CreateGroupAsync(MenuItemIngredientGroupCreateDTO request)
+    public async Task<MenuItemIngredientGroup> CreateGroupAsync(MenuAddonGroupCreateDTO request)
     {
         // Check if MenuItem exists
         var menuItem = await _context.MenuItems.FindAsync(request.MenuItemId);
@@ -87,7 +87,7 @@ public class MenuItemIngredientGroupService(ApplicationDbContext context) : IMen
         return group;
     }
 
-    public async Task UpdateGroupAsync(MenuItemIngredientGroupUpdateDTO request, long nid)
+    public async Task UpdateGroupAsync(MenuAddonGroupUpdateDTO request, long nid)
     {
         if (nid <= 0)
         {
@@ -124,6 +124,7 @@ public class MenuItemIngredientGroupService(ApplicationDbContext context) : IMen
         var group = await _context.MenuItemIngredientGroups.FindAsync(nid)
             ?? throw new ApiException(404, $"Ingredient group {nid} not found");
 
-        _context.MenuItemIngredientGroups.Remove(group);        await Helper.SaveChangesOrThrowAsync(_context, "Failed to delete ingredient group");
+        _context.MenuItemIngredientGroups.Remove(group);        
+        await Helper.SaveChangesOrThrowAsync(_context, "Failed to delete ingredient group");
     }
 }

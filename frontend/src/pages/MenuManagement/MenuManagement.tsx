@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import PaginationComponent from '../../components/Pagination/PaginationComponent';
 import SnackbarNotification from '../../components/SnackBar/SnackNotification';
 import { menuApi, type MenuCreateDTO, type MenuUpdateDTO } from '../../services/menuService';
-import { menuAddonsApi, ingredientGroupsApi, type MenuAddonCreateDTO, type MenuAddonUpdateDTO, type MenuItemIngredientGroupCreateDTO } from '../../services/menuAddonsService';
+import { menuAddonsApi, addonGroupsApi, type MenuAddonCreateDTO, type MenuAddonUpdateDTO, type MenuAddonGroupCreateDTO } from '../../services/menuAddonsService';
 
 type Option = {
   id: number;
@@ -169,15 +169,15 @@ export default function MenuManagement() {
         };
         const newItem = await menuApi.createMenuItem(createData);
 
-        // Create ingredient groups and addons on backend
+        // Create addon groups and addons on backend
         const createdGroups: OptionGroup[] = [];
         for (const group of editableItem.optionGroups) {
           // Create the group
-          const groupData: MenuItemIngredientGroupCreateDTO = {
+          const groupData: MenuAddonGroupCreateDTO = {
             name: group.name,
             menuItemId: newItem.nid
           };
-          const createdGroup = await ingredientGroupsApi.createGroup(groupData);
+          const createdGroup = await addonGroupsApi.createGroup(groupData);
 
           // Create addons for this group
           const createdAddons: Array<{ nid: number; name: string; price: number }> = [];
@@ -226,14 +226,14 @@ export default function MenuManagement() {
 
         // Sync groups and addons with backend
         if (optionsDirty && selectedItem) {
-          const existingGroups = await ingredientGroupsApi.getGroupsByMenuItemNid(editableItem.id);
+          const existingGroups = await addonGroupsApi.getGroupsByMenuItemNid(editableItem.id);
           const existingGroupIds = new Set(existingGroups.map(g => g.nid));
           const currentGroupIds = new Set(editableItem.optionGroups.filter(g => g.id > 0).map(g => g.id));
 
           // Delete removed groups (this will cascade delete addons)
           for (const group of existingGroups) {
             if (!currentGroupIds.has(group.nid)) {
-              await ingredientGroupsApi.deleteGroup(group.nid);
+              await addonGroupsApi.deleteGroup(group.nid);
             }
           }
 
@@ -241,11 +241,11 @@ export default function MenuManagement() {
           for (const group of editableItem.optionGroups) {
             if (group.id <= 0) {
               // Create new group
-              const groupData: MenuItemIngredientGroupCreateDTO = {
+              const groupData: MenuAddonGroupCreateDTO = {
                 name: group.name,
                 menuItemId: editableItem.id
               };
-              const createdGroup = await ingredientGroupsApi.createGroup(groupData);
+              const createdGroup = await addonGroupsApi.createGroup(groupData);
               
               // Create addons for new group
               for (const option of group.options) {
@@ -319,8 +319,8 @@ export default function MenuManagement() {
   const handleItemClick = async (item: MenuItem) => {
     if (!deleteMode) {
       try {
-        // Load ingredient groups for this menu item
-        const groups = await ingredientGroupsApi.getGroupsByMenuItemNid(item.id);
+        // Load addon groups for this menu item
+        const groups = await addonGroupsApi.getGroupsByMenuItemNid(item.id);
         
         // Load addons for each group
         const optionGroups: OptionGroup[] = await Promise.all(

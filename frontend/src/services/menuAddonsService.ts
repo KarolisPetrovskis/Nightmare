@@ -19,18 +19,18 @@ export interface MenuAddonUpdateDTO {
   price?: number;
 }
 
-export interface MenuItemIngredientGroup {
+export interface MenuAddonGroup {
   nid: number;
   name: string;
   menuItemId: number;
 }
 
-export interface MenuItemIngredientGroupCreateDTO {
+export interface MenuAddonGroupCreateDTO {
   name: string;
   menuItemId: number;
 }
 
-export interface MenuItemIngredientGroupUpdateDTO {
+export interface MenuAddonGroupUpdateDTO {
   name?: string;
   menuItemId?: number;
 }
@@ -89,56 +89,56 @@ export const menuAddonsApi = {
   },
 };
 
-export const ingredientGroupsApi = {
-  // GET /api/menu/ingredient-groups?Page=0&PerPage=10
-  getAllGroups: async (page: number = 0, perPage: number = 100): Promise<MenuItemIngredientGroup[]> => {
+export const addonGroupsApi = {
+  // GET /api/menu/addon-groups?Page=0&PerPage=10
+  getAllGroups: async (page: number = 0, perPage: number = 100): Promise<MenuAddonGroup[]> => {
     const response = await fetch(
-      `${API_BASE_URL}/menu/ingredient-groups?Page=${page}&PerPage=${perPage}`
+      `${API_BASE_URL}/menu/addon-groups?Page=${page}&PerPage=${perPage}`
     );
-    if (!response.ok) throw new Error('Failed to fetch ingredient groups');
+    if (!response.ok) throw new Error('Failed to fetch addon groups');
     return await response.json();
   },
 
-  // GET /api/menu/ingredient-groups/{nid}
-  getGroupByNid: async (nid: number): Promise<MenuItemIngredientGroup> => {
-    const response = await fetch(`${API_BASE_URL}/menu/ingredient-groups/${nid}`);
-    if (!response.ok) throw new Error('Failed to fetch ingredient group');
+  // GET /api/menu/addon-groups/{nid}
+  getGroupByNid: async (nid: number): Promise<MenuAddonGroup> => {
+    const response = await fetch(`${API_BASE_URL}/menu/addon-groups/${nid}`);
+    if (!response.ok) throw new Error('Failed to fetch addon group');
     return await response.json();
   },
 
-  // GET /api/menu/ingredient-groups/by-menu-item/{menuItemNid}
-  getGroupsByMenuItemNid: async (menuItemNid: number): Promise<MenuItemIngredientGroup[]> => {
-    const response = await fetch(`${API_BASE_URL}/menu/ingredient-groups/by-menu-item/${menuItemNid}`);
-    if (!response.ok) throw new Error('Failed to fetch ingredient groups by menu item');
+  // GET /api/menu/addon-groups/by-menu-item/{menuItemNid}
+  getGroupsByMenuItemNid: async (menuItemNid: number): Promise<MenuAddonGroup[]> => {
+    const response = await fetch(`${API_BASE_URL}/menu/addon-groups/by-menu-item/${menuItemNid}`);
+    if (!response.ok) throw new Error('Failed to fetch addon groups by menu item');
     return await response.json();
   },
 
-  // POST /api/menu/ingredient-groups
-  createGroup: async (data: MenuItemIngredientGroupCreateDTO): Promise<MenuItemIngredientGroup> => {
-    const response = await fetch(`${API_BASE_URL}/menu/ingredient-groups`, {
+  // POST /api/menu/addon-groups
+  createGroup: async (data: MenuAddonGroupCreateDTO): Promise<MenuAddonGroup> => {
+    const response = await fetch(`${API_BASE_URL}/menu/addon-groups`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    if (!response.ok) throw new Error('Failed to create ingredient group');
+    if (!response.ok) throw new Error('Failed to create addon group');
     return await response.json();
   },
 
-  // PUT /api/menu/ingredient-groups/{nid}
-  updateGroup: async (nid: number, data: MenuItemIngredientGroupUpdateDTO): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/menu/ingredient-groups/${nid}`, {
+  // PUT /api/menu/addon-groups/{nid}
+  updateGroup: async (nid: number, data: MenuAddonGroupUpdateDTO): Promise<void> => {
+    const response = await fetch(`${API_BASE_URL}/menu/addon-groups/${nid}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    if (!response.ok) throw new Error('Failed to update ingredient group');
+    if (!response.ok) throw new Error('Failed to update addon group');
   },
 
-  // DELETE /api/menu/ingredient-groups/{nid}
+  // DELETE /api/menu/addon-groups/{nid}
   deleteGroup: async (nid: number): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/menu/ingredient-groups/${nid}`, {
+    const response = await fetch(`${API_BASE_URL}/menu/addon-groups/${nid}`, {
       method: 'DELETE',
     });
-    if (!response.ok) throw new Error('Failed to delete ingredient group');
+    if (!response.ok) throw new Error('Failed to delete addon group');
   },
 };

@@ -1,18 +1,18 @@
 using backend.Server.Interfaces;
 using backend.Server.Models.DatabaseObjects;
-using backend.Server.Models.DTOs.MenuItemIngredientGroup;
+using backend.Server.Models.DTOs.MenuAddonGroup;
 using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Server.Controllers;
 
 [ApiController]
-[Route("api/menu/ingredient-groups")]
-public class MenuItemIngredientGroupController(IMenuItemIngredientGroupService groupService) : ControllerBase
+[Route("api/menu/addon-groups")]
+public class MenuAddonGroupController(IMenuAddonGroupService groupService) : ControllerBase
 {
-    private readonly IMenuItemIngredientGroupService _groupService = groupService;
+    private readonly IMenuAddonGroupService _groupService = groupService;
 
     [HttpGet]
-    public async Task<ActionResult<List<MenuItemIngredientGroup>>> GetGroups([FromQuery] MenuItemIngredientGroupGetAllDTO request)
+    public async Task<ActionResult<List<MenuItemIngredientGroup>>> GetGroups([FromQuery] MenuAddonGroupGetAllDTO request)
     {
         var result = await _groupService.GetAllGroupsAsync(request);
         
@@ -36,7 +36,7 @@ public class MenuItemIngredientGroupController(IMenuItemIngredientGroupService g
     }
 
     [HttpPost]
-    public async Task<ActionResult<MenuItemIngredientGroup>> CreateGroup([FromBody] MenuItemIngredientGroupCreateDTO request)
+    public async Task<ActionResult<MenuItemIngredientGroup>> CreateGroup([FromBody] MenuAddonGroupCreateDTO request)
     {
         var group = await _groupService.CreateGroupAsync(request);
 
@@ -44,7 +44,7 @@ public class MenuItemIngredientGroupController(IMenuItemIngredientGroupService g
     }
 
     [HttpPut("{nid}")]
-    public async Task<IActionResult> UpdateGroup(long nid, [FromBody] MenuItemIngredientGroupUpdateDTO request)
+    public async Task<IActionResult> UpdateGroup(long nid, [FromBody] MenuAddonGroupUpdateDTO request)
     {
         await _groupService.UpdateGroupAsync(request, nid);
 
