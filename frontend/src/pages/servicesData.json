@@ -1,0 +1,49 @@
+{
+  "services": [
+    {
+      "id": 1,
+      "name": "Haircut",
+      "price": 25.00,
+      "discount": 0,
+      "durationMinutes": 30,
+      "discountExpires": "",
+      "description": "Professional haircut service"
+    },
+    {
+      "id": 2,
+      "name": "Hair Coloring",
+      "price": 50.00,
+      "discount": 10,
+      "durationMinutes": 60,
+      "discountExpires": "2025-02-28",
+      "description": "Full hair coloring service with premium dyes"
+    },
+    {
+      "id": 3,
+      "name": "Manicure",
+      "price": 20.00,
+      "discount": 0,
+      "durationMinutes": 45,
+      "discountExpires": "",
+      "description": "Nail care and polish application"
+    },
+    {
+      "id": 4,
+      "name": "Pedicure",
+      "price": 30.00,
+      "discount": 0,
+      "durationMinutes": 45,
+      "discountExpires": "",
+      "description": "Foot care and nail polish"
+    },
+    {
+      "id": 5,
+      "name": "Massage Therapy",
+      "price": 60.00,
+      "discount": 15,
+      "durationMinutes": 60,
+      "discountExpires": "2025-01-31",
+      "description": "Relaxing full body massage"
+    }
+  ]
+}

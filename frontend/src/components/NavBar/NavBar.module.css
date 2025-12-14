@@ -1,0 +1,66 @@
+.appBar {
+  background-color: #1a1a1a !important;
+  box-shadow: none !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.toolbar {
+  display: flex !important;
+  justify-content: space-between !important;
+  padding: 0 2rem !important;
+}
+
+.navList {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.navLink {
+  text-decoration: none;
+}
+
+.navButton {
+  color: rgba(255, 255, 255, 0.87) !important;
+  text-transform: none !important;
+  font-weight: 500 !important;
+  font-size: 1rem !important;
+  border-radius: 6px !important;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif !important;
+}
+
+.navButton:hover {
+  background-color: #3e44b3 !important;
+  color: #fff !important;
+}
+
+.active .navButton {
+  background-color: #646cff !important;
+  color: #fff !important;
+}
+
+.rightButtons {
+  display: flex;
+  gap: 1rem;
+}
+
+.businessName {
+  font-weight: 700 !important;
+  color: #fff !important;
+  font-size: 1.25rem !important;
+  cursor: pointer !important;
+  transition: color 0.3s ease !important;
+}
+
+.businessName:hover {
+  color: #646cff !important;
+}
+
+.pageTitle {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-weight: 600 !important;
+  color: #646cff !important;
+  font-size: 1.1rem !important;
+}

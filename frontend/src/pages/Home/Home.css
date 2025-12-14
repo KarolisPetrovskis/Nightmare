@@ -1,0 +1,107 @@
+:root {
+  /* Original colors */
+  --pastel-purple: #b8b5ff;
+  --pastel-pink: #f3b7d8;
+  --pastel-blue: #a7c7e7;
+  --pastel-green: #b6e3c6;
+  --pastel-yellow: #f6e7b2;
+
+  /* New pastel colors */
+  --pastel-lavender: #c5b3e6;
+  --pastel-mint: #9fdfbf;
+  --pastel-coral: #ffb6b9;
+  --pastel-peach: #ffccb6;
+  --pastel-sky: #a3d9ff;
+  --pastel-lilac: #d9c5f4;
+  --pastel-rose: #ffb7ce;
+  --pastel-aqua: #a3e7d8;
+  --pastel-lemon: #fff6a3;
+  --pastel-mauve: #e0b0d5;
+  --pastel-seafoam: #8de0cb;
+  --pastel-apricot: #ffd8b1;
+  --pastel-periwinkle: #b8c2ff;
+  --pastel-blush: #ffb8d1;
+  --pastel-spearmint: #b8e0d2;
+  --pastel-cream: #fffdd0;
+  --pastel-wisteria: #c9a0dc;
+  --pastel-sand: #f4d9a4;
+  --pastel-ice: #a3e1f4;
+  --pastel-salmon: #ffb6a3;
+
+  --card-bg: #242424;
+  --card-hover: #2f2f2f;
+}
+
+.home-container {
+  background-color: #1a1a1a;
+  margin: 10px;
+  padding: 24px;
+  border-radius: 8px;
+  height: 78vh;
+}
+
+.home-title {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.home-subtitle {
+  margin-top: 6px;
+  margin-bottom: 32px;
+  color: #bdbdbd;
+}
+
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.home-dashboard-button {
+  background: var(--card-bg) !important;
+  height: 180px;
+  border-radius: 16px !important;
+  padding: 0 !important;
+  transition: all 0.25s ease;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  position: relative;
+  overflow: hidden;
+}
+.home-dashboard-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  height: 6px;
+  width: 100%;
+  background: var(--accent-color);
+}
+
+
+.home-dashboard-button:hover {
+  background: var(--card-hover) !important;
+}
+
+.home-button-content {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.home-button-icon {
+  color: var(--accent-color);
+}
+
+.home-button-text {
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-align: center;
+  color: #eaeaea;
+}
+.home-button-icon svg {
+  font-size: 64px;
+}

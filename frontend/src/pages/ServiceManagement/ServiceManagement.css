@@ -1,0 +1,100 @@
+.service-top-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.service-management .item-list-container {
+  flex: 0 0 300px; 
+  max-width: 320px;
+  min-width: 240px;
+}
+
+.service-management .info-container {
+  flex: 1 1 calc(100% - 340px);
+  min-width: 420px;
+}
+
+
+.service-management .item-card {
+  padding: 0.9rem;
+  font-size: 1rem;
+}
+
+
+.service-management .item-actions .item-action-button {
+  padding: 0.5rem 0 !important;
+  font-size: 0.95rem !important;
+}
+
+
+.service-management .item-list-pagination {
+  padding: 8px 0 14px;
+}
+
+.service-description {
+  background-color: #2b2b2b;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.service-description label {
+  font-size: 0.9rem;
+  color: #bdbdbd;
+}
+
+.service-description textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 140px;
+  background-color: #1f1f1f;
+  color: white;
+  border: none;
+  padding: 8px;
+  border-radius: 6px;
+  resize: vertical;
+  font-size: 1rem;
+  font-family: inherit;
+}
+
+.service-description textarea:focus {
+  outline: none;
+  background-color: #262626;
+}
+
+.service-description:focus-within {
+  border: 1px solid #646cff;
+  background-color: #333333;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+@media (max-width: 1000px) {
+  .service-top-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* reuse existing Management.css .info-box styles for smaller boxes */
+.info-box input[type="number"], .info-box input[type="date"], .info-box input[type="text"] {
+  padding: 8px;
+  border-radius: 6px;
+  border: none;
+  background-color: #1f1f1f;
+  color: white;
+}
+
+/* To ensure the layout of divs like in the wireframe */
+/* 4th item: service time */
+.service-top-grid .info-box:nth-child(4) {
+  grid-column: 1; /* left side */
+}
+
+/* 5th item: discount expiration */
+.service-top-grid .info-box:nth-child(5) {
+  grid-column: 3; /* right side */
+}

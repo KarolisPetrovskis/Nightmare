@@ -1,0 +1,128 @@
+.option-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.fixed-name{  
+  flex: 0 0 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.option-row input[type="text"]:first-of-type {
+  background-color: #1f1f1f;
+  padding: 8px;
+  border-radius: 6px;
+  border: none;
+  color: white;
+  font-size: 1rem;
+}
+
+.option-row input[type="text"]:not(:first-of-type) {
+  flex: 0 0 auto;
+  background-color: #1f1f1f;
+  padding: 8px;
+  border-radius: 6px;
+  border: none;
+  color: white;
+  font-size: 1rem;
+}
+
+.details-button {
+  background-color: #2d2d2d !important;
+  color: rgba(255, 255, 255, 0.87) !important;
+  text-transform: none !important;
+  font-weight: 500 !important;
+  font-size: 0.9rem !important;
+  border-radius: 6px !important;
+  border: none !important;
+  padding: 0.5rem 0.8rem !important;
+  cursor: pointer !important;
+  transition: background-color 0.3s ease !important;
+  flex: 0 0 auto;
+}
+
+.details-button:hover {
+  background-color: #3e44b3 !important;
+}
+
+.quantity-box {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background-color: #1f1f1f;
+  padding: 6px;
+  border-radius: 6px;
+  flex: 0 0 auto;
+}
+
+.quantity-box input {
+  width: 50px;
+  background-color: #1f1f1f;
+  padding: 4px;
+  border: none;
+  color: white;
+  text-align: center;
+  font-size: 1rem;
+}
+
+.quantity-box button {
+  background-color: #2d2d2d;
+  color: white;
+  border: none;
+  padding: 3px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.quantity-box button:hover {
+  background-color: #3e44b3;
+}
+
+.delete-dish {
+  color: #ff5b5b;
+  cursor: pointer;
+  font-size: 18px;
+  flex-shrink: 0;
+  transition: color 0.2s;
+}
+
+.delete-dish:hover {
+  color: white;
+}
+
+.management .info-container {
+  flex-grow: 2;
+}
+
+
+/* in OrderManagement.css */
+.quantity-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.quantity-box input {
+  width: 56px;
+  text-align: center;
+  background: #1f1f1f;
+  border-radius: 6px;
+  border: none;
+  color: white;
+  padding: 6px;
+}
+.quantity-box button {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background: #2d2d2d;
+  color: white;
+}

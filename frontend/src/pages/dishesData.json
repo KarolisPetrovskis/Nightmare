@@ -1,0 +1,74 @@
+{
+  "dishes": [
+    {
+      "id": 1,
+      "name": "Spaghetti Carbonara",
+      "price": 12.50,
+      "discount": 0,
+      "discountExpiration": "",
+      "vat": "standard",
+      "optionTrees": [
+        {
+          "id": 101,
+          "name": "Choose Pasta Size",
+          "options": [
+            { "id": 1001, "name": "Regular", "price": 0 },
+            { "id": 1002, "name": "Large", "price": 2.00 }
+          ]
+        },
+        {
+          "id": 102,
+          "name": "Extra Toppings",
+          "options": [
+            { "id": 1003, "name": "Parmesan", "price": 0.50 },
+            { "id": 1004, "name": "Bacon", "price": 1.00 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Caesar Salad",
+      "price": 8.90,
+      "discount": 10,
+      "discountExpiration": "2025-01-10",
+      "vat": "reduced",
+      "optionTrees": [
+        {
+          "id": 201,
+          "name": "Add Protein",
+          "options": [
+            { "id": 2001, "name": "Chicken", "price": 2.00 },
+            { "id": 2002, "name": "Shrimp", "price": 3.50 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Margherita Pizza",
+      "price": 10.00,
+      "discount": 0,
+      "discountExpiration": "",
+      "vat": "standard",
+      "optionTrees": [
+        {
+          "id": 301,
+          "name": "Choose Crust",
+          "options": [
+            { "id": 3001, "name": "Thin Crust", "price": 0 },
+            { "id": 3002, "name": "Thick Crust", "price": 1.00 }
+          ]
+        },
+        {
+          "id": 302,
+          "name": "Extra Cheese",
+          "options": [
+            { "id": 3003, "name": "Mozzarella", "price": 1.20 },
+            { "id": 3004, "name": "Cheddar", "price": 1.00 }
+          ]
+        }
+      ]
+    }
+  ]
+}

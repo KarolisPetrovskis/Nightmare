@@ -1,0 +1,124 @@
+.new-tree-button {
+  width: 100%;
+  background-color: #2d2d2d !important;
+  color: white !important;
+}
+
+.option-tree-list {
+  flex: 1 1 auto;
+  overflow: auto;
+  min-height: 0; 
+  padding-bottom: 8px;
+}
+
+.option-tree-box {
+  flex: 0 0 auto;
+  background-color: #2b2b2b;
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 8px;
+}
+
+.option-tree-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.option-tree-button {
+  flex: 0 !important;
+}
+
+.option-tree-header input {
+  flex-grow: 1;
+  background-color: #1f1f1f;
+  border: none;
+  padding: 6px;
+  color: white;
+  border-radius: 6px;
+}
+
+.delete-tree {
+  margin-left: 8px;
+  color: #ff5b5b;
+  background: none;
+  border: none;
+  font-size: 18px;
+}
+
+.option-list {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.option-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.option-tree-header input,
+.option-row input {
+  background-color: #1f1f1f;
+  padding: 8px;
+  border-radius: 6px;
+  border: none;
+  color: white;
+  font-size: 1rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.option-row input[type="number"] {
+  flex: 0 0 40px;
+  min-width: 0;
+}
+
+.delete-option {
+  background: none;
+  color: #ff5b5b;
+  border: none;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.add-option {
+  background-color: #333 !important;
+  color: white !important;
+  width: 100%;
+}
+
+.option-tree-box:focus-within {
+  border: 1px solid #646cff;
+  background-color: #333333;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.option-tree-box input:focus,
+.option-row input:focus,
+.option-tree-header input:focus {
+  outline: none;
+  background-color: #262626;
+}
+
+.option-tree-box:focus-within .add-option {
+  background-color: #3e44b3 !important;
+  color: white !important;
+}
+
+.modal-content .option-tree-box {
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.modal-content .option-tree-header input,
+.modal-content .option-row input[type="text"] {
+  background-color: #1f1f1f;
+  color: white;
+}
+

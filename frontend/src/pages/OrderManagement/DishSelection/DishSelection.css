@@ -1,0 +1,37 @@
+.dish-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.dish-card {
+  min-height: 88px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 12px;
+}
+
+/* responsiveness */
+@media (max-width: 1100px) {
+  .dish-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 800px) {
+  .dish-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 480px) {
+  .dish-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* small tweak for search input if you want to override in one place */
+.search-input:focus {
+  outline: none;
+  box-shadow: none;
+}
