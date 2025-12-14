@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using backend.Server.Interfaces;
 using backend.Server.Models.DatabaseObjects;
 using backend.Server.Models.DTOs.VAT;
@@ -28,7 +27,7 @@ namespace backend.Server.Controllers
         public async Task<ActionResult<Vat>> CreateVatRateAsync([FromBody] VatCreateDTO request)
         {
             var vat = await _vatService.CreateVatRate(request);
-            return CreatedAtAction(nameof(GetVatRateBYNid), new { nid = vat.Nid }, vat);
+            return CreatedAtAction(nameof(GetVatRateByNid), new { nid = vat.Nid }, vat);
         }
 
         [HttpPut("{nid}")]
@@ -39,7 +38,7 @@ namespace backend.Server.Controllers
         }
 
         [HttpGet("{nid}")]
-        public async Task<ActionResult<Vat>> GetVatRateBYNid(long nid)
+        public async Task<ActionResult<Vat>> GetVatRateByNid(long nid)
         {
             var vat = await _vatService.GetVatRateByNid(nid);
             return Ok(vat);

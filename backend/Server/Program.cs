@@ -55,7 +55,7 @@ builder.Services.AddScoped<IOrdersService, OrdersService>();
 builder.Services.AddScoped<IPaymentsService, PaymentsService>();
 builder.Services.AddScoped<IReceiptsService, ReceiptsService>();
 builder.Services.AddScoped<IServicesService, ServicesService>();
-builder.Services.AddScoped<IVatService, VatService>();
+builder.Services.AddScoped<IVATService, VATService>();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
