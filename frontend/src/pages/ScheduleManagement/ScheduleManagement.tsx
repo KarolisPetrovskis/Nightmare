@@ -7,6 +7,7 @@ import "../Management.css";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "@mui/material/Button";
+import SnackbarNotification from "../../components/SnackBar/SnackNotification";
 
 function getMonthMatrix(year: number, month: number) {
   // month: 0-11
@@ -54,6 +55,15 @@ export default function ScheduleManagement() {
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+  }>({
+    open: false,
+    message: '',
+    type: 'success',
+  });
 
   const handleDayClick = (day: number, inMonth: boolean) => {
     if (inMonth) {
