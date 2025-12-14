@@ -488,19 +488,19 @@ Accept: application/json
 ###
 
 # Get All Businesses by Owner ID
-GET {{backend_HostAddress}}/api/business?ownerNid=1
+GET {{backend_HostAddress}}/api/business?ownerId=1
 Accept: application/json
 
 ###
 
 # Get All Businesses by Owner ID - Different owner
-GET {{backend_HostAddress}}/api/business?ownerNid=2
+GET {{backend_HostAddress}}/api/business?ownerId=2
 Accept: application/json
 
 ###
 
 # Get All Businesses by Owner ID with pagination
-GET {{backend_HostAddress}}/api/business?ownerNid=1&page=0&perPage=10
+GET {{backend_HostAddress}}/api/business?ownerId=1&page=0&perPage=10
 Accept: application/json
 
 ###
