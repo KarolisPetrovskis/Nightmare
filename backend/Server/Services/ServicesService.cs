@@ -6,7 +6,7 @@ namespace backend.Server.Services
     {
         public void placeholderMethod()
         {
-            // Implementation of the placeholder method
+            // Implementation of the placeholder method 
         }
     }
 }

@@ -1,5 +1,5 @@
-using System.Threading.Tasks;
 using backend.Server.Interfaces;
+using backend.Server.Models.DatabaseObjects;
 using backend.Server.Models.DTOs.VAT;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,28 +7,27 @@ namespace backend.Server.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class VatController : ControllerBase
+    public class VATController : ControllerBase
     {
-        private readonly IVatService _vatService;
+        private readonly IVATService _vatService;
 
-        public VatController(IVatService vatService)
+        public VATController(IVATService vatService)
         {
             _vatService = vatService;
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetVatRatesAsync([FromQuery] VatGetAllDTO request)
+        public async Task<ActionResult<List<Vat>>> GetVatRatesAsync([FromQuery] VatGetAllDTO request)
         {
             var list = await _vatService.GetVatRates(request);
             return Ok(list);
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateVatRateAsync([FromBody] VatCreateDTO request)
+        public async Task<ActionResult<Vat>> CreateVatRateAsync([FromBody] VatCreateDTO request)
         {
             var vat = await _vatService.CreateVatRate(request);
-            return CreatedAtAction(nameof(GetVatRateBYNid), new { nid = vat.Nid }, vat);
-;
+            return CreatedAtAction(nameof(GetVatRateByNid), new { nid = vat.Nid }, vat);
         }
 
         [HttpPut("{nid}")]
@@ -39,13 +38,10 @@ namespace backend.Server.Controllers
         }
 
         [HttpGet("{nid}")]
-        public async Task<IActionResult> GetVatRateBYNid(long nid)
+        public async Task<ActionResult<Vat>> GetVatRateByNid(long nid)
         {
             var vat = await _vatService.GetVatRateByNid(nid);
-            if (vat == null)
-                return NotFound();
-            else
-                return Ok(vat);
+            return Ok(vat);
         }
 
         [HttpDelete("{nid}")]
