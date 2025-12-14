@@ -1,10 +1,11 @@
 using backend.Server.Interfaces;
 using backend.Server.Database;
 using backend.Server.Models.DatabaseObjects;
-using Microsoft.EntityFrameworkCore;
+using backend.Server.Models.DTOs.Menu;
 using backend.Server.Exceptions;
 using backend.Server._helpers;
 using backend.Server.Models.Helper;
+using Microsoft.EntityFrameworkCore;
 
 namespace backend.Server.Services
 {
@@ -43,16 +44,28 @@ namespace backend.Server.Services
                 .ToListAsync();
         }
 
-        public async Task CreateMenuItemAsync(MenuItem menuItem)
+        public async Task<MenuItem> CreateMenuItemAsync(MenuCreateDTO request)
         {
-            if (await _context.MenuItems.AnyAsync(m => m.Name == menuItem.Name && m.BusinessId == menuItem.BusinessId))
+            if (await _context.MenuItems.AnyAsync(m => m.Name == request.Name && m.BusinessId == request.BusinessId))
             {
-                throw new ApiException(409, $"Menu item with Name {menuItem.Name} already exists.");
+                throw new ApiException(409, $"Menu item with Name {request.Name} already exists.");
             }
+
+            var menuItem = new MenuItem
+            {
+                Name = request.Name,
+                BusinessId = request.BusinessId,
+                Price = request.Price,
+                Discount = request.Discount,
+                VatId = request.VatId,
+                DiscountTime = request.DiscountTime
+            };
 
             _context.MenuItems.Add(menuItem);
 
             await Helper.SaveChangesOrThrowAsync(_context, "Failed to create menu item.");
+
+            return menuItem;
         }
 
         public async Task<MenuItem> GetMenuItemByNidAsync(long nid)
@@ -63,21 +76,8 @@ namespace backend.Server.Services
             }
 
             var menuItem = await _context.MenuItems.FindAsync(nid) ?? throw new ApiException(404, $"Menu item {nid} not found.");
+
             return menuItem;
-        }
-
-        public async Task UpdateMenuItemAsync(MenuItem menuItem)
-        {
-            _context.MenuItems.Update(menuItem);
-            await Helper.SaveChangesOrThrowAsync(_context, "Failed to update menu item.", expectChanges: false);
-        }
-
-        public async Task DeleteMenuItemAsync(long nid)
-        {
-            var menuItem = await _context.MenuItems.FindAsync(nid) ?? throw new ApiException(404, $"Menu item {nid} not found.");
-            _context.MenuItems.Remove(menuItem);
-
-            await Helper.SaveChangesOrThrowAsync(_context, "Failed to delete menu item.");
         }
 
         public async Task<MenuItemWithAddons> GetMenuItemWithAddonsAsync(long nid)
@@ -86,13 +86,11 @@ namespace backend.Server.Services
             {
                 throw new ApiException(400, "Invalid menu item ID");
             }
-            var menuItem = await GetMenuItemByNidAsync(nid);
-            if (menuItem == null)
-            {
-                throw new ApiException(404, $"Menu item {nid} not found.");
-            }
-            var addons = _menuAddonsService.GetMenuAddonsByMenuItemNidAsync(nid);
-            if (addons == null || addons.Result.Count == 0)
+            var menuItem = await GetMenuItemByNidAsync(nid) ?? throw new ApiException(404, $"Menu item {nid} not found.");
+
+            var addons = await _menuAddonsService.GetMenuAddonsByMenuItemNidAsync(nid);
+
+            if (addons == null || addons.Count == 0)
             {
                 return new MenuItemWithAddons
                 {
@@ -100,12 +98,43 @@ namespace backend.Server.Services
                     Addons = null
                 };
             }
+
             return new MenuItemWithAddons
-                {
-                    MenuItem = menuItem,
-                    Addons = addons.Result
-                };
+            {
+                MenuItem = menuItem,
+                Addons = addons
+            };
         }
 
+        public async Task UpdateMenuItemAsync(MenuUpdateDTO request, long nid)
+        {
+            if (nid <= 0)
+            {
+                throw new ApiException(400, "Nid must be a positive number");
+            }
+            var menuItem = await _context.MenuItems.FindAsync(nid) ?? throw new ApiException(404, $"Menu item {nid} not found.");
+
+            if (request.Name != null) menuItem.Name = request.Name;
+            if (request.Price.HasValue) menuItem.Price = request.Price.Value;
+            if (request.Discount.HasValue) menuItem.Discount = request.Discount.Value;
+            if (request.VatId.HasValue) menuItem.VatId = request.VatId.Value;
+            if (request.DiscountTime.HasValue) menuItem.DiscountTime = request.DiscountTime;
+
+            _context.MenuItems.Update(menuItem);
+
+            await Helper.SaveChangesOrThrowAsync(_context, "Failed to update menu item.", expectChanges: false);
+        }
+
+        public async Task DeleteMenuItemAsync(long nid)
+        {
+            if (nid <= 0)
+            {
+                throw new ApiException(400, "Nid must be a positive number");
+            }
+            var menuItem = await _context.MenuItems.FindAsync(nid) ?? throw new ApiException(404, $"Menu item {nid} not found.");
+            _context.MenuItems.Remove(menuItem);
+
+            await Helper.SaveChangesOrThrowAsync(_context, "Failed to delete menu item.");
+        }
     }
 }

@@ -1,6 +1,7 @@
 using backend.Server.Database;
 using backend.Server.Interfaces;
 using backend.Server.Models.DatabaseObjects;
+using backend.Server.Models.DTOs.MenuAddon;
 using backend.Server.Exceptions;
 using backend.Server._helpers;
 using Microsoft.EntityFrameworkCore;
@@ -11,18 +12,18 @@ namespace backend.Server.Services
     {
         private readonly ApplicationDbContext _context = context;
 
-        public async Task<List<MenuItemIngredient>> GetAllMenuAddonsAsync(int page, int perPage)
+        public async Task<List<MenuItemIngredient>> GetAllMenuAddonsAsync(MenuAddonsGetAllDTO request)
         {
-            if (page < 0)
+            if (request.Page < 0)
             {
                 throw new ApiException(400, "Page number must be greater than zero");
             }
-            if (perPage <= 0)
+            if (request.PerPage <= 0)
             {
                 throw new ApiException(400, "PerPage value must be greater than zero");
             }
 
-            if (page == 0)
+            if (request.Page == 0)
             {
                 return await _context.MenuItemIngredients
                     .AsNoTracking()
@@ -30,57 +31,43 @@ namespace backend.Server.Services
             }
 
             return await _context.MenuItemIngredients
-                .Skip((page - 1) * perPage)
-                .Take(perPage)
+                .Skip((request.Page - 1) * request.PerPage)
+                .Take(request.PerPage)
                 .AsNoTracking()
                 .ToListAsync();
         }
 
-        public async Task CreateMenuAddonAsync(MenuItemIngredient menuAddon)
+        public async Task<MenuItemIngredient> CreateMenuAddonAsync(MenuAddonCreateDTO request)
         {
-            if (await _context.MenuItemIngredients.AnyAsync(m => m.Name == menuAddon.Name))
+            if (await _context.MenuItemIngredients.AnyAsync(m => m.Name == request.Name))
             {
                 throw new ApiException(409, "Menu addon with the same name already exists");
             }
 
+            var menuAddon = new MenuItemIngredient
+            {
+                Name = request.Name,
+                ItemId = request.ItemId,
+                Price = request.Price
+            };
+
             _context.MenuItemIngredients.Add(menuAddon);
 
             await Helper.SaveChangesOrThrowAsync(_context, "Failed to create menu addon");
+
+            return menuAddon;
         }
 
         public async Task<MenuItemIngredient> GetMenuAddonByNidAsync(long nid)
         {
             if (nid <= 0)
             {
-                throw new ApiException(400, "Invalid menu addon ID");
+                throw new ApiException(400, "Invalid menu addon Nid");
             }
 
-            var menuAddon = await _context.MenuItemIngredients
-                .AsNoTracking()
-                .FirstOrDefaultAsync(m => m.Nid == nid) ?? throw new ApiException(404, $"Menu addon {nid} not found");
+            var menuAddon = await _context.MenuItemIngredients.FindAsync(nid) ?? throw new ApiException(404, $"Menu addon {nid} not found");
             
             return menuAddon;
-        }
-
-        public async Task UpdateMenuAddonAsync(MenuItemIngredient menuAddon)
-        {
-            if (menuAddon == null || menuAddon.Nid <= 0)
-            {
-                throw new ApiException(400, "Invalid menu addon data");
-            }
-
-            _context.MenuItemIngredients.Update(menuAddon);
-            
-            await Helper.SaveChangesOrThrowAsync(_context, "Failed to update menu addon", expectChanges: false);
-        }
-
-        public async Task DeleteMenuAddonAsync(long nid)
-        {
-            var menuAddon = await _context.MenuItemIngredients.FindAsync(nid) ?? throw new ApiException(404, $"Menu addon {nid} not found");
-
-            _context.MenuItemIngredients.Remove(menuAddon);
-
-            await Helper.SaveChangesOrThrowAsync(_context, "Failed to delete menu addon");
         }
 
         public async Task<List<MenuItemIngredient>> GetMenuAddonsByMenuItemNidAsync(long menuItemNid)
@@ -96,6 +83,36 @@ namespace backend.Server.Services
                 .ToListAsync();
 
             return addons;
+        }
+
+        public async Task UpdateMenuAddonAsync(MenuAddonUpdateDTO request, long nid)
+        {
+            if (nid <= 0)
+            {
+                throw new ApiException(400, "Invalid menu addon Nid");
+            }
+            var menuAddon = await _context.MenuItemIngredients.FindAsync(nid) ?? throw new ApiException(404, $"Menu addon {nid} not found");
+
+            if (request.Name != null) menuAddon.Name = request.Name;
+            if (request.ItemId.HasValue) menuAddon.ItemId = request.ItemId.Value;
+            if (request.Price.HasValue) menuAddon.Price = request.Price.Value;
+
+            _context.MenuItemIngredients.Update(menuAddon);
+            
+            await Helper.SaveChangesOrThrowAsync(_context, "Failed to update menu addon", expectChanges: false);
+        }
+
+        public async Task DeleteMenuAddonAsync(long nid)
+        {
+            if (nid <= 0)
+            {
+                throw new ApiException(400, "Invalid menu addon Nid");
+            }
+            var menuAddon = await _context.MenuItemIngredients.FindAsync(nid) ?? throw new ApiException(404, $"Menu addon {nid} not found");
+
+            _context.MenuItemIngredients.Remove(menuAddon);
+
+            await Helper.SaveChangesOrThrowAsync(_context, "Failed to delete menu addon");
         }
     }
 }

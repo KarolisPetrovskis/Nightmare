@@ -7,14 +7,9 @@ namespace backend.Server.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class AppointmentController : ControllerBase
+    public class AppointmentController(IAppointmentsService appointmentsService) : ControllerBase
     {
-        private readonly IAppointmentsService _appointmentsService;
-
-        public AppointmentController(IAppointmentsService appointmentsService)
-        {
-            _appointmentsService = appointmentsService;
-        }
+        private readonly IAppointmentsService _appointmentsService = appointmentsService;
 
         [HttpGet]
         public async Task<ActionResult<List<Appointment>>> GetAllAppointments([FromQuery] AppointmentGetAllDTO request)
@@ -36,23 +31,7 @@ namespace backend.Server.Controllers
         [HttpPost]
         public async Task<ActionResult<Appointment>> CreateAppointment([FromBody] AppointmentCreateDTO request)
         {
-            var appointment = new Appointment
-            {
-                Code = request.Code,
-                BusinessId = request.BusinessId,
-                EmployeeId = request.EmployeeId,
-                ServiceId = request.ServiceId,
-                AppointmentDate = request.AppointmentDate,
-                AppointmentStart = request.AppointmentStart,
-                AppointmentEnd = request.AppointmentEnd,
-                Total = request.Total,
-                StatusId = request.StatusId,
-                CustomerCode = request.CustomerCode,
-                CustomerName = request.CustomerName,
-                CustomerNumber = request.CustomerNumber
-            };
-
-            await _appointmentsService.CreateAppointmentAsync(appointment);
+            var appointment = await _appointmentsService.CreateAppointmentAsync(request);
 
             return CreatedAtAction(nameof(GetAppointmentBynId), new { nid = appointment.Nid }, appointment);
         }
@@ -61,27 +40,14 @@ namespace backend.Server.Controllers
         public async Task<ActionResult<Appointment>> GetAppointmentBynId(long nid)
         {
             var appointment = await _appointmentsService.GetAppointmentByNidAsync(nid);
+
             return Ok(appointment);
         }
 
         [HttpPut("{nid}")]
         public async Task<IActionResult> UpdateAppointment(long nid, [FromBody] AppointmentUpdateDTO request)
         {
-            var appointment = await _appointmentsService.GetAppointmentByNidAsync(nid);
-
-            // Map only non-null properties from the request
-            if (request.EmployeeId.HasValue) appointment.EmployeeId = request.EmployeeId.Value;
-            if (request.ServiceId.HasValue) appointment.ServiceId = request.ServiceId.Value;
-            if (request.AppointmentDate.HasValue) appointment.AppointmentDate = request.AppointmentDate.Value;
-            if (request.AppointmentStart.HasValue) appointment.AppointmentStart = request.AppointmentStart.Value;
-            if (request.AppointmentEnd.HasValue) appointment.AppointmentEnd = request.AppointmentEnd.Value;
-            if (request.Total.HasValue) appointment.Total = request.Total.Value;
-            if (request.StatusId.HasValue) appointment.StatusId = request.StatusId.Value;
-            if (request.CustomerCode != null) appointment.CustomerCode = request.CustomerCode;
-            if (request.CustomerName != null) appointment.CustomerName = request.CustomerName;
-            if (request.CustomerNumber != null) appointment.CustomerNumber = request.CustomerNumber;
-
-            await _appointmentsService.UpdateAppointmentAsync(appointment);
+            await _appointmentsService.UpdateAppointmentAsync(request, nid);
 
             return NoContent();
         }
@@ -90,6 +56,7 @@ namespace backend.Server.Controllers
         public async Task<IActionResult> DeleteAppointment(long nid)
         {
             await _appointmentsService.DeleteAppointmentAsync(nid);
+            
             return NoContent();
         }
     }
