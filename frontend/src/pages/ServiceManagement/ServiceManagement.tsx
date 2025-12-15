@@ -74,6 +74,7 @@ export default function ServiceManagement() {
       }
 
       const id = await response.json();
+      setBusinessId(id);
       //console.log(id);
       return id;
     } catch (error) {
@@ -83,11 +84,11 @@ export default function ServiceManagement() {
   };
 
   // Fetch services
-  const fetchServices = async () => {
+  const fetchServices = async (id: number) => {
     try {
-      console.log(businessIdRef.current); // This will have the value
+      console.log(id);
       const response = await fetch(
-        `/api/services?businessId=${businessIdRef.current}&page=1&perPage=100`
+        `/api/services?businessId=${id}&page=1&perPage=100`
       );
       if (!response.ok) throw new Error('Failed to fetch services');
       const data = await response.json();
@@ -97,7 +98,6 @@ export default function ServiceManagement() {
       throw error;
     }
   };
-
   // Fetch VAT options
   const fetchVatOptions = async () => {
     try {
@@ -131,7 +131,7 @@ export default function ServiceManagement() {
       setLoading(true);
       try {
         const id = await fetchBusinessId();
-        //console.log('Id is this:', id);
+        console.log('Id is this:', id);
         updateBusinessId(id);
 
         if (id === null) {
@@ -142,7 +142,7 @@ export default function ServiceManagement() {
 
         //console.log('bus Id is this:', businessIdRef.current);
 
-        await fetchServices();
+        await fetchServices(id);
         await fetchVatOptions();
       } catch (error) {
       } finally {

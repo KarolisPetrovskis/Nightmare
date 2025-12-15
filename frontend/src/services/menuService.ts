@@ -41,9 +41,13 @@ export interface MenuUpdateDTO {
 
 export const menuApi = {
   // GET /api/menu?BusinessId=1&Page=0&PerPage=10
-  getMenu: async (businessId: number, page: number = 0, perPage: number = 100): Promise<MenuItem[]> => {
+  getMenu: async (
+    businessId: number,
+    page: number = 0,
+    perPage: number = 100
+  ): Promise<MenuItem[]> => {
     const response = await fetch(
-      `${API_BASE_URL}/menu?BusinessId=${businessId}&Page=${page}&PerPage=${perPage}`
+      `api/menu?BusinessId=${businessId}&Page=${page}&PerPage=${perPage}`
     );
     if (!response.ok) throw new Error('Failed to fetch menu items');
     return await response.json();
@@ -51,21 +55,21 @@ export const menuApi = {
 
   // GET /api/menu/{nid}
   getMenuItem: async (nid: number): Promise<MenuItem> => {
-    const response = await fetch(`${API_BASE_URL}/menu/${nid}`);
+    const response = await fetch(`api/menu/${nid}`);
     if (!response.ok) throw new Error('Failed to fetch menu item');
     return await response.json();
   },
 
   // GET /api/menu/{nid}/addons
   getMenuItemWithAddons: async (nid: number): Promise<MenuItemWithAddons> => {
-    const response = await fetch(`${API_BASE_URL}/menu/${nid}/addons`);
+    const response = await fetch(`api/menu/${nid}/addons`);
     if (!response.ok) throw new Error('Failed to fetch menu item with addons');
     return await response.json();
   },
 
   // POST /api/menu
   createMenuItem: async (data: MenuCreateDTO): Promise<MenuItem> => {
-    const response = await fetch(`${API_BASE_URL}/menu`, {
+    const response = await fetch(`api/menu`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -76,7 +80,7 @@ export const menuApi = {
 
   // PUT /api/menu/{nid}
   updateMenuItem: async (nid: number, data: MenuUpdateDTO): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/menu/${nid}`, {
+    const response = await fetch(`api/menu/${nid}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -86,7 +90,7 @@ export const menuApi = {
 
   // DELETE /api/menu/{nid}
   deleteMenuItem: async (nid: number): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/menu/${nid}`, {
+    const response = await fetch(`api/menu/${nid}`, {
       method: 'DELETE',
     });
     if (!response.ok) throw new Error('Failed to delete menu item');

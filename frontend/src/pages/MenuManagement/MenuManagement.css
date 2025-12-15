@@ -7,7 +7,7 @@
 .option-tree-list {
   flex: 1 1 auto;
   overflow: auto;
-  min-height: 0; 
+  min-height: 0;
   padding-bottom: 8px;
 }
 
@@ -73,7 +73,7 @@
   flex: 1;
 }
 
-.option-row input[type="number"] {
+.option-row input[type='number'] {
   flex: 0 0 40px;
   min-width: 0;
 }
@@ -117,8 +117,73 @@
 }
 
 .modal-content .option-tree-header input,
-.modal-content .option-row input[type="text"] {
+.modal-content .option-row input[type='text'] {
   background-color: #1f1f1f;
   color: white;
 }
 
+/* VAT Dropdown styles */
+.vat-dropdown-container {
+  position: relative;
+  width: 100%;
+}
+
+.vat-dropdown-toggle {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.vat-dropdown-arrow {
+  font-size: 10px;
+  color: #666;
+}
+
+.vat-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.vat-dropdown-item {
+  padding: 10px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.vat-dropdown-item:hover {
+  background-color: #f5f5f5;
+}
+
+.vat-dropdown-item.selected {
+  background-color: #e3f2fd;
+}
+
+.vat-dropdown-item.disabled {
+  color: #999;
+  cursor: not-allowed;
+}
+
+.vat-name {
+  font-weight: 500;
+}
+
+.vat-percentage {
+  color: #666;
+  font-size: 14px;
+}

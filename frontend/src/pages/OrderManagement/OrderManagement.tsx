@@ -130,7 +130,8 @@ export default function OrderManagement() {
       }
 
       const id = await response.json();
-      //console.log(id);
+      setBusinessId(id);
+      console.log(id);
       return id;
     } catch (error) {
       console.error('Error fetching business ID:', error);
