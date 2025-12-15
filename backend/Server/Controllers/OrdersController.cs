@@ -3,6 +3,7 @@ using backend.Server.Interfaces;
 using backend.Server.Models;
 using backend.Server.Models.DatabaseObjects;
 using backend.Server.Models.DTOs.Order;
+using backend.Server.Models.Enums;
 using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Server.Controllers
@@ -119,6 +120,12 @@ namespace backend.Server.Controllers
             return NoContent();
         }
 
+        [HttpPut("{orderNid}/status/{status}")]
+        public async Task<IActionResult> UpdateOrderStatus(long orderNid, OrderStatus status)
+        {
+            await _ordersService.UpdateOrderStatusAsync(orderNid, status);
+            return NoContent();
+        }
         [HttpGet("getFinalCost/{orderNid}/{tip}")]
         public async Task<ActionResult<decimal>> CalculateCost(long orderNid, decimal tip)
         {

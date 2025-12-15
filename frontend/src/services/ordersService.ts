@@ -4,7 +4,7 @@ export interface Order {
   nid: number;
   code: string | null;
   vatId: number;
-  statusId: number;
+  status: number;
   total: number;
   businessId: number;
   workerId: number | null;
@@ -43,7 +43,6 @@ export interface OrderDetailRequest {
 export interface OrderCreateDTO {
   code?: string | null;
   vatId: number;
-  statusId: number;
   total: number;
   businessId: number;
   workerId?: number | null;

@@ -93,44 +93,45 @@
 .payment-method-options {
   display: flex;
   gap: 15px;
-.payment-method-btn {
-  flex: 1;
-  padding: 15px;
-  border: 2px solid #3a3a3a;
-  border-radius: 8px;
-  background: #2d2d2d;
-  cursor: pointer;
-  transition: all 0.3s;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
+  .payment-method-btn {
+    flex: 1;
+    padding: 15px;
+    border: 2px solid #3a3a3a;
+    border-radius: 8px;
+    background: #2d2d2d;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
 
-.payment-method-btn:hover {
-  border-color: #3e44b3;
-  background: #2d2d2d;
-}
+  .payment-method-btn:hover {
+    border-color: #3e44b3;
+    background: #2d2d2d;
+  }
 
-.payment-method-btn.selected {
-  border-color: #3e44b3;
-  background: #3e44b3;
-}
+  .payment-method-btn.selected {
+    border-color: #3e44b3;
+    background: #3e44b3;
+  }
 
-.payment-method-btn svg {
-  font-size: 32px;
-  color: rgba(255, 255, 255, 0.7);
-}
+  .payment-method-btn svg {
+    font-size: 32px;
+    color: rgba(255, 255, 255, 0.7);
+  }
 
-.payment-method-btn.selected svg {
-  color: rgba(255, 255, 255, 0.95);
-}
+  .payment-method-btn.selected svg {
+    color: rgba(255, 255, 255, 0.95);
+  }
 
-.payment-method-btn span {
+  .payment-method-btn span {
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.87);
+  }
   font-size: 14px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.87);
-} font-size: 14px;
   font-weight: 500;
   color: #555;
 }
@@ -253,7 +254,6 @@
   color: rgba(255, 255, 255, 0.5);
 }
 
-
 .payment-status {
   padding: 6px 12px;
   border-radius: 4px;
@@ -303,4 +303,103 @@
   margin-bottom: 20px;
   font-size: 14px;
 }
+/* Add these styles to your existing PaymentProcessing.css */
 
+/* Tip input styling */
+.tip-input {
+  font-size: 1.1rem;
+  font-weight: 500;
+  border: 2px solid #646cff !important;
+  background-color: #1f1f1f !important;
+}
+
+.tip-input:focus {
+  background-color: #262626 !important;
+  border-color: #747bff !important;
+  box-shadow: 0 0 0 2px rgba(100, 108, 255, 0.2) !important;
+}
+
+.tip-hint {
+  color: #888;
+  font-size: 0.8rem;
+  margin-top: 4px;
+  display: block;
+}
+
+/* Cost summary styling */
+.cost-summary {
+  background-color: #2b2b2b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+}
+
+.cost-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.cost-row:last-child {
+  border-bottom: none;
+}
+
+.cost-row.total-cost {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 2px solid #646cff;
+  font-size: 1.1rem;
+}
+
+.final-amount {
+  color: #646cff;
+  font-size: 1.2rem;
+}
+
+.cost-note {
+  text-align: center;
+  margin-top: 12px;
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.loading-text {
+  color: #888;
+  font-style: italic;
+}
+
+/* Payment amount display */
+.payment-amount-display {
+  background-color: #2d2d2d;
+  border: 1px solid #646cff;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 12px 0;
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .cost-summary {
+    padding: 12px;
+  }
+
+  .cost-row {
+    padding: 6px 0;
+    font-size: 0.9rem;
+  }
+
+  .cost-row.total-cost {
+    font-size: 1rem;
+  }
+
+  .final-amount {
+    font-size: 1.1rem;
+  }
+}

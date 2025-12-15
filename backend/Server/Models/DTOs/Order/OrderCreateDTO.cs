@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using backend.Server.Models.Enums;
 
 namespace backend.Server.Models.DTOs.Order;
 public class OrderCreateDTO
@@ -9,10 +10,6 @@ public class OrderCreateDTO
     [Required]
     [Range(1, long.MaxValue, ErrorMessage = "VatId must be a positive number")]
     public required long VatId { get; set; }
-
-    [Required]
-    [Range(1, long.MaxValue, ErrorMessage = "StatusId must be a positive number")]
-    public required long StatusId { get; set; }
 
     [Range(0, double.MaxValue, ErrorMessage = "Total must be non-negative")]
     public decimal Total { get; set; } = 0.00M;

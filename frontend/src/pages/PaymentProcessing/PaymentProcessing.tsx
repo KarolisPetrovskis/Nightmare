@@ -1,11 +1,12 @@
 import './PaymentProcessing.css';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Button from '@mui/material/Button';
 import SnackbarNotification from '../../components/SnackBar/SnackNotification';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
 import LocalAtmIcon from '@mui/icons-material/LocalAtm';
 import CardGiftcardIcon from '@mui/icons-material/CardGiftcard';
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import StripeCardForm from './StripeCardForm';
@@ -16,7 +17,7 @@ const PaymentMethod = {
   GiftCard: 2,
 } as const;
 
-type PaymentMethodType = typeof PaymentMethod[keyof typeof PaymentMethod];
+type PaymentMethodType = (typeof PaymentMethod)[keyof typeof PaymentMethod];
 
 const PaymentStatus = {
   Pending: 0,
@@ -27,7 +28,7 @@ const PaymentStatus = {
   PartiallyRefunded: 5,
 } as const;
 
-type PaymentStatusType = typeof PaymentStatus[keyof typeof PaymentStatus];
+type PaymentStatusType = (typeof PaymentStatus)[keyof typeof PaymentStatus];
 
 type PaymentHistoryItem = {
   paymentId: number;
@@ -46,24 +47,31 @@ type Order = {
   nid: number;
   code: string;
   total: number;
-  statusId: number;
+  status: number;
   dateCreated: string;
 };
 
-export default function PaymentProcessing() {
+export default function PaymentProcessingWithTip() {
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
 
   const [order, setOrder] = useState<Order | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>(PaymentMethod.Card);
-  const [amount, setAmount] = useState<string>('');
-  const [tip, setTip] = useState<string>('0');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>(
+    PaymentMethod.Card
+  );
   const [customerEmail, setCustomerEmail] = useState<string>('');
   const [currency] = useState<string>('EUR');
   const [loading, setLoading] = useState(false);
   const [loadingOrder, setLoadingOrder] = useState(true);
-  const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryItem[]>([]);
+  const [loadingCost, setLoadingCost] = useState(false);
+  const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryItem[]>(
+    []
+  );
   const [stripePromise, setStripePromise] = useState<any>(null);
+
+  // Tip related states
+  const [tip, setTip] = useState<string>('0');
+  const [finalCost, setFinalCost] = useState<number | null>(null);
 
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
@@ -75,8 +83,8 @@ export default function PaymentProcessing() {
     type: 'success',
   });
 
+  // Initialize Stripe
   useEffect(() => {
-    // Fetch Stripe publishable key and initialize
     const initializeStripe = async () => {
       try {
         const response = await fetch('/api/payments/create-payment-intent', {
@@ -85,7 +93,7 @@ export default function PaymentProcessing() {
           credentials: 'include',
           body: JSON.stringify({
             orderId: parseInt(orderId || '0'),
-            amount: 1.00,
+            amount: 1.0,
             currency: 'eur',
           }),
         });
@@ -102,14 +110,55 @@ export default function PaymentProcessing() {
     };
 
     initializeStripe();
-  }, []);
+  }, [orderId]);
 
+  // Fetch order details
   useEffect(() => {
     if (orderId) {
       fetchOrder();
       fetchPaymentHistory();
     }
   }, [orderId]);
+
+  // Fetch final cost when tip changes
+  useEffect(() => {
+    const fetchFinalCost = async () => {
+      if (!orderId || !order) return;
+
+      try {
+        setLoadingCost(true);
+        const response = await fetch(
+          `/api/orders/getFinalCost/${orderId}/${tip || 0}`,
+          {
+            credentials: 'include',
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to calculate final cost');
+        }
+
+        const data = await response.json();
+        setFinalCost(data);
+      } catch (error) {
+        console.error('Failed to fetch final cost:', error);
+        setSnackbar({
+          open: true,
+          message: 'Failed to calculate final cost',
+          type: 'error',
+        });
+      } finally {
+        setLoadingCost(false);
+      }
+    };
+
+    // Debounce the API call
+    const timer = setTimeout(() => {
+      fetchFinalCost();
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [tip, orderId, order]);
 
   const fetchOrder = async () => {
     try {
@@ -124,7 +173,19 @@ export default function PaymentProcessing() {
 
       const data = await response.json();
       setOrder(data);
-      setAmount(data.total.toString());
+
+      // Get initial cost with 0 tip
+      const costResponse = await fetch(
+        `/api/orders/getFinalCost/${orderId}/0`,
+        {
+          credentials: 'include',
+        }
+      );
+
+      if (costResponse.ok) {
+        const costData = await costResponse.json();
+        setFinalCost(costData);
+      }
     } catch (error) {
       setSnackbar({
         open: true,
@@ -152,10 +213,10 @@ export default function PaymentProcessing() {
   };
 
   const handleProcessPayment = async () => {
-    if (!orderId || !amount || parseFloat(amount) <= 0) {
+    if (!orderId || !finalCost || finalCost <= 0) {
       setSnackbar({
         open: true,
-        message: 'Please enter a valid amount',
+        message: 'Invalid payment amount',
         type: 'error',
       });
       return;
@@ -166,17 +227,17 @@ export default function PaymentProcessing() {
       setLoading(true);
 
       try {
-        const totalWithTip = parseFloat(amount) + parseFloat(tip || '0');
         const response = await fetch('/api/payments/process', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
           body: JSON.stringify({
             orderId: parseInt(orderId),
-            amount: totalWithTip,
+            amount: finalCost,
             currency: currency,
             paymentMethod: paymentMethod,
             customerEmail: customerEmail || undefined,
+            tipAmount: parseFloat(tip) || 0,
           }),
         });
 
@@ -199,9 +260,6 @@ export default function PaymentProcessing() {
         // Reset form
         setCustomerEmail('');
         setTip('0');
-        if (order) {
-          setAmount(order.total.toString());
-        }
       } catch (error: any) {
         setSnackbar({
           open: true,
@@ -227,9 +285,6 @@ export default function PaymentProcessing() {
     // Reset form
     setCustomerEmail('');
     setTip('0');
-    if (order) {
-      setAmount(order.total.toString());
-    }
   };
 
   const handleStripeError = (message: string) => {
@@ -238,6 +293,13 @@ export default function PaymentProcessing() {
       message: message,
       type: 'error',
     });
+  };
+
+  const handleTipChange = (value: string) => {
+    // Allow only numbers and one decimal point
+    if (/^\d*\.?\d*$/.test(value) || value === '') {
+      setTip(value);
+    }
   };
 
   const getPaymentMethodIcon = (method: PaymentMethodType) => {
@@ -301,8 +363,8 @@ export default function PaymentProcessing() {
     return (
       <div className="payment-container">
         <div className="error-message">Order not found</div>
-        <Button 
-          variant="contained" 
+        <Button
+          variant="contained"
           className="back-button"
           onClick={() => navigate('/orders')}
         >
@@ -315,8 +377,8 @@ export default function PaymentProcessing() {
   return (
     <div className="payment-container">
       <div className="payment-header">
-        <Button 
-          variant="contained" 
+        <Button
+          variant="contained"
           className="back-button"
           onClick={() => navigate('/order-management')}
         >
@@ -336,8 +398,8 @@ export default function PaymentProcessing() {
             <span>Order Date:</span>
             <span>{new Date(order.dateCreated).toLocaleDateString()}</span>
           </div>
-          <div className="summary-row total">
-            <span>Total Amount:</span>
+          <div className="summary-row">
+            <span>Order Total:</span>
             <span>
               {order.total.toFixed(2)} {currency}
             </span>
@@ -348,27 +410,53 @@ export default function PaymentProcessing() {
           <h2>Payment Details</h2>
 
           <div className="form-group">
-            <label>Amount to Pay</label>
+            <label>
+              <AttachMoneyIcon
+                style={{ marginRight: '8px', verticalAlign: 'middle' }}
+              />
+              Tip Amount ({currency})
+            </label>
             <input
-              type="number"
-              step="0.01"
-              min="0.01"
-              value={amount}
-              readOnly
-              placeholder="Enter amount"
+              type="text"
+              value={tip}
+              onChange={(e) => handleTipChange(e.target.value)}
+              placeholder="Enter tip amount"
+              className="tip-input"
             />
+            <small className="tip-hint">
+              Enter flat tip amount (e.g., 5.50)
+            </small>
           </div>
 
-          <div className="form-group">
-            <label>Tip (Optional)</label>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={tip}
-              onChange={(e) => setTip(e.target.value)}
-              placeholder="Enter tip amount"
-            />
+          <div className="cost-summary">
+            <div className="cost-row">
+              <span>Order Total:</span>
+              <span>
+                {order.total.toFixed(2)} {currency}
+              </span>
+            </div>
+            <div className="cost-row">
+              <span>Tip:</span>
+              <span>
+                {(parseFloat(tip) || 0).toFixed(2)} {currency}
+              </span>
+            </div>
+            <div className="cost-row total-cost">
+              <span>Final Amount to Pay:</span>
+              <span className="final-amount">
+                {loadingCost ? (
+                  <span className="loading-text">Calculating...</span>
+                ) : (
+                  <strong>
+                    {finalCost !== null ? finalCost.toFixed(2) : '0.00'}{' '}
+                    {currency}
+                  </strong>
+                )}
+              </span>
+            </div>
+            <div className="cost-note">
+              <small>Final amount is calculated by the server</small>
+            </div>
           </div>
 
           <div className="form-group">
@@ -415,31 +503,39 @@ export default function PaymentProcessing() {
           </div>
 
           {/* Stripe Card Payment Form */}
-          {paymentMethod === PaymentMethod.Card && stripePromise && orderId && (
-            <Elements stripe={stripePromise}>
-              <StripeCardForm
-                amount={(parseFloat(amount) + parseFloat(tip || '0')).toString()}
-                currency={currency}
-                orderId={orderId}
-                customerEmail={customerEmail}
-                onSuccess={handleStripeSuccess}
-                onError={handleStripeError}
-              />
-            </Elements>
-          )}
+          {paymentMethod === PaymentMethod.Card &&
+            stripePromise &&
+            orderId &&
+            finalCost && (
+              <Elements stripe={stripePromise}>
+                <StripeCardForm
+                  amount={finalCost.toString()}
+                  currency={currency}
+                  orderId={orderId}
+                  customerEmail={customerEmail}
+                  onSuccess={handleStripeSuccess}
+                  onError={handleStripeError}
+                />
+              </Elements>
+            )}
         </div>
 
         {/* Show regular payment button for non-card payments */}
-        {paymentMethod !== PaymentMethod.Card && (
+        {paymentMethod !== PaymentMethod.Card && finalCost && (
           <div className="payment-actions">
             <button
               className="btn-pay"
               onClick={handleProcessPayment}
-              disabled={loading || !amount || parseFloat(amount) <= 0}
+              disabled={loading || !finalCost || finalCost <= 0 || loadingCost}
             >
-              {loading ? 'Processing...' : 'Process Payment'}
+              {loading
+                ? 'Processing...'
+                : `Pay ${finalCost.toFixed(2)} ${currency}`}
             </button>
-            <button className="btn-cancel" onClick={() => navigate('/order-management')}>
+            <button
+              className="btn-cancel"
+              onClick={() => navigate('/order-management')}
+            >
               Cancel
             </button>
           </div>

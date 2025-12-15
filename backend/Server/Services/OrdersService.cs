@@ -5,6 +5,7 @@ using backend.Server.Interfaces;
 using backend.Server.Models;
 using backend.Server.Models.DatabaseObjects;
 using backend.Server.Models.DTOs.Order;
+using backend.Server.Models.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace backend.Server.Services
@@ -65,7 +66,7 @@ namespace backend.Server.Services
             {
                 Code = request.Code,
                 VatId = request.VatId,
-                StatusId = request.StatusId,
+                Status = OrderStatus.InProgress,
                 Total = request.Total,
                 DateCreated = DateTime.UtcNow,
                 BusinessId = request.BusinessId,
@@ -208,7 +209,7 @@ namespace backend.Server.Services
             }
             var order = await _context.Orders.FindAsync(nid) ?? throw new ApiException(404, $"Order {nid} not found");
 
-            if (request.StatusId.HasValue) order.StatusId = request.StatusId.Value;
+            if (request.StatusId.HasValue) order.Status = (OrderStatus)request.StatusId.Value;
             if (request.Total.HasValue) order.Total = request.Total.Value;
 
             _context.Orders.Update(order);
@@ -445,6 +446,20 @@ namespace backend.Server.Services
             await Helper.SaveChangesOrThrowAsync(_context, $"Failed to update order total.", expectChanges: false);
         }
 
+        public async Task UpdateOrderStatusAsync(long orderNid, OrderStatus status)
+        {
+            var order = await _context.Orders.FindAsync(orderNid) ?? throw new ApiException(404, $"Order with ID {orderNid} not found");
+
+            if (!Enum.IsDefined(typeof(OrderStatus), status))
+            {
+                throw new ApiException(400, $"Invalid status value: {status}");
+            }
+
+            order.Status = status;
+            _context.Orders.Update(order);
+            await Helper.SaveChangesOrThrowAsync(_context, $"Failed to update order status.");
+        }
+        
         public async Task<decimal> CalculateCost(long orderNid, decimal tip)
         {
             if (orderNid <= 0)

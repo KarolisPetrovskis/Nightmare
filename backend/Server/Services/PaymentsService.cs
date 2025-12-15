@@ -7,16 +7,19 @@ using backend.Server.Models.Enums;
 using Microsoft.EntityFrameworkCore;
 using Stripe;
 using PaymentMethod = backend.Server.Models.Enums.PaymentMethod;
+using OrderStatus = backend.Server.Models.Enums.OrderStatus;
 
 namespace backend.Server.Services
 {
     public class PaymentsService : IPaymentsService
     {
         private readonly ApplicationDbContext _context;
+        private readonly IOrdersService _ordersService;
 
-        public PaymentsService(ApplicationDbContext context)
+        public PaymentsService(ApplicationDbContext context, IOrdersService ordersService)
         {
             _context = context;
+            _ordersService = ordersService;
         }
 
         public async Task<PaymentResponseDTO> ProcessPaymentAsync(ProcessPaymentDTO request)
@@ -81,6 +84,12 @@ namespace backend.Server.Services
 
                 _context.Payments.Add(payment);
                 await _context.SaveChangesAsync();
+
+                // Update order status to Paid if payment completed
+                if (payment.Status == PaymentStatus.Completed)
+                {
+                    await _ordersService.UpdateOrderStatusAsync(request.OrderId, OrderStatus.Paid);
+                }
 
                 return MapToDTO(payment);
             }

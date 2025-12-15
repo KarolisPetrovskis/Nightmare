@@ -3,8 +3,10 @@ import "../../Management.css";
 import { useState, useEffect } from "react";
 import Button from "@mui/material/Button";
 import SnackbarNotification from "../../../components/SnackBar/SnackNotification";
+import { OrderStatus, getOrderStatusLabel } from "../../../types/orderStatus";
 import { useAuth } from "../../../context/AuthContext";
 
+const MOCK_BUSINESS_ID = 12;
 const REFUNDED_STATUS_ID = 3; 
 
 interface OrderRecord {
@@ -13,7 +15,7 @@ interface OrderRecord {
   total: number;
   workerId?: number;
   dateCreated: string;
-  statusId: number;
+  status: number;
   businessId: number;
   statusName?: string; // Display name for status
 }
@@ -22,11 +24,6 @@ export default function OrderHistory() {
   const { businessId } = useAuth();
   const [orders, setOrders] = useState<OrderRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusMap, setStatusMap] = useState<{ [key: number]: string }>({
-    1: "Finished",
-    2: "Unfinished",
-    4: "Refunded",
-  });
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
@@ -68,10 +65,10 @@ export default function OrderHistory() {
       const data = await response.json();
       console.log('Fetched orders:', data);
       
-      // Map statusId to statusName for display
+      // Map status to statusName for display
       const ordersWithStatus = data.map((order: OrderRecord) => ({
         ...order,
-        statusName: statusMap[order.statusId] || `Status ${order.statusId}`,
+        statusName: getOrderStatusLabel(order.status),
       }));
       
       setOrders(ordersWithStatus);
@@ -224,17 +221,27 @@ export default function OrderHistory() {
                     checked={filterState === ""}
                     onChange={(e) => setFilterState(e.target.value)}
                   />
-                  finished
+                  all
                 </label>
                 <label>
                   <input
                     type="radio"
                     name="state"
-                    value="unfinished"
-                    checked={filterState === "unfinished"}
+                    value="paid"
+                    checked={filterState === "paid"}
                     onChange={(e) => setFilterState(e.target.value)}
                   />
-                  unfinished
+                  paid
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    name="state"
+                    value="in progress"
+                    checked={filterState === "in progress"}
+                    onChange={(e) => setFilterState(e.target.value)}
+                  />
+                  in progress
                 </label>
                 <label>
                   <input
@@ -276,7 +283,7 @@ export default function OrderHistory() {
                     <td>{new Date(order.dateCreated).toLocaleDateString()}</td>
                     <td>{order.statusName}</td>
                     <td>
-                      {order.statusName === "Finished" && (
+                      {order.statusName === "Paid" && (
                         <Button
                           className="refund-btn"
                           variant="contained"
