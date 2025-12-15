@@ -236,7 +236,11 @@ export default function PaymentProcessing() {
     return (
       <div className="payment-container">
         <div className="error-message">Order not found</div>
-        <Button variant="contained" onClick={() => navigate('/orders')}>
+        <Button 
+          variant="contained" 
+          className="back-button"
+          onClick={() => navigate('/orders')}
+        >
           Back to Orders
         </Button>
       </div>
@@ -246,10 +250,14 @@ export default function PaymentProcessing() {
   return (
     <div className="payment-container">
       <div className="payment-header">
-        <h1>Payment Processing</h1>
-        <Button variant="outlined" onClick={() => navigate('/orders')}>
+        <Button 
+          variant="contained" 
+          className="back-button"
+          onClick={() => navigate('/order-management')}
+        >
           Back to Orders
         </Button>
+        <h1>Payment Processing</h1>
       </div>
 
       <div className="payment-form">
