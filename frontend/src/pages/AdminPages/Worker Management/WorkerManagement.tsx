@@ -20,6 +20,7 @@ type Worker = {
   bankAccount?: string;
   bossId?: string;
   userType: number;
+  businessId?: number;
 };
 
 type ApiWorker = {
@@ -58,6 +59,7 @@ export default function WorkerManagement() {
     bankAccount: '',
     bossId: '',
     userType: 1, // Default to staff
+    businessId: undefined,
   });
   const [loading, setLoading] = useState(false);
   const [currentUserType, setCurrentUserType] = useState<number | null>(null);
@@ -150,6 +152,7 @@ export default function WorkerManagement() {
       bankAccount: '',
       bossId: userId.toString(),
       userType: 1, // Default to staff
+      businessId: currentUserType === 3 ? undefined : businessId, // Super admin can set manually
     });
     setIsModalOpen(true);
   };
@@ -185,6 +188,7 @@ export default function WorkerManagement() {
       bankAccount: '',
       bossId: '',
       userType: 1,
+      businessId: undefined,
     });
   };
 
@@ -199,8 +203,16 @@ export default function WorkerManagement() {
       return;
     }
     
-    if (!userId || !businessId) {
+    if (!userId) {
       showSnackbar('Authentication required', 'error');
+      return;
+    }
+    
+    // For super admin, check if businessId is set manually
+    const targetBusinessId = currentUserType === 3 && formData.businessId ? formData.businessId : businessId;
+    
+    if (!targetBusinessId) {
+      showSnackbar('Business ID is required', 'error');
       return;
     }
     
@@ -212,6 +224,8 @@ export default function WorkerManagement() {
 
     try {
       setLoading(true);
+      const targetBusinessId = currentUserType === 3 && formData.businessId ? formData.businessId : businessId;
+      
       if (currentWorker) {
         // Update existing worker
         const updatePayload: any = {
@@ -220,7 +234,7 @@ export default function WorkerManagement() {
           email: formData.email,
           telephone: formData.phone,
           userType: formData.userType,
-          businessId: businessId,
+          businessId: targetBusinessId,
           address: formData.address,
           salary: formData.salary ? parseFloat(formData.salary) : undefined,
           bankAccount: formData.bankAccount,
@@ -258,7 +272,7 @@ export default function WorkerManagement() {
             password: formData.password,
             telephone: formData.phone,
             userType: formData.userType,
-            businessId: businessId,
+            businessId: targetBusinessId,
             address: formData.address,
             salary: formData.salary ? parseFloat(formData.salary) : undefined,
             bankAccount: formData.bankAccount,
@@ -436,6 +450,18 @@ export default function WorkerManagement() {
                 <option value={2}>Manager</option>
               </select>
             </div>
+
+            {currentUserType === 3 && (
+              <div className="info-box">
+                <label>Business ID *</label>
+                <input
+                  type="number"
+                  placeholder="Enter business ID"
+                  value={formData.businessId || ''}
+                  onChange={(e) => handleInputChange('businessId', parseInt(e.target.value, 10) || undefined)}
+                />
+              </div>
+            )}
 
             <div className="info-box">
               <label>Bank Account</label>
