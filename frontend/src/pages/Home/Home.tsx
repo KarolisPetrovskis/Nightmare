@@ -9,6 +9,7 @@ import TodayIcon from '@mui/icons-material/Today';
 import StoreIcon from '@mui/icons-material/Store';
 import EngineeringIcon from '@mui/icons-material/Engineering';
 import HistoryIcon from '@mui/icons-material/History';
+import PercentIcon from '@mui/icons-material/Percent';
 
 import './Home.css';
 
@@ -17,9 +18,8 @@ export default function Home() {
 
   return (
     <div className="home-container">
-    <h1 className="home-title">Nightmare Central</h1>
-    <p className="home-subtitle">Managing chaos one click at a time</p>
-
+      <h1 className="home-title">Nightmare Central</h1>
+      <p className="home-subtitle">Managing chaos one click at a time</p>
 
       <div className="home-grid">
         <DashboardButton
@@ -55,7 +55,11 @@ export default function Home() {
           label="Today’s Schedule"
           color="#f6e7b2"
           onClick={() =>
-            navigate(`/current-schedule-management/${new Date().toISOString().slice(0, 10)}`)
+            navigate(
+              `/current-schedule-management/${new Date()
+                .toISOString()
+                .slice(0, 10)}`
+            )
           }
         />
 
@@ -79,6 +83,13 @@ export default function Home() {
           color="#c9a0dc"
           onClick={() => navigate('/admin/order-history')}
         />
+
+        <DashboardButton
+          icon={<PercentIcon />}
+          label="Vat Managment"
+          color="#f5d4b8"
+          onClick={() => navigate('/admin/vat')}
+        />
       </div>
     </div>
   );
@@ -90,7 +101,12 @@ type DashboardButtonProps = {
   onClick: () => void;
 };
 
-function DashboardButton({ icon, label, onClick, color }: DashboardButtonProps & { color: string }) {
+function DashboardButton({
+  icon,
+  label,
+  onClick,
+  color,
+}: DashboardButtonProps & { color: string }) {
   return (
     <Button
       className="item-action-button home-dashboard-button"
@@ -104,4 +120,3 @@ function DashboardButton({ icon, label, onClick, color }: DashboardButtonProps &
     </Button>
   );
 }
-
