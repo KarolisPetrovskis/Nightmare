@@ -124,11 +124,11 @@ export default function ServiceManagement() {
       try {
         // 1. Get business ID
 
-        //const response = fetch('/api/auth/businessId', {
-        //  method: 'GET',
-        //  credentials: 'include',
-        //});
-        //console.log(response);
+        const response = fetch('/api/auth/businessId', {
+          method: 'GET',
+          credentials: 'include',
+        });
+        console.log(response);
 
         //fetch('/api/weatherforeca
         //const id = await fetchBusinessId();

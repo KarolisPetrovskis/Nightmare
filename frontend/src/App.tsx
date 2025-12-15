@@ -49,11 +49,11 @@ export default function App() {
   };
 
   useEffect(() => {
-    //const response = fetch('/api/auth/businessId', {
-    //  method: 'GET',
-    //  credentials: 'include',
-    //});
-    //console.log(response);
+    const response = fetch('/api/auth/businessId', {
+      method: 'GET',
+      credentials: 'include',
+    });
+    console.log(response);
     //fetch('/api/weatherforecast')
     //  .then((res) => res.json())
     //  .then((data) => setData(data))
