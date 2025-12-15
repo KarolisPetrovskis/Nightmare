@@ -228,7 +228,7 @@ export default function MenuManagement() {
         if (optionsDirty && selectedItem) {
           const existingGroups = await addonGroupsApi.getGroupsByMenuItemNid(editableItem.id);
           const existingGroupIds = new Set(existingGroups.map(g => g.nid));
-          const currentGroupIds = new Set(editableItem.optionGroups.filter(g => g.id > 0).map(g => g.id));
+          const currentGroupIds = new Set(editableItem.optionGroups.filter(g => g.id >= 0).map(g => g.id));
 
           // Delete removed groups (this will cascade delete addons)
           for (const group of existingGroups) {
@@ -238,8 +238,9 @@ export default function MenuManagement() {
           }
 
           // Process each group
+          const updatedGroups: OptionGroup[] = [];
           for (const group of editableItem.optionGroups) {
-            if (group.id <= 0) {
+            if (group.id < 0) {
               // Create new group
               const groupData: MenuAddonGroupCreateDTO = {
                 name: group.name,
@@ -248,20 +249,32 @@ export default function MenuManagement() {
               const createdGroup = await addonGroupsApi.createGroup(groupData);
               
               // Create addons for new group
+              const createdOptions: Option[] = [];
               for (const option of group.options) {
                 const addonData: MenuAddonCreateDTO = {
                   name: option.name,
                   groupId: createdGroup.nid,
                   price: option.price
                 };
-                await menuAddonsApi.createAddon(addonData);
+                const createdAddon = await menuAddonsApi.createAddon(addonData);
+                createdOptions.push({
+                  id: createdAddon.nid,
+                  name: createdAddon.name,
+                  price: createdAddon.price
+                });
               }
+              
+              updatedGroups.push({
+                id: createdGroup.nid,
+                name: createdGroup.name,
+                options: createdOptions
+              });
             } else {
               // Update existing group
               // Get existing addons for this group
               const existingAddons = await menuAddonsApi.getAddonsByGroupNid(group.id);
               const existingAddonIds = new Set(existingAddons.map(a => a.nid));
-              const currentAddonIds = new Set(group.options.filter(o => o.id > 0).map(o => o.id));
+              const currentAddonIds = new Set(group.options.filter(o => o.id >= 0).map(o => o.id));
 
               // Delete removed addons
               for (const addon of existingAddons) {
@@ -271,15 +284,21 @@ export default function MenuManagement() {
               }
 
               // Create/update addons
+              const updatedOptions: Option[] = [];
               for (const option of group.options) {
-                if (option.id <= 0) {
+                if (option.id < 0) {
                   // Create new addon
                   const addonData: MenuAddonCreateDTO = {
                     name: option.name,
                     groupId: group.id,
                     price: option.price
                   };
-                  await menuAddonsApi.createAddon(addonData);
+                  const createdAddon = await menuAddonsApi.createAddon(addonData);
+                  updatedOptions.push({
+                    id: createdAddon.nid,
+                    name: createdAddon.name,
+                    price: createdAddon.price
+                  });
                 } else if (existingAddonIds.has(option.id)) {
                   // Update existing addon
                   const addonData: MenuAddonUpdateDTO = {
@@ -287,15 +306,30 @@ export default function MenuManagement() {
                     price: option.price
                   };
                   await menuAddonsApi.updateAddon(option.id, addonData);
+                  updatedOptions.push(option);
+                } else {
+                  updatedOptions.push(option);
                 }
               }
+              
+              updatedGroups.push({
+                id: group.id,
+                name: group.name,
+                options: updatedOptions
+              });
             }
           }
+          
+          // Update the editable item with the new IDs
+          editableItem.optionGroups = updatedGroups;
         }
 
+        const updatedItem = { ...editableItem };
         setItems(prev =>
-          prev.map(i => i.id === editableItem.id ? editableItem : i)
+          prev.map(i => i.id === editableItem.id ? updatedItem : i)
         );
+        setSelectedItem(updatedItem);
+        setEditableItem(updatedItem);
       }
 
       setItemDirty(false);
@@ -523,8 +557,8 @@ export default function MenuManagement() {
             <Button
               className="option-tree-button item-action-button new-item"
               onClick={() => {
-                const newGroup = {
-                  id: Date.now(),
+                const newGroup: OptionGroup = {
+                  id: -Date.now(),
                   name: "",
                   options: []
                 };
@@ -626,7 +660,7 @@ export default function MenuManagement() {
                           onClick={() => {
                             const updated = [...editableItem.optionGroups];
                             updated[realIndex].options.push({
-                              id: Date.now(),
+                              id: -Date.now(),
                               name: "",
                               price: 0
                             });
