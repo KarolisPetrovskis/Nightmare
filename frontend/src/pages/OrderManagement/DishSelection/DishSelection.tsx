@@ -1,14 +1,10 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../../Management.css";
 import "../OrderManagement.css";
 import "./DishSelection.css";
 import Button from "@mui/material/Button";
 import PaginationComponent from "../../../components/Pagination/PaginationComponent";
-import { menuApi } from "../../../services/menuService";
-import { menuAddonsApi, addonGroupsApi } from "../../../services/menuAddonsService";
-
-const BUSINESS_ID = 1; // TODO: Get from auth context
 
 type Option = { nid: number; name: string; price: number; };
 type OptionGroup = { nid: number; name: string; options: Option[]; };
@@ -45,36 +41,60 @@ export default function DishSelectionPage() {
   const [quantity, setQuantity] = useState(1);
   const [modalSelections, setModalSelections] = useState<Record<number, number>>({});
 
+  // Fetch business ID
+  const fetchBusinessId = async (): Promise<number> => {
+    try {
+      const response = await fetch('/api/auth/businessId', {
+        method: 'GET',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Please login to access menu');
+        }
+        throw new Error(`Failed to get business ID: ${response.statusText}`);
+      }
+      const id = await response.json();
+      return id;
+    } catch (error) {
+      console.error('Error fetching business ID:', error);
+      throw error as Error;
+    }
+  };
+
   // Fetch menu items from backend
   useEffect(() => {
     const fetchMenuItems = async () => {
       try {
         setLoading(true);
-        const items = await menuApi.getMenu(BUSINESS_ID, 0, 1000);
+        const id = await fetchBusinessId();
+        
+        const response = await fetch(`/api/menu?BusinessId=${id}&Page=0&PerPage=1000`);
+        if (!response.ok) throw new Error('Failed to fetch menu');
+        const items = await response.json();
         
         // Fetch addon groups for each item
         const itemsWithAddons = await Promise.all(
-          items.map(async (item) => {
+          items.map(async (item: any) => {
             try {
-              const groups = await addonGroupsApi.getGroupsByMenuItemNid(item.nid);
+              const groupsRes = await fetch(`/api/menu/addon-groups/by-menu-item/${item.nid}`);
+              if (!groupsRes.ok) throw new Error('Failed to fetch groups');
+              const groups = await groupsRes.json();
               
               // Fetch addons for each group
               const addonGroups = await Promise.all(
-                groups.map(async (group) => {
-                  const addons = await menuAddonsApi.getAddonsByGroupNid(group.nid);
+                groups.map(async (group: any) => {
+                  const addonsRes = await fetch(`/api/menu/addons/by-group/${group.nid}`);
+                  if (!addonsRes.ok) throw new Error('Failed to fetch addons');
+                  const addons = await addonsRes.json();
                   return {
                     nid: group.nid,
                     name: group.name,
-                    options: addons.map(addon => {
-                      if (addon.price === undefined || addon.price === null) {
-                        console.warn('Addon missing price:', addon);
-                      }
-                      return {
-                        nid: addon.nid,
-                        name: addon.name,
-                        price: addon.price || 0,
-                      };
-                    })
+                    options: addons.map((addon: any) => ({
+                      nid: addon.nid,
+                      name: addon.name,
+                      price: addon.price || 0,
+                    }))
                   };
                 })
               );
@@ -88,6 +108,7 @@ export default function DishSelectionPage() {
                 addonGroups,
               };
             } catch (error) {
+              console.error(`Failed to fetch addon groups for item ${item.nid}:`, error);
               return {
                 nid: item.nid,
                 name: item.name,

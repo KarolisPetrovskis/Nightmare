@@ -314,12 +314,13 @@ export default function MenuManagement() {
           const groupsRes = await fetch(`/api/menu/addon-groups/by-menu-item/${editableItem.id}`);
           if (!groupsRes.ok) throw new Error('Failed to fetch groups');
           const existingGroups = await groupsRes.json();
-          const currentGroupIds = new Set(editableItem.optionGroups.filter(g => g.id >= 0).map(g => g.id));
+          const currentGroupIds = new Set(editableItem.optionGroups.filter(g => g.id > 0).map(g => g.id));
 
           // Delete removed groups
           for (const group of existingGroups) {
             if (!currentGroupIds.has(group.nid)) {
-              await fetch(`/api/menu/addon-groups/${group.nid}`, { method: 'DELETE' });
+              const deleteRes = await fetch(`/api/menu/addon-groups/${group.nid}`, { method: 'DELETE' });
+              if (!deleteRes.ok) throw new Error(`Failed to delete group ${group.nid}`);
             }
           }
 
@@ -752,7 +753,7 @@ export default function MenuManagement() {
                             <input
                               type="number"
                               value={opt.price}
-                              placeholder="Price (€)"
+                              placeholder="0.00 €"
                               min="0"
                               onChange={(e) => {
                                 const updated = [...editableItem.optionGroups];
