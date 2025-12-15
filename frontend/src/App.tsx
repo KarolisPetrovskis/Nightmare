@@ -78,7 +78,7 @@ export default function App() {
                     path="/admin/order-history"
                     element={<OrderHistory />}
                   />
-                  <Route path="/vat" element={<VATManagement />} />
+                  <Route path="/admin/vat" element={<VATManagement />} />
                 </Routes>
               </main>
               <div className="side-container" />
