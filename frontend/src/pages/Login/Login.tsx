@@ -21,26 +21,38 @@ export default function Login() {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
   }
 
-  const handleSubmit = (ev?: React.FormEvent) => {
+  const handleSubmit = async (ev?: React.FormEvent) => {
     if (ev) ev.preventDefault();
     if (!validateEmail(email)) {
-      setSnackbar({ open: true, message: 'Please enter a valid email.', type: 'error' });
+      setSnackbar({
+        open: true,
+        message: 'Please enter a valid email.',
+        type: 'error',
+      });
       return;
     }
     if (!password || password.length < 6) {
-      setSnackbar({ open: true, message: 'Password must be at least 6 characters.', type: 'error' });
+      setSnackbar({
+        open: true,
+        message: 'Password must be at least 6 characters.',
+        type: 'error',
+      });
       return;
     }
 
     setLoading(true);
 
-    // Simulate auth request — replace with real call
-    setTimeout(() => {
-      setLoading(false);
-      setSnackbar({ open: true, message: 'Login successful!', type: 'success' });
-      // After success navigate to home (or wherever)
-      setTimeout(() => navigate('/'), 600);
-    }, 900);
+    const createPayload = {
+      Email: email,
+      Password: password,
+    };
+
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(createPayload),
+    });
+    navigate('/');
   };
 
   return (

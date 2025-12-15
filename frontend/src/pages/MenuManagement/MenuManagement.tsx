@@ -41,6 +41,9 @@ export default function MenuManagement() {
   const [optionsDirty, setOptionsDirty] = useState(false);
   const [deleteMode, setDeleteMode] = useState(false);
 
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [dishToDelete, setDishToDelete] = useState<MenuItem | null>(null);
+
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
@@ -228,7 +231,7 @@ export default function MenuManagement() {
         if (optionsDirty && selectedItem) {
           const existingGroups = await addonGroupsApi.getGroupsByMenuItemNid(editableItem.id);
           const existingGroupIds = new Set(existingGroups.map(g => g.nid));
-          const currentGroupIds = new Set(editableItem.optionGroups.filter(g => g.id > 0).map(g => g.id));
+          const currentGroupIds = new Set(editableItem.optionGroups.filter(g => g.id >= 0).map(g => g.id));
 
           // Delete removed groups (this will cascade delete addons)
           for (const group of existingGroups) {
@@ -238,8 +241,9 @@ export default function MenuManagement() {
           }
 
           // Process each group
+          const updatedGroups: OptionGroup[] = [];
           for (const group of editableItem.optionGroups) {
-            if (group.id <= 0) {
+            if (group.id < 0) {
               // Create new group
               const groupData: MenuAddonGroupCreateDTO = {
                 name: group.name,
@@ -248,20 +252,32 @@ export default function MenuManagement() {
               const createdGroup = await addonGroupsApi.createGroup(groupData);
               
               // Create addons for new group
+              const createdOptions: Option[] = [];
               for (const option of group.options) {
                 const addonData: MenuAddonCreateDTO = {
                   name: option.name,
                   groupId: createdGroup.nid,
                   price: option.price
                 };
-                await menuAddonsApi.createAddon(addonData);
+                const createdAddon = await menuAddonsApi.createAddon(addonData);
+                createdOptions.push({
+                  id: createdAddon.nid,
+                  name: createdAddon.name,
+                  price: createdAddon.price
+                });
               }
+              
+              updatedGroups.push({
+                id: createdGroup.nid,
+                name: createdGroup.name,
+                options: createdOptions
+              });
             } else {
               // Update existing group
               // Get existing addons for this group
               const existingAddons = await menuAddonsApi.getAddonsByGroupNid(group.id);
               const existingAddonIds = new Set(existingAddons.map(a => a.nid));
-              const currentAddonIds = new Set(group.options.filter(o => o.id > 0).map(o => o.id));
+              const currentAddonIds = new Set(group.options.filter(o => o.id >= 0).map(o => o.id));
 
               // Delete removed addons
               for (const addon of existingAddons) {
@@ -271,15 +287,21 @@ export default function MenuManagement() {
               }
 
               // Create/update addons
+              const updatedOptions: Option[] = [];
               for (const option of group.options) {
-                if (option.id <= 0) {
+                if (option.id < 0) {
                   // Create new addon
                   const addonData: MenuAddonCreateDTO = {
                     name: option.name,
                     groupId: group.id,
                     price: option.price
                   };
-                  await menuAddonsApi.createAddon(addonData);
+                  const createdAddon = await menuAddonsApi.createAddon(addonData);
+                  updatedOptions.push({
+                    id: createdAddon.nid,
+                    name: createdAddon.name,
+                    price: createdAddon.price
+                  });
                 } else if (existingAddonIds.has(option.id)) {
                   // Update existing addon
                   const addonData: MenuAddonUpdateDTO = {
@@ -287,15 +309,30 @@ export default function MenuManagement() {
                     price: option.price
                   };
                   await menuAddonsApi.updateAddon(option.id, addonData);
+                  updatedOptions.push(option);
+                } else {
+                  updatedOptions.push(option);
                 }
               }
+              
+              updatedGroups.push({
+                id: group.id,
+                name: group.name,
+                options: updatedOptions
+              });
             }
           }
+          
+          // Update the editable item with the new IDs
+          editableItem.optionGroups = updatedGroups;
         }
 
+        const updatedItem = { ...editableItem };
         setItems(prev =>
-          prev.map(i => i.id === editableItem.id ? editableItem : i)
+          prev.map(i => i.id === editableItem.id ? updatedItem : i)
         );
+        setSelectedItem(updatedItem);
+        setEditableItem(updatedItem);
       }
 
       setItemDirty(false);
@@ -351,11 +388,21 @@ export default function MenuManagement() {
     }
   };
 
-  const handleDeleteDish = async (id: number) => {
+  const handleDeleteDish = (id: number) => {
+    const dish = items.find(i => i.id === id);
+    if (dish) {
+      setDishToDelete(dish);
+      setConfirmDeleteOpen(true);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!dishToDelete) return;
+
     try {
-      await menuApi.deleteMenuItem(id);
-      setItems(prev => prev.filter(i => i.id !== id));
-      if (selectedItem?.id === id) {
+      await menuApi.deleteMenuItem(dishToDelete.id);
+      setItems(prev => prev.filter(i => i.id !== dishToDelete.id));
+      if (selectedItem?.id === dishToDelete.id) {
         setSelectedItem(null);
         setEditableItem(null);
         setItemDirty(false);
@@ -373,7 +420,16 @@ export default function MenuManagement() {
         message: 'Failed to delete dish',
         type: 'error',
       });
+    } finally {
+      setConfirmDeleteOpen(false);
+      setDishToDelete(null);
+      setDeleteMode(false);
     }
+  };
+
+  const cancelDelete = () => {
+    setConfirmDeleteOpen(false);
+    setDishToDelete(null);
   };
 
 
@@ -523,8 +579,8 @@ export default function MenuManagement() {
             <Button
               className="option-tree-button item-action-button new-item"
               onClick={() => {
-                const newGroup = {
-                  id: Date.now(),
+                const newGroup: OptionGroup = {
+                  id: -Date.now(),
                   name: "",
                   options: []
                 };
@@ -626,7 +682,7 @@ export default function MenuManagement() {
                           onClick={() => {
                             const updated = [...editableItem.optionGroups];
                             updated[realIndex].options.push({
-                              id: Date.now(),
+                              id: -Date.now(),
                               name: "",
                               price: 0
                             });
@@ -654,6 +710,43 @@ export default function MenuManagement() {
         </div>
 
       </div>
+      
+      {confirmDeleteOpen && dishToDelete && (
+        <div className="modal-overlay" onClick={cancelDelete}>
+          <div className="modal-content option-tree-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 400 }}>
+            <div className="option-tree-header" style={{ marginBottom: 16 }}>
+              <h3 style={{ margin: 0 }}>Confirm Delete</h3>
+              <button className="delete-tree modal-close" onClick={cancelDelete}>✖</button>
+            </div>
+
+            <p style={{ marginBottom: 24, fontSize: '1rem' }}>
+              Are you sure you want to delete "{dishToDelete.name}"? This will also delete all its option groups and options. This action cannot be undone.
+            </p>
+
+            <div className="modal-actions">
+              <Button
+                className="item-action-button new-item"
+                onClick={cancelDelete}
+              >
+                Cancel
+              </Button>
+
+              <Button 
+                onClick={confirmDelete}
+                sx={{ 
+                  backgroundColor: '#d32f2f', 
+                  color: 'white', 
+                  fontWeight: 'bold',
+                  '&:hover': { backgroundColor: '#bb2929ff' }
+                }}
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <SnackbarNotification
         open={snackbar.open}
         onClose={() => setSnackbar({ ...snackbar, open: false })}

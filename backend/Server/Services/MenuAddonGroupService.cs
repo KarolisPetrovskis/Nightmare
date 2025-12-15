@@ -124,6 +124,17 @@ public class MenuAddonGroupService(ApplicationDbContext context) : IMenuAddonGro
         var group = await _context.MenuItemIngredientGroups.FindAsync(nid)
             ?? throw new ApiException(404, $"Ingredient group {nid} not found");
 
+        // Delete all addons associated with this group first
+        var addons = await _context.MenuItemIngredients
+            .Where(a => a.GroupId == nid)
+            .ToListAsync();
+        
+        if (addons.Any())
+        {
+            _context.MenuItemIngredients.RemoveRange(addons);
+        }
+
+        // Now delete the group
         _context.MenuItemIngredientGroups.Remove(group);        
         await Helper.SaveChangesOrThrowAsync(_context, "Failed to delete ingredient group");
     }

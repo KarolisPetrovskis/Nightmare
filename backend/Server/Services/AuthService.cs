@@ -116,6 +116,7 @@ namespace backend.Server.Services
             return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
         }
 
+
         public async Task<long> GetUserBusinessId(long? nid)
         {            
             if (nid == null)

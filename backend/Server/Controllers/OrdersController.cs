@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using backend.Server.Interfaces;
+using backend.Server.Models;
 using backend.Server.Models.DatabaseObjects;
 using backend.Server.Models.DTOs.Order;
 using Microsoft.AspNetCore.Mvc;
@@ -87,6 +88,34 @@ namespace backend.Server.Controllers
         public async Task<IActionResult> DeleteOrder(long nid)         //Different from YAML, but DELETE with body is not a good practice
         {
             await _ordersService.DeleteOrderAsync(nid);
+            return NoContent();
+        }
+
+        [HttpPost("{orderNid}/items")]
+        public async Task<ActionResult<OrderDetail>> AddItemToOrder(long orderNid, [FromBody] OrderDetailRequest request)
+        {
+            var orderDetail = await _ordersService.AddOrderDetailAsync(orderNid, request);
+            return CreatedAtAction(nameof(GetOrderDetailsByOrderNid), new { orderNid }, orderDetail);
+        }
+
+        [HttpDelete("{orderNid}/items/{detailNid}")]
+        public async Task<IActionResult> RemoveItemFromOrder(long orderNid, long detailNid)
+        {
+            await _ordersService.DeleteOrderDetailAsync(orderNid, detailNid);
+            return NoContent();
+        }
+
+        [HttpPut("{orderNid}/items/{detailNid}")]
+        public async Task<IActionResult> UpdateOrderItem(long orderNid, long detailNid, [FromBody] OrderDetailUpdateDTO request)
+        {
+            await _ordersService.UpdateOrderDetailAsync(orderNid, detailNid, request);
+            return NoContent();
+        }
+
+        [HttpPut("{orderNid}/items/{detailNid}/addons")]
+        public async Task<IActionResult> UpdateOrderItemAddons(long orderNid, long detailNid, [FromBody] List<OrderAddOnsDTO> addons)
+        {
+            await _ordersService.UpdateOrderDetailAddOnsAsync(orderNid, detailNid, addons);
             return NoContent();
         }
     }

@@ -13,5 +13,7 @@ public class OrderDetailRequest
     [Required]
     [Range(0, double.MaxValue, ErrorMessage = "PriceWtVat must be non-negative")]
     public required decimal PriceWtVat { get; set; }
+    [Range(1, int.MaxValue, ErrorMessage = "Quantity must be at least 1")]
+    public int Quantity { get; set; } = 1;
     public List<OrderAddOnsDTO>? Addons { get; set;}
 }

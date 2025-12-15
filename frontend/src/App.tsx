@@ -15,45 +15,11 @@ import WorkerManagement from './pages/AdminPages/Worker Management/WorkerManagem
 import OrderHistory from './pages/AdminPages/OrderHistory/OrderHistory';
 import { OrderProvider } from './context/OrderContext';
 
-export interface WeatherForecast {
-  date: string;
-  temperatureC: number;
-  summary: string;
-}
-
 export default function App() {
   const location = useLocation();
   //const [_data, setData] = useState<WeatherForecast[]>([]);
 
-  const fetchBusinessId = async (): Promise<number> => {
-    try {
-      const response = await fetch('/api/auth/businessId', {
-        method: 'GET',
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error('Please login to access services');
-        }
-        throw new Error(`Failed to get business ID: ${response.statusText}`);
-      }
-
-      const id = await response.json();
-      console.log(response);
-      return id;
-    } catch (error) {
-      console.error('Error fetching business ID:', error);
-      throw error;
-    }
-  };
-
   useEffect(() => {
-    const response = fetch('/api/auth/businessId', {
-      method: 'GET',
-      credentials: 'include',
-    });
-    console.log(response);
     //fetch('/api/weatherforecast')
     //  .then((res) => res.json())
     //  .then((data) => setData(data))

@@ -1,9 +1,11 @@
 import './ServiceManagement.css';
 import '../Management.css';
 import Button from '@mui/material/Button';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import PaginationComponent from '../../components/Pagination/PaginationComponent';
 import SnackbarNotification from '../../components/SnackBar/SnackNotification';
+import { useNavigate } from 'react-router-dom';
+import { BusinessSharp } from '@mui/icons-material';
 
 type Service = {
   nid?: number;
@@ -33,13 +35,14 @@ export default function ServiceManagement() {
   const [dirty, setDirty] = useState(false);
   const [page, setPage] = useState(1);
   const servicesPerPage = 7;
+  const navigate = useNavigate();
 
   const [vatDropdownOpen, setVatDropdownOpen] = useState(false);
   const [selectedVatOption, setSelectedVatOption] = useState<VatOption | null>(
     null
   );
   const [businessId, setBusinessId] = useState<number | null>(null);
-
+  const businessIdRef = useRef<number | null>(null);
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
@@ -49,6 +52,11 @@ export default function ServiceManagement() {
     message: '',
     type: 'success',
   });
+
+  const updateBusinessId = (id: number | null) => {
+    setBusinessId(id);
+    businessIdRef.current = id;
+  };
 
   // Fetch business ID
   const fetchBusinessId = async (): Promise<number> => {
@@ -66,7 +74,7 @@ export default function ServiceManagement() {
       }
 
       const id = await response.json();
-      console.log(response);
+      console.log(id);
       return id;
     } catch (error) {
       console.error('Error fetching business ID:', error);
@@ -75,10 +83,11 @@ export default function ServiceManagement() {
   };
 
   // Fetch services
-  const fetchServices = async (businessId: number) => {
+  const fetchServices = async () => {
     try {
+      console.log(businessIdRef.current); // This will have the value
       const response = await fetch(
-        `/api/services?businessId=${businessId}&page=1&perPage=100`
+        `/api/services?businessId=${businessIdRef.current}&page=1&perPage=100`
       );
       if (!response.ok) throw new Error('Failed to fetch services');
       const data = await response.json();
@@ -112,7 +121,6 @@ export default function ServiceManagement() {
       }
     } catch (error) {
       console.error('Error fetching VAT options:', error);
-      // Don't throw, just set empty array
       setVatOptions([]);
     }
   };
@@ -122,31 +130,20 @@ export default function ServiceManagement() {
     const loadInitialData = async () => {
       setLoading(true);
       try {
-        // 1. Get business ID
+        const id = await fetchBusinessId();
+        console.log('Id is this:', id);
+        updateBusinessId(id);
 
-        const response = fetch('/api/auth/businessId', {
-          method: 'GET',
-          credentials: 'include',
-        });
-        console.log(response);
+        if (id === null) {
+          navigate('/');
+          return;
+        }
 
-        //fetch('/api/weatherforeca
-        //const id = await fetchBusinessId();
-        //setBusinessId(id);
-        setBusinessId(MOCK_UP_BUSINESS_ID);
-        // 2. Fetch services and VAT options in parallel
-        await Promise.all([
-          fetchServices(MOCK_UP_BUSINESS_ID),
-          fetchVatOptions(),
-        ]);
+        //console.log('bus Id is this:', businessIdRef.current);
+
+        await fetchServices();
+        await fetchVatOptions();
       } catch (error) {
-        console.error('Error loading initial data:', error);
-        setSnackbar({
-          open: true,
-          message:
-            error instanceof Error ? error.message : 'Failed to load data',
-          type: 'error',
-        });
       } finally {
         setLoading(false);
       }

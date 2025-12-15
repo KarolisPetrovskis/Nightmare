@@ -570,3 +570,103 @@ Content-Type: application/json
 DELETE {{backend_HostAddress}}/api/business/1
 
 ###
+
+####################
+# ORDER ITEM MANAGEMENT TESTS
+####################
+
+# Test Add Item to Existing Order - Simple item without addons
+POST {{backend_HostAddress}}/api/orders/1/items
+Content-Type: application/json
+
+{
+  "itemId": 3,
+  "priceWoVat": 8.50,
+  "priceWtVat": 10.50
+}
+
+###
+
+# Test Add Item to Existing Order - Item with addons
+POST {{backend_HostAddress}}/api/orders/1/items
+Content-Type: application/json
+
+{
+  "itemId": 4,
+  "priceWoVat": 12.00,
+  "priceWtVat": 15.00,
+  "addons": [
+    {
+      "ingredientId": 1,
+      "priceWoVat": 1.50
+    },
+    {
+      "ingredientId": 2,
+      "priceWoVat": 2.00
+    }
+  ]
+}
+
+###
+
+# Test Update Order Item - Update both prices
+PUT {{backend_HostAddress}}/api/orders/1/items/1
+Content-Type: application/json
+
+{
+  "priceWoVat": 15.00,
+  "priceWtVat": 18.50
+}
+
+###
+
+# Test Update Order Item - Update only price with VAT
+PUT {{backend_HostAddress}}/api/orders/1/items/1
+Content-Type: application/json
+
+{
+  "priceWtVat": 20.00
+}
+
+###
+
+# Test Update Order Item - Update only price without VAT
+PUT {{backend_HostAddress}}/api/orders/1/items/1
+Content-Type: application/json
+
+{
+  "priceWoVat": 16.50
+}
+
+###
+
+# Test Update Order Item Addons - Replace all addons for an item
+PUT {{backend_HostAddress}}/api/orders/1/items/1/addons
+Content-Type: application/json
+
+[
+  {
+    "ingredientId": 5,
+    "priceWoVat": 2.50
+  },
+  {
+    "ingredientId": 7,
+    "priceWoVat": 1.00
+  }
+]
+
+###
+
+# Test Update Order Item Addons - Remove all addons (empty array)
+PUT {{backend_HostAddress}}/api/orders/1/items/1/addons
+Content-Type: application/json
+
+[]
+
+###
+
+# Test Remove Item from Order
+DELETE {{backend_HostAddress}}/api/orders/1/items/1
+
+###
+
