@@ -125,7 +125,7 @@ export default function ServiceManagement() {
     }
   };
 
-  // Initial data loading
+  // Initial data loading.
   useEffect(() => {
     const loadInitialData = async () => {
       setLoading(true);
