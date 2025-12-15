@@ -87,7 +87,7 @@ export default function Home() {
         <DashboardButton
           icon={<PercentIcon />}
           label="Vat Managment"
-          color="#85db3aff"
+          color="#f5d4b8"
           onClick={() => navigate('/admin/vat')}
         />
       </div>
