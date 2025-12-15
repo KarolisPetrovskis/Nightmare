@@ -1,0 +1,75 @@
+.stripe-card-form {
+  margin-top: 20px;
+}
+
+.card-element-wrapper {
+  margin-bottom: 20px;
+}
+
+.card-element-wrapper label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 8px;
+}
+
+.card-element {
+  padding: 12px;
+  border: 1px solid #3a3a3a;
+  border-radius: 4px;
+  background-color: #2d2d2d;
+  transition: border-color 0.3s;
+}
+
+.card-element:focus,
+.card-element:focus-within {
+  border-color: #3e44b3;
+  outline: none;
+}
+
+.stripe-card-form .payment-actions {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.stripe-card-form .payment-actions button {
+  flex: 1;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.stripe-card-form .btn-pay {
+  background: #3e44b3;
+  color: white;
+}
+
+.stripe-card-form .btn-pay:hover:not(:disabled) {
+  background: #2c3399;
+}
+
+.stripe-card-form .btn-pay:disabled {
+  background: #2d2d2d;
+  color: rgba(255, 255, 255, 0.3);
+  cursor: not-allowed;
+}
+
+.stripe-card-form .btn-cancel {
+  background: #2d2d2d;
+  color: rgba(255, 255, 255, 0.87);
+}
+
+.stripe-card-form .btn-cancel:hover:not(:disabled) {
+  background: #ff5b5b;
+}
+
+.stripe-card-form .btn-cancel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

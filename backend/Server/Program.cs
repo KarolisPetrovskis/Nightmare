@@ -1,10 +1,12 @@
 using backend.Server.Database;
 using backend.Server.Interfaces;
 using backend.Server.Middleware;
+using backend.Server.Models.Configuration;
 using backend.Server.Services;
 using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+using Stripe;
 
 // Load .env file before building the app
 Env.Load();
@@ -12,6 +14,16 @@ Env.Load();
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration.AddEnvironmentVariables();
+
+// Configure Stripe settings from environment variables
+var stripeSettings = new StripeSettings
+{
+    SecretKey = builder.Configuration["STRIPE_SECRET_KEY"] ?? string.Empty,
+    PublishableKey = builder.Configuration["STRIPE_PUBLISHABLE_KEY"] ?? string.Empty,
+    WebhookSecret = builder.Configuration["STRIPE_WEBHOOK_SECRET"] ?? string.Empty
+};
+builder.Services.AddSingleton(stripeSettings);
+StripeConfiguration.ApiKey = stripeSettings.SecretKey;
 
 // Build the connection string using config values
 var dbHost = builder.Configuration["DB_HOST"];

@@ -1,10 +1,12 @@
 import "./BusinessView.css";
 import "../../Management.css";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import SnackbarNotification from "../../../components/SnackBar/SnackNotification";
+import { useAuth } from "../../../context/AuthContext";
 
 interface Business {
   nid: number;
@@ -45,6 +47,8 @@ const emptyBusiness: FormData = {
 };
 
 export default function BusinessView() {
+  const navigate = useNavigate();
+  const { userId } = useAuth();
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -62,12 +66,51 @@ export default function BusinessView() {
     type: 'success',
   });
 
+  // Check if user is super admin
+  useEffect(() => {
+    const checkPermissions = async () => {
+      if (!userId) return;
+      
+      try {
+        const response = await fetch(`/api/employees/${userId}`, {
+          credentials: 'include',
+        });
+        if (!response.ok) throw new Error('Failed to fetch user info');
+        const userData = await response.json();
+        
+        // Only super admin (type 3) can access this page
+        if (userData.userType !== 3) {
+          setSnackbar({
+            open: true,
+            message: 'Access denied. Only super admins can access this page.',
+            type: 'error',
+          });
+          navigate('/');
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking permissions:', error);
+        setSnackbar({
+          open: true,
+          message: 'Failed to verify permissions',
+          type: 'error',
+        });
+      }
+    };
+    
+    checkPermissions();
+  }, [userId, navigate]);
+
   // Fetch businesses from API on component mount
   useEffect(() => {
     const fetchBusinesses = async () => {
       setLoading(true);
       try {
-        const response = await fetch(`/api/business?OwnerId=${MOCK_OWNER_ID}`);
+        // Super admin sees all businesses - fetch without owner filter using special value
+        // Backend requires OwnerId, so use 1 but with page=0 to get all
+        const response = await fetch(`/api/business?OwnerId=1&Page=0&PerPage=10000`, {
+          credentials: 'include',
+        });
         if (!response.ok) throw new Error('Failed to fetch businesses');
         const data = await response.json();
         setBusinesses(data);
@@ -125,10 +168,12 @@ export default function BusinessView() {
   };
 
   const handleInputChange = (field: keyof FormData, value: string | number) => {
+    console.log(`Field: ${field}, Value: ${value}, Type: ${typeof value}`);
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSave = async () => {
+    console.log('Saving with formData:', formData);
     try {
       if (isEditMode && editingId) {
         // Update existing business
@@ -227,7 +272,7 @@ export default function BusinessView() {
     }
   };
 
-  const isFormValid = formData.name && formData.email;
+  const isFormValid = formData.name && formData.email && formData.ownerId > 0;
 
   // Filter businesses by search query (ID or name)
   const filteredBusinesses = businesses.filter((b) =>
@@ -348,12 +393,22 @@ export default function BusinessView() {
           </div>
 
           <div className="info-box">
+            <label>Owner ID *</label>
+            <input
+              type="number"
+              placeholder="Enter owner user ID"
+              value={formData.ownerId}
+              onChange={(e) => handleInputChange("ownerId", parseInt(e.target.value, 10) || 0)}
+            />
+          </div>
+
+          <div className="info-box">
             <label>Business Type</label>
             <input
               type="number"
               placeholder="Enter business type"
               value={formData.type}
-              onChange={(e) => handleInputChange("type", e.target.value)}
+              onChange={(e) => handleInputChange("type", parseInt(e.target.value, 10) || 1)}
             />
           </div>
 

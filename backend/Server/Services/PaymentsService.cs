@@ -5,6 +5,8 @@ using backend.Server.Models.DatabaseObjects;
 using backend.Server.Models.DTOs.Payment;
 using backend.Server.Models.Enums;
 using Microsoft.EntityFrameworkCore;
+using Stripe;
+using PaymentMethod = backend.Server.Models.Enums.PaymentMethod;
 
 namespace backend.Server.Services
 {
@@ -40,15 +42,23 @@ namespace backend.Server.Services
 
             try
             {
-                // Simulate payment processing logic
-                // In a real application, you would integrate with payment providers like Stripe, PayPal, etc.
                 switch (request.PaymentMethod)
                 {
                     case PaymentMethod.Card:
-                        // Simulate card payment processing
-                        payment.TransactionId = $"TXN-{Guid.NewGuid().ToString()[..8].ToUpper()}";
-                        payment.Status = PaymentStatus.Completed;
-                        payment.ProcessedAt = DateTime.UtcNow;
+                        // Process card payment through Stripe
+                        var paymentIntentService = new PaymentIntentService();
+                        var paymentIntent = await paymentIntentService.GetAsync(request.PaymentIntentId);
+                        
+                        if (paymentIntent.Status == "succeeded")
+                        {
+                            payment.TransactionId = paymentIntent.Id;
+                            payment.Status = PaymentStatus.Completed;
+                            payment.ProcessedAt = DateTime.UtcNow;
+                        }
+                        else
+                        {
+                            throw new ApiException(400, $"Payment intent status is {paymentIntent.Status}");
+                        }
                         break;
 
                     case PaymentMethod.Cash:
@@ -74,6 +84,17 @@ namespace backend.Server.Services
 
                 return MapToDTO(payment);
             }
+            catch (StripeException stripeEx)
+            {
+                payment.Status = PaymentStatus.Failed;
+                payment.ErrorMessage = stripeEx.Message;
+                payment.ProcessedAt = DateTime.UtcNow;
+
+                _context.Payments.Add(payment);
+                await _context.SaveChangesAsync();
+
+                throw new ApiException(500, $"Stripe error: {stripeEx.Message}");
+            }
             catch (Exception ex)
             {
                 payment.Status = PaymentStatus.Failed;
@@ -84,6 +105,42 @@ namespace backend.Server.Services
                 await _context.SaveChangesAsync();
 
                 throw new ApiException(500, $"Payment processing failed: {ex.Message}");
+            }
+        }
+
+        public async Task<string> CreatePaymentIntentAsync(long orderId, decimal amount, string currency)
+        {
+            var order = await _context.Orders.FindAsync(orderId);
+            if (order == null)
+            {
+                throw new ApiException(404, "Order not found");
+            }
+
+            try
+            {
+                var options = new PaymentIntentCreateOptions
+                {
+                    Amount = (long)(amount * 100), // Stripe uses cents
+                    Currency = currency.ToLower(),
+                    AutomaticPaymentMethods = new PaymentIntentAutomaticPaymentMethodsOptions
+                    {
+                        Enabled = true,
+                    },
+                    Metadata = new Dictionary<string, string>
+                    {
+                        { "orderId", orderId.ToString() },
+                        { "orderCode", order.Code ?? "" }
+                    }
+                };
+
+                var service = new PaymentIntentService();
+                var paymentIntent = await service.CreateAsync(options);
+
+                return paymentIntent.ClientSecret;
+            }
+            catch (StripeException ex)
+            {
+                throw new ApiException(500, $"Failed to create payment intent: {ex.Message}");
             }
         }
 
@@ -105,35 +162,87 @@ namespace backend.Server.Services
                 throw new ApiException(400, "Refund amount cannot exceed payment amount");
             }
 
-            // Create a refund payment record
-            var refundPayment = new Payment
+            try
             {
-                OrderId = payment.OrderId,
-                Amount = -request.Amount, // Negative amount for refund
-                Currency = payment.Currency,
-                PaymentMethod = payment.PaymentMethod,
-                Status = PaymentStatus.Refunded,
-                CreatedAt = DateTime.UtcNow,
-                ProcessedAt = DateTime.UtcNow,
-                TransactionId = $"REFUND-{payment.TransactionId}",
-                CustomerEmail = payment.CustomerEmail,
-                ErrorMessage = $"Refund reason: {request.Reason}"
-            };
+                // If it's a Stripe payment (has payment intent ID), process refund through Stripe
+                if (payment.PaymentMethod == PaymentMethod.Card && payment.TransactionId?.StartsWith("pi_") == true)
+                {
+                    var refundOptions = new RefundCreateOptions
+                    {
+                        PaymentIntent = payment.TransactionId,
+                        Amount = (long)(request.Amount * 100), // Stripe uses cents
+                        Reason = "requested_by_customer"
+                    };
 
-            // Update original payment status
-            if (request.Amount == payment.Amount)
-            {
-                payment.Status = PaymentStatus.Refunded;
+                    var refundService = new RefundService();
+                    var stripeRefund = await refundService.CreateAsync(refundOptions);
+
+                    // Create a refund payment record
+                    var refundPayment = new Payment
+                    {
+                        OrderId = payment.OrderId,
+                        Amount = -request.Amount,
+                        Currency = payment.Currency,
+                        PaymentMethod = payment.PaymentMethod,
+                        Status = PaymentStatus.Refunded,
+                        CreatedAt = DateTime.UtcNow,
+                        ProcessedAt = DateTime.UtcNow,
+                        TransactionId = stripeRefund.Id,
+                        CustomerEmail = payment.CustomerEmail,
+                        ErrorMessage = $"Refund reason: {request.Reason}"
+                    };
+
+                    // Update original payment status
+                    if (request.Amount == payment.Amount)
+                    {
+                        payment.Status = PaymentStatus.Refunded;
+                    }
+                    else
+                    {
+                        payment.Status = PaymentStatus.PartiallyRefunded;
+                    }
+
+                    _context.Payments.Add(refundPayment);
+                    await _context.SaveChangesAsync();
+
+                    return MapToDTO(refundPayment);
+                }
+                else
+                {
+                    // For non-Stripe payments (cash, gift card), just create refund record
+                    var refundPayment = new Payment
+                    {
+                        OrderId = payment.OrderId,
+                        Amount = -request.Amount,
+                        Currency = payment.Currency,
+                        PaymentMethod = payment.PaymentMethod,
+                        Status = PaymentStatus.Refunded,
+                        CreatedAt = DateTime.UtcNow,
+                        ProcessedAt = DateTime.UtcNow,
+                        TransactionId = $"REFUND-{payment.TransactionId}",
+                        CustomerEmail = payment.CustomerEmail,
+                        ErrorMessage = $"Refund reason: {request.Reason}"
+                    };
+
+                    if (request.Amount == payment.Amount)
+                    {
+                        payment.Status = PaymentStatus.Refunded;
+                    }
+                    else
+                    {
+                        payment.Status = PaymentStatus.PartiallyRefunded;
+                    }
+
+                    _context.Payments.Add(refundPayment);
+                    await _context.SaveChangesAsync();
+
+                    return MapToDTO(refundPayment);
+                }
             }
-            else
+            catch (StripeException ex)
             {
-                payment.Status = PaymentStatus.PartiallyRefunded;
+                throw new ApiException(500, $"Stripe refund failed: {ex.Message}");
             }
-
-            _context.Payments.Add(refundPayment);
-            await _context.SaveChangesAsync();
-
-            return MapToDTO(refundPayment);
         }
 
         public async Task<PaymentResponseDTO?> GetPaymentByIdAsync(long paymentId)

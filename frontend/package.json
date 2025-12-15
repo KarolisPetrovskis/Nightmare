@@ -18,6 +18,8 @@
     "@mui/joy": "^5.0.0-beta.52",
     "@mui/material": "^7.3.5",
     "@mui/styled-engine-sc": "^7.3.5",
+    "@stripe/react-stripe-js": "^5.4.1",
+    "@stripe/stripe-js": "^8.6.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.9.5",
