@@ -1,6 +1,3 @@
-// TODO:
-// Improve Calendar design from aesthethics side
-
 import "./ScheduleManagement.css";
 import "../../App.css";
 import "../Management.css";
@@ -8,6 +5,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "@mui/material/Button";
 import SnackbarNotification from "../../components/SnackBar/SnackNotification";
+import { useAuth } from "../../context/AuthContext";
 
 function getMonthMatrix(year: number, month: number) {
   // month: 0-11
@@ -52,6 +50,7 @@ function getMonthMatrix(year: number, month: number) {
 
 export default function ScheduleManagement() {
   const navigate = useNavigate();
+  const { businessId, isLoading } = useAuth();
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -66,10 +65,10 @@ export default function ScheduleManagement() {
   });
 
   const handleDayClick = (day: number, inMonth: boolean) => {
-    if (inMonth) {
+    if (inMonth && businessId) {
       const monthStr = String(month + 1).padStart(2, "0");
       const dayStr = String(day).padStart(2, "0");
-      navigate(`/current-schedule-management/${year}-${monthStr}-${dayStr}`);
+      navigate(`/current-schedule-management/${year}-${monthStr}-${dayStr}?businessId=${businessId}`);
     }
   };
 
@@ -108,41 +107,58 @@ export default function ScheduleManagement() {
     <div className="schedule-page">
       <h2 className="schedule-title">Current schedule management</h2>
 
-      <div className="calendar-wrapper">
-        <div className="calendar">
-          <div className="calendar-month">{monthNames[month]} {year}</div>
+      {isLoading ? (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+          Loading your business calendar...
+        </div>
+      ) : !businessId ? (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#d32f2f' }}>
+          Unable to load your business information. Please try logging in again.
+        </div>
+      ) : (
+        <div className="calendar-wrapper">
+          <div className="calendar">
+            <div className="calendar-month">{monthNames[month]} {year}</div>
 
-          <div className="calendar-grid">
-            <div className="calendar-weekday">Mon</div>
-            <div className="calendar-weekday">Tue</div>
-            <div className="calendar-weekday">Wed</div>
-            <div className="calendar-weekday">Thu</div>
-            <div className="calendar-weekday">Fri</div>
-            <div className="calendar-weekday">Sat</div>
-            <div className="calendar-weekday">Sun</div>
+            <div className="calendar-grid">
+              <div className="calendar-weekday">Mon</div>
+              <div className="calendar-weekday">Tue</div>
+              <div className="calendar-weekday">Wed</div>
+              <div className="calendar-weekday">Thu</div>
+              <div className="calendar-weekday">Fri</div>
+              <div className="calendar-weekday">Sat</div>
+              <div className="calendar-weekday">Sun</div>
 
-            {matrix.map((row, ri) => (
-              <div className="calendar-row" key={ri}>
-                {row.map((cell, ci) => (
-                  <Button
-                    key={ci}
-                    className={`day-cell ${cell.inMonth ? "in-month" : "out-month"}`}
-                    onClick={() => handleDayClick(cell.day, cell.inMonth)}
-                    disabled={!cell.inMonth}
-                  >
-                    <span className="day-number">{cell.day}</span>
-                  </Button>
-                ))}
-              </div>
-            ))}
-          </div>
+              {matrix.map((row, ri) => (
+                <div className="calendar-row" key={ri}>
+                  {row.map((cell, ci) => (
+                    <Button
+                      key={ci}
+                      className={`day-cell ${cell.inMonth ? "in-month" : "out-month"}`}
+                      onClick={() => handleDayClick(cell.day, cell.inMonth)}
+                      disabled={!cell.inMonth}
+                    >
+                      <span className="day-number">{cell.day}</span>
+                    </Button>
+                  ))}
+                </div>
+              ))}
+            </div>
 
-          <div className="calendar-actions">
-            <Button className="item-action-button new-item" onClick={prev}>Previous month</Button>
-            <Button className="item-action-button new-item" onClick={next}>Next month</Button>
+            <div className="calendar-actions">
+              <Button className="item-action-button new-item" onClick={prev}>Previous month</Button>
+              <Button className="item-action-button new-item" onClick={next}>Next month</Button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      <SnackbarNotification
+        open={snackbar.open}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        message={snackbar.message}
+        type={snackbar.type}
+      />
     </div>
   );
 }

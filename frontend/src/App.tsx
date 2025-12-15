@@ -14,6 +14,7 @@ import BusinessView from './pages/AdminPages/Business view/BusinessView';
 import WorkerManagement from './pages/AdminPages/Worker Management/WorkerManagement';
 import OrderHistory from './pages/AdminPages/OrderHistory/OrderHistory';
 import { OrderProvider } from './context/OrderContext';
+import { AuthProvider } from './context/AuthContext';
 
 export default function App() {
   const location = useLocation();
@@ -28,45 +29,47 @@ export default function App() {
 
   return (
     <>
-      <OrderProvider>
-        <div className="root-container">
-          {location.pathname !== '/login' && <Navbar />}
-          <div className="content-wrapper">
-            <div className="side-container" />
-            <main className="page-container">
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/menu-management" element={<MenuManagement />} />
-                <Route path="/order-management" element={<OrderManagement />} />
-                <Route
-                  path="/order-management/select-dish"
-                  element={<DishSelection />}
-                />
-                <Route
-                  path="/service-management"
-                  element={<ServiceManagement />}
-                />
-                <Route
-                  path="/schedule-management"
-                  element={<ScheduleManagement />}
-                />
-                <Route
-                  path="/current-schedule-management/:date"
-                  element={<CurrentScheduleManagement />}
-                />
-                <Route path="/login" element={<Login />} />
-                <Route path="/admin/business-view" element={<BusinessView />} />
-                <Route
-                  path="/admin/worker-management"
-                  element={<WorkerManagement />}
-                />
-                <Route path="/admin/order-history" element={<OrderHistory />} />
-              </Routes>
-            </main>
-            <div className="side-container" />
+      <AuthProvider>
+        <OrderProvider>
+          <div className="root-container">
+            {location.pathname !== '/login' && <Navbar />}
+            <div className="content-wrapper">
+              <div className="side-container" />
+              <main className="page-container">
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/menu-management" element={<MenuManagement />} />
+                  <Route path="/order-management" element={<OrderManagement />} />
+                  <Route
+                    path="/order-management/select-dish"
+                    element={<DishSelection />}
+                  />
+                  <Route
+                    path="/service-management"
+                    element={<ServiceManagement />}
+                  />
+                  <Route
+                    path="/schedule-management"
+                    element={<ScheduleManagement />}
+                  />
+                  <Route
+                    path="/current-schedule-management/:date"
+                    element={<CurrentScheduleManagement />}
+                  />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/admin/business-view" element={<BusinessView />} />
+                  <Route
+                    path="/admin/worker-management"
+                    element={<WorkerManagement />}
+                  />
+                  <Route path="/admin/order-history" element={<OrderHistory />} />
+                </Routes>
+              </main>
+              <div className="side-container" />
+            </div>
           </div>
-        </div>
-      </OrderProvider>
+        </OrderProvider>
+      </AuthProvider>
     </>
   );
 }
