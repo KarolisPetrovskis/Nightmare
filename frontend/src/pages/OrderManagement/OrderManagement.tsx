@@ -1,982 +1,1239 @@
-import "./OrderManagement.css";
-import "../Management.css";
-import Button from "@mui/material/Button";
+import './OrderManagement.css';
+import '../Management.css';
+import Button from '@mui/material/Button';
 
-import PaginationComponent from "../../components/Pagination/PaginationComponent";
-import SnackbarNotification from "../../components/SnackBar/SnackNotification";
-import { useState, useEffect, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { useOrderContext } from "../../context/OrderContext";
-import { ordersApi, type OrderCreateDTO, type OrderDetailRequest } from "../../services/ordersService";
-import { menuApi } from "../../services/menuService";
-import { addonGroupsApi, menuAddonsApi } from "../../services/menuAddonsService";
+import PaginationComponent from '../../components/Pagination/PaginationComponent';
+import SnackbarNotification from '../../components/SnackBar/SnackNotification';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useOrderContext } from '../../context/OrderContext';
+import {
+  ordersApi,
+  type OrderCreateDTO,
+  type OrderDetailRequest,
+} from '../../services/ordersService';
+import { menuApi } from '../../services/menuService';
+import {
+  addonGroupsApi,
+  menuAddonsApi,
+} from '../../services/menuAddonsService';
 
 const BUSINESS_ID = 1; // TODO: Get from auth context
 const VAT_ID_STANDARD = 1; // TODO: Get from VAT settings
 const STATUS_ID_PENDING = 1; // TODO: Get from status enum
 
 type Option = {
-    nid: number;
-    name: string;
-    price: number;
+  nid: number;
+  name: string;
+  price: number;
 };
 
 type OptionGroup = {
-    nid: number;
-    name: string;
-    options: Option[];
+  nid: number;
+  name: string;
+  options: Option[];
 };
 
 type MenuItem = {
-    nid: number;
-    name: string;
-    price: number;
-    vatId: number;
-    addonGroups?: OptionGroup[];
+  nid: number;
+  name: string;
+  price: number;
+  vatId: number;
+  addonGroups?: OptionGroup[];
 };
 
 type OrderDish = {
-    nid: number;
-    menuItem: MenuItem;
-    quantity: number;
-    selectedOptions?: Record<number, number>;
-    backendDetailNid?: number; // Track backend OrderDetail ID
+  nid: number;
+  menuItem: MenuItem;
+  quantity: number;
+  selectedOptions?: Record<number, number>;
+  backendDetailNid?: number; // Track backend OrderDetail ID
 };
 
 type Order = {
-    nid: number;
-    items: OrderDish[];
-    staff: string;
-    backendNid?: number; // Track backend order ID
+  nid: number;
+  items: OrderDish[];
+  staff: string;
+  backendNid?: number; // Track backend order ID
 };
 
 export default function OrderManagement() {
-    const { orders, setOrders } = useOrderContext();
-    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-    const [originalOrder, setOriginalOrder] = useState<Order | null>(null);
-    const [orderDirty, setOrderDirty] = useState(false);
-    const [cancelMode, setCancelMode] = useState(false);
-    const [loading, setLoading] = useState(true);
+  const { orders, setOrders } = useOrderContext();
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [originalOrder, setOriginalOrder] = useState<Order | null>(null);
+  const [orderDirty, setOrderDirty] = useState(false);
+  const [cancelMode, setCancelMode] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-    const [modalOpen, setModalOpen] = useState(false);
-    const [modalItem, setModalItem] = useState<OrderDish | null>(null);
-    const [modalSelections, setModalSelections] = useState<Record<number, number>>({});
-    
-    const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
-    const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalItem, setModalItem] = useState<OrderDish | null>(null);
+  const [modalSelections, setModalSelections] = useState<
+    Record<number, number>
+  >({});
 
-    const [snackbar, setSnackbar] = useState<{
-        open: boolean;
-        message: string;
-        type: 'success' | 'error' | 'warning' | 'info';
-    }>({
-        open: false,
-        message: '',
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
+
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+  }>({
+    open: false,
+    message: '',
+    type: 'success',
+  });
+
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
+
+  const [dishPage, setDishPage] = useState(1);
+  const dishesPerPage = 8;
+
+  const processedStateRef = useRef<string | null>(null);
+  const pendingOrderRef = useRef<Order | null>(null);
+
+  const start = (page - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  const paginatedOrders = orders.slice(start, end);
+
+  const staffList = ['Alice', 'Bob', 'Charlie', 'Diana'];
+
+  const toggleCancelMode = () => {
+    setCancelMode((prev) => !prev);
+  };
+
+  const [businessId, setBusinessId] = useState<number | null>(null);
+  const businessIdRef = useRef<number | null>(null);
+
+  const updateBusinessId = (id: number | null) => {
+    setBusinessId(id);
+    businessIdRef.current = id;
+  };
+
+  // Fetch business ID
+  const fetchBusinessId = async (): Promise<number> => {
+    try {
+      const response = await fetch('/api/auth/businessId', {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Please login to access services');
+        }
+        throw new Error(`Failed to get business ID: ${response.statusText}`);
+      }
+
+      const id = await response.json();
+      //console.log(id);
+      return id;
+    } catch (error) {
+      console.error('Error fetching business ID:', error);
+      throw error;
+    }
+  };
+
+  // Load orders from database on mount
+  useEffect(() => {
+    const loadOrders = async () => {
+      try {
+        setLoading(true);
+        const id = await fetchBusinessId();
+        //console.log('Id is this:', id);
+        updateBusinessId(id);
+        const backendOrders = await ordersApi.getOrdersByBusinessId(id);
+
+        // Convert backend orders to frontend format
+        const convertedOrders: (Order | null)[] = await Promise.all(
+          backendOrders.map(async (backendOrder) => {
+            try {
+              // Fetch order details
+              const details = await ordersApi.getOrderDetails(backendOrder.nid);
+              const addons = await ordersApi.getOrderDetailAddOns(
+                backendOrder.nid
+              );
+
+              // Fetch menu items with their addon groups
+              const items: (OrderDish | null)[] = await Promise.all(
+                details.map(async (detail) => {
+                  try {
+                    // Fetch menu item
+                    const menuItem = await menuApi.getMenuItem(detail.itemId);
+
+                    // Fetch addon groups for this menu item
+                    const groups = await addonGroupsApi.getGroupsByMenuItemNid(
+                      menuItem.nid
+                    );
+                    const addonGroups = await Promise.all(
+                      groups.map(async (group) => {
+                        const groupAddons =
+                          await menuAddonsApi.getAddonsByGroupNid(group.nid);
+                        return {
+                          nid: group.nid,
+                          name: group.name,
+                          options: groupAddons.map((addon) => ({
+                            nid: addon.nid,
+                            name: addon.name,
+                            price: addon.price,
+                          })),
+                        };
+                      })
+                    );
+
+                    // Find selected addons for this detail
+                    const detailAddons = addons.filter(
+                      (addon) => addon.detailId === detail.nid
+                    );
+                    const selectedOptions: Record<number, number> = {};
+
+                    // Map addons to their groups
+                    for (const addon of detailAddons) {
+                      for (const group of addonGroups) {
+                        const option = group.options.find(
+                          (opt) => opt.nid === addon.ingredientId
+                        );
+                        if (option) {
+                          selectedOptions[group.nid] = option.nid;
+                          break;
+                        }
+                      }
+                    }
+
+                    return {
+                      nid: detail.nid,
+                      menuItem: {
+                        nid: menuItem.nid,
+                        name: menuItem.name,
+                        price: menuItem.price,
+                        vatId: menuItem.vatId,
+                        addonGroups,
+                      },
+                      quantity: detail.quantity,
+                      selectedOptions,
+                      backendDetailNid: detail.nid, // Track backend detail ID
+                    };
+                  } catch (error) {
+                    console.error(
+                      `Failed to load menu item ${detail.itemId}:`,
+                      error
+                    );
+                    return null;
+                  }
+                })
+              );
+
+              // Filter out failed items
+              const validItems = items.filter(
+                (item): item is OrderDish => item !== null
+              );
+
+              return {
+                nid: backendOrder.nid,
+                items: validItems,
+                staff: backendOrder.workerId
+                  ? `Worker ${backendOrder.workerId}`
+                  : '',
+                backendNid: backendOrder.nid,
+              };
+            } catch (error) {
+              console.error(`Failed to load order ${backendOrder.nid}:`, error);
+              return null;
+            }
+          })
+        );
+
+        // Filter out failed orders
+        const validOrders = convertedOrders.filter(
+          (order): order is Order => order !== null
+        );
+
+        // Merge with any unsaved orders from context (don't overwrite them)
+        setOrders((prevOrders) => {
+          // Keep unsaved orders (those without backendNid)
+          const unsavedOrders = prevOrders.filter((o) => !o.backendNid);
+          // Combine with backend orders
+          return [...validOrders, ...unsavedOrders];
+        });
+      } catch (error) {
+        console.error('Failed to load orders:', error);
+        setSnackbar({
+          open: true,
+          message: 'Failed to load orders from database.',
+          type: 'error',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadOrders();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleNewOrder = () => {
+    // Check if there's already an unsaved order
+    const hasUnsavedOrder = orders.some((order) => !order.backendNid);
+
+    if (hasUnsavedOrder) {
+      setSnackbar({
+        open: true,
+        message:
+          'Please save or cancel the existing unsaved order before creating a new one.',
+        type: 'warning',
+      });
+      return;
+    }
+
+    const emptyOrder: Order = {
+      nid: Date.now(),
+      items: [],
+      staff: '',
+    };
+
+    setOrders((prev) => [...prev, emptyOrder]);
+    setSelectedOrder(emptyOrder);
+    setOrderDirty(false);
+
+    // Navigate to last page where the new order will be
+    const newTotalOrders = orders.length + 1;
+    const lastPage = Math.ceil(newTotalOrders / itemsPerPage);
+    setPage(lastPage);
+  };
+
+  const handleOrderClick = (order: Order) => {
+    if (!cancelMode) {
+      // Find the order from the current orders state to ensure we have the latest data
+      const currentOrder = orders.find((o) => o.nid === order.nid);
+      if (currentOrder) {
+        const orderCopy = JSON.parse(JSON.stringify(currentOrder));
+        setSelectedOrder({ ...currentOrder });
+        setOriginalOrder(orderCopy); // Store original state for deletion tracking
+        setOrderDirty(false);
+      }
+    }
+  };
+
+  const handleCancelOrder = (orderNid: number) => {
+    const order = orders.find((o) => o.nid === orderNid);
+    if (order) {
+      setOrderToDelete(order);
+      setConfirmDeleteOpen(true);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!orderToDelete) return;
+
+    try {
+      // If order has backend ID, delete from backend
+      if (orderToDelete.backendNid) {
+        await ordersApi.deleteOrder(orderToDelete.backendNid);
+      }
+
+      // Remove from local state
+      setOrders((prev) => prev.filter((o) => o.nid !== orderToDelete.nid));
+      if (selectedOrder?.nid === orderToDelete.nid) {
+        setSelectedOrder(null);
+      }
+
+      setSnackbar({
+        open: true,
+        message: 'Order deleted successfully.',
         type: 'success',
+      });
+    } catch (error) {
+      console.error('Failed to delete order:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to delete order. Please try again.',
+        type: 'error',
+      });
+    } finally {
+      setConfirmDeleteOpen(false);
+      setOrderToDelete(null);
+      setCancelMode(false);
+    }
+  };
+
+  const cancelDelete = () => {
+    setConfirmDeleteOpen(false);
+    setOrderToDelete(null);
+  };
+
+  const updateStaff = (staff: string) => {
+    if (!selectedOrder) return;
+    setSelectedOrder({ ...selectedOrder, staff });
+    setOrderDirty(true);
+  };
+
+  const addDishToOrder = () => {
+    if (selectedOrder) {
+      navigate('/order-management/select-dish', {
+        state: { orderId: selectedOrder.nid },
+      });
+    }
+  };
+
+  const updateQuantity = (nid: number, delta: number) => {
+    if (!selectedOrder) return;
+
+    const updated = selectedOrder.items.map((it) => {
+      if (it.nid === nid) {
+        const updatedItem = {
+          ...it,
+          quantity: Math.max(1, it.quantity + delta),
+        };
+        // Mark item as having quantity modified if it has a backend ID
+        if ((it as any).backendDetailNid) {
+          (updatedItem as any).quantityModified = true;
+        }
+        return updatedItem;
+      }
+      return it;
     });
 
-    const navigate = useNavigate();
-    const location = useLocation();
+    setSelectedOrder({ ...selectedOrder, items: updated });
+    setOrderDirty(true);
+  };
 
-    const [page, setPage] = useState(1);
-    const itemsPerPage = 10;
-
-    const [dishPage, setDishPage] = useState(1);
-    const dishesPerPage = 8;
-
-    const processedStateRef = useRef<string | null>(null);
-    const pendingOrderRef = useRef<Order | null>(null);
-
-    const start = (page - 1) * itemsPerPage;
-    const end = start + itemsPerPage;
-    const paginatedOrders = orders.slice(start, end);
-
-    const staffList = ["Alice", "Bob", "Charlie", "Diana"];
-
-    const toggleCancelMode = () => {
-        setCancelMode((prev) => !prev);
-    };
-
-    // Load orders from database on mount
-    useEffect(() => {
-        const loadOrders = async () => {
-            try {
-                setLoading(true);
-                const backendOrders = await ordersApi.getOrdersByBusinessId(BUSINESS_ID);
-                
-                // Convert backend orders to frontend format
-                const convertedOrders: (Order | null)[] = await Promise.all(
-                    backendOrders.map(async (backendOrder) => {
-                        try {
-                            // Fetch order details
-                            const details = await ordersApi.getOrderDetails(backendOrder.nid);
-                            const addons = await ordersApi.getOrderDetailAddOns(backendOrder.nid);
-                            
-                            // Fetch menu items with their addon groups
-                            const items: (OrderDish | null)[] = await Promise.all(
-                                details.map(async (detail) => {
-                                    try {
-                                        // Fetch menu item
-                                        const menuItem = await menuApi.getMenuItem(detail.itemId);
-                                        
-                                        // Fetch addon groups for this menu item
-                                        const groups = await addonGroupsApi.getGroupsByMenuItemNid(menuItem.nid);
-                                        const addonGroups = await Promise.all(
-                                            groups.map(async (group) => {
-                                                const groupAddons = await menuAddonsApi.getAddonsByGroupNid(group.nid);
-                                                return {
-                                                    nid: group.nid,
-                                                    name: group.name,
-                                                    options: groupAddons.map(addon => ({
-                                                        nid: addon.nid,
-                                                        name: addon.name,
-                                                        price: addon.price,
-                                                    }))
-                                                };
-                                            })
-                                        );
-                                        
-                                        // Find selected addons for this detail
-                                        const detailAddons = addons.filter(addon => addon.detailId === detail.nid);
-                                        const selectedOptions: Record<number, number> = {};
-                                        
-                                        // Map addons to their groups
-                                        for (const addon of detailAddons) {
-                                            for (const group of addonGroups) {
-                                                const option = group.options.find(opt => opt.nid === addon.ingredientId);
-                                                if (option) {
-                                                    selectedOptions[group.nid] = option.nid;
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                        
-                                        return {
-                                            nid: detail.nid,
-                                            menuItem: {
-                                                nid: menuItem.nid,
-                                                name: menuItem.name,
-                                                price: menuItem.price,
-                                                vatId: menuItem.vatId,
-                                                addonGroups,
-                                            },
-                                            quantity: detail.quantity,
-                                            selectedOptions,
-                                            backendDetailNid: detail.nid, // Track backend detail ID
-                                        };
-                                    } catch (error) {
-                                        console.error(`Failed to load menu item ${detail.itemId}:`, error);
-                                        return null;
-                                    }
-                                })
-                            );
-                            
-                            // Filter out failed items
-                            const validItems = items.filter((item): item is OrderDish => item !== null);
-                            
-                            return {
-                                nid: backendOrder.nid,
-                                items: validItems,
-                                staff: backendOrder.workerId ? `Worker ${backendOrder.workerId}` : "",
-                                backendNid: backendOrder.nid,
-                            };
-                        } catch (error) {
-                            console.error(`Failed to load order ${backendOrder.nid}:`, error);
-                            return null;
-                        }
-                    })
-                );
-                
-                // Filter out failed orders
-                const validOrders = convertedOrders.filter((order): order is Order => order !== null);
-                
-                // Merge with any unsaved orders from context (don't overwrite them)
-                setOrders(prevOrders => {
-                    // Keep unsaved orders (those without backendNid)
-                    const unsavedOrders = prevOrders.filter(o => !o.backendNid);
-                    // Combine with backend orders
-                    return [...validOrders, ...unsavedOrders];
-                });
-            } catch (error) {
-                console.error('Failed to load orders:', error);
-                setSnackbar({
-                    open: true,
-                    message: 'Failed to load orders from database.',
-                    type: 'error',
-                });
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        loadOrders();
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-    const handleNewOrder = () => {
-        // Check if there's already an unsaved order
-        const hasUnsavedOrder = orders.some(order => !order.backendNid);
-        
-        if (hasUnsavedOrder) {
-            setSnackbar({
-                open: true,
-                message: 'Please save or cancel the existing unsaved order before creating a new one.',
-                type: 'warning',
-            });
-            return;
-        }
-
-        const emptyOrder: Order = {
-            nid: Date.now(),
-            items: [],
-            staff: "",
-        };
-
-        setOrders((prev) => [...prev, emptyOrder]);
-        setSelectedOrder(emptyOrder);
-        setOrderDirty(false);
-        
-        // Navigate to last page where the new order will be
-        const newTotalOrders = orders.length + 1;
-        const lastPage = Math.ceil(newTotalOrders / itemsPerPage);
-        setPage(lastPage);
-    };
-
-const handleOrderClick = (order: Order) => {
-    if (!cancelMode) {
-        // Find the order from the current orders state to ensure we have the latest data
-        const currentOrder = orders.find(o => o.nid === order.nid);
-        if (currentOrder) {
-            const orderCopy = JSON.parse(JSON.stringify(currentOrder));
-            setSelectedOrder({ ...currentOrder });
-            setOriginalOrder(orderCopy); // Store original state for deletion tracking
-            setOrderDirty(false);
-        }
-    }
-};
-
-    const handleCancelOrder = (orderNid: number) => {
-        const order = orders.find(o => o.nid === orderNid);
-        if (order) {
-            setOrderToDelete(order);
-            setConfirmDeleteOpen(true);
-        }
-    };
-
-    const confirmDelete = async () => {
-        if (!orderToDelete) return;
-
-        try {
-            // If order has backend ID, delete from backend
-            if (orderToDelete.backendNid) {
-                await ordersApi.deleteOrder(orderToDelete.backendNid);
-            }
-
-            // Remove from local state
-            setOrders((prev) => prev.filter((o) => o.nid !== orderToDelete.nid));
-            if (selectedOrder?.nid === orderToDelete.nid) {
-                setSelectedOrder(null);
-            }
-
-            setSnackbar({
-                open: true,
-                message: 'Order deleted successfully.',
-                type: 'success',
-            });
-        } catch (error) {
-            console.error('Failed to delete order:', error);
-            setSnackbar({
-                open: true,
-                message: 'Failed to delete order. Please try again.',
-                type: 'error',
-            });
-        } finally {
-            setConfirmDeleteOpen(false);
-            setOrderToDelete(null);
-            setCancelMode(false);
-        }
-    };
-
-    const cancelDelete = () => {
-        setConfirmDeleteOpen(false);
-        setOrderToDelete(null);
-    };
-
-    const updateStaff = (staff: string) => {
-        if (!selectedOrder) return;
-        setSelectedOrder({ ...selectedOrder, staff });
-        setOrderDirty(true);
-    };
-
-    const addDishToOrder = () => {
-        if (selectedOrder) {
-            navigate("/order-management/select-dish", { state: { orderId: selectedOrder.nid } });
-        }
-    };
-
-    const updateQuantity = (nid: number, delta: number) => {
-        if (!selectedOrder) return;
-
-        const updated = selectedOrder.items
-            .map((it) => {
-                if (it.nid === nid) {
-                    const updatedItem = { ...it, quantity: Math.max(1, it.quantity + delta) };
-                    // Mark item as having quantity modified if it has a backend ID
-                    if ((it as any).backendDetailNid) {
-                        (updatedItem as any).quantityModified = true;
-                    }
-                    return updatedItem;
-                }
-                return it;
-            });
-
-        setSelectedOrder({ ...selectedOrder, items: updated });
-        setOrderDirty(true);
-    };
-
-const handleSave = async () => {
+  const handleSave = async () => {
     if (!selectedOrder) return;
 
     try {
-        // Calculate total with VAT (assuming 24% VAT rate)
-        const vatRate = 1.24; // TODO: Get from VAT service
-        
-        // If order doesn't exist in backend yet, create it
-        if (!selectedOrder.backendNid) {
-            let total = 0;
-            
-            const orderDetails: OrderDetailRequest[] = selectedOrder.items.map(item => {
-                const basePrice = item.menuItem.price;
-                let addonsPriceWoVat = 0;
-                
-                // Calculate addons price
-                const addons = (item.menuItem.addonGroups || []).flatMap(group => {
-                    const selectedOptionId = item.selectedOptions?.[group.nid];
-                    if (!selectedOptionId) return [];
-                    
-                    const option = group.options.find(opt => opt.nid === selectedOptionId);
-                    if (!option) return [];
-                    
-                    addonsPriceWoVat += option.price;
-                    
-                    return [{
-                        ingredientId: option.nid,
-                        priceWoVat: option.price,
-                    }];
-                });
-                
-                const itemPriceWoVat = (basePrice + addonsPriceWoVat) * item.quantity;
-                const itemPriceWtVat = itemPriceWoVat * vatRate;
-                total += itemPriceWtVat;
-                
-                return {
-                    itemId: item.menuItem.nid,
-                    priceWoVat: itemPriceWoVat,
-                    priceWtVat: itemPriceWtVat,
-                    quantity: item.quantity,
-                    addons: addons.length > 0 ? addons : undefined,
-                };
-            });
+      // Calculate total with VAT (assuming 24% VAT rate)
+      const vatRate = 1.24; // TODO: Get from VAT service
 
-            const orderData: OrderCreateDTO = {
-                code: `ORD-${Date.now()}`,
-                vatId: VAT_ID_STANDARD,
-                statusId: STATUS_ID_PENDING,
-                total: total,
-                businessId: BUSINESS_ID,
-                workerId: selectedOrder.staff ? 1 : undefined, // TODO: Map staff name to worker ID
-                orderDetails,
+      // If order doesn't exist in backend yet, create it
+      if (!selectedOrder.backendNid) {
+        let total = 0;
+
+        const orderDetails: OrderDetailRequest[] = selectedOrder.items.map(
+          (item) => {
+            const basePrice = item.menuItem.price;
+            let addonsPriceWoVat = 0;
+
+            // Calculate addons price
+            const addons = (item.menuItem.addonGroups || []).flatMap(
+              (group) => {
+                const selectedOptionId = item.selectedOptions?.[group.nid];
+                if (!selectedOptionId) return [];
+
+                const option = group.options.find(
+                  (opt) => opt.nid === selectedOptionId
+                );
+                if (!option) return [];
+
+                addonsPriceWoVat += option.price;
+
+                return [
+                  {
+                    ingredientId: option.nid,
+                    priceWoVat: option.price,
+                  },
+                ];
+              }
+            );
+
+            const itemPriceWoVat =
+              (basePrice + addonsPriceWoVat) * item.quantity;
+            const itemPriceWtVat = itemPriceWoVat * vatRate;
+            total += itemPriceWtVat;
+
+            return {
+              itemId: item.menuItem.nid,
+              priceWoVat: itemPriceWoVat,
+              priceWtVat: itemPriceWtVat,
+              quantity: item.quantity,
+              addons: addons.length > 0 ? addons : undefined,
             };
-
-            const createdOrder = await ordersApi.createOrder(orderData);
-
-            // Update the order with backend ID and backend detail IDs
-            const orderWithDetails = await ordersApi.getOrderWithDetails(createdOrder.nid);
-            const updatedItems = selectedOrder.items.map((item, index) => ({
-                ...item,
-                backendDetailNid: orderWithDetails.details[index]?.nid,
-            }));
-
-            const updatedOrder = { 
-                ...selectedOrder, 
-                backendNid: createdOrder.nid,
-                items: updatedItems,
-            };
-            setSelectedOrder(updatedOrder);
-            setOriginalOrder(JSON.parse(JSON.stringify(updatedOrder))); // Set original state after creation
-            setOrders(prev =>
-                prev.map((o) => (o.nid === selectedOrder.nid ? updatedOrder : o))
-            );
-
-            setOrderDirty(false);
-            setSnackbar({
-                open: true,
-                message: 'Order created successfully!',
-                type: 'success',
-            });
-        } else {
-            // Order exists - we need to sync changes with backend
-            
-            // Handle deleted items - compare with original order
-            if (originalOrder && originalOrder.backendNid) {
-                const currentItemIds = selectedOrder.items
-                    .filter(item => (item as any).backendDetailNid)
-                    .map(item => (item as any).backendDetailNid);
-                
-                const deletedItems = originalOrder.items.filter(item => 
-                    (item as any).backendDetailNid && 
-                    !currentItemIds.includes((item as any).backendDetailNid)
-                );
-                
-                for (const item of deletedItems) {
-                    console.log('Deleting item with detail:', (item as any).backendDetailNid);
-                    await ordersApi.removeItemFromOrder(
-                        selectedOrder.backendNid,
-                        (item as any).backendDetailNid
-                    );
-                }
-            }
-            
-            // Handle items with modified quantities
-            const modifiedQuantityItems = selectedOrder.items.filter(item => 
-                (item as any).backendDetailNid && (item as any).quantityModified
-            );
-            
-            for (const item of modifiedQuantityItems) {
-                console.log('Updating quantity for detail:', (item as any).backendDetailNid, 'to', item.quantity);
-                await ordersApi.updateOrderItem(
-                    selectedOrder.backendNid,
-                    (item as any).backendDetailNid,
-                    { quantity: item.quantity }
-                );
-                
-                // Clear the modified flag
-                delete (item as any).quantityModified;
-            }
-            
-            // Handle items with modified addons
-            const modifiedAddonItems = selectedOrder.items.filter(item => 
-                (item as any).backendDetailNid && (item as any).addonsModified
-            );
-            
-            for (const item of modifiedAddonItems) {
-                // Update addons using the new endpoint
-                const addons = (item.menuItem.addonGroups || []).flatMap(group => {
-                    const selectedOptionId = item.selectedOptions?.[group.nid];
-                    if (!selectedOptionId) return [];
-                    
-                    const option = group.options.find(opt => opt.nid === selectedOptionId);
-                    if (!option) return [];
-                    
-                    return [{
-                        ingredientId: option.nid,
-                        priceWoVat: option.price,
-                    }];
-                });
-                
-                console.log('Updating addons for detail:', (item as any).backendDetailNid);
-                await ordersApi.updateOrderItemAddons(
-                    selectedOrder.backendNid, 
-                    (item as any).backendDetailNid, 
-                    addons
-                );
-                
-                // Clear the modified flag
-                delete (item as any).addonsModified;
-            }
-            
-            // Find items that don't have a backendDetailNid (newly added)
-            const newItems = selectedOrder.items.filter(item => !(item as any).backendDetailNid);
-            
-            for (const item of newItems) {
-                const basePrice = item.menuItem.price;
-                let addonsPriceWoVat = 0;
-                
-                // Calculate addons price
-                const addons = (item.menuItem.addonGroups || []).flatMap(group => {
-                    const selectedOptionId = item.selectedOptions?.[group.nid];
-                    if (!selectedOptionId) return [];
-                    
-                    const option = group.options.find(opt => opt.nid === selectedOptionId);
-                    if (!option) return [];
-                    
-                    addonsPriceWoVat += option.price;
-                    
-                    return [{
-                        ingredientId: option.nid,
-                        priceWoVat: option.price,
-                    }];
-                });
-                
-                const itemPriceWoVat = (basePrice + addonsPriceWoVat) * item.quantity;
-                const itemPriceWtVat = itemPriceWoVat * vatRate;
-                
-                const itemRequest: OrderDetailRequest = {
-                    itemId: item.menuItem.nid,
-                    priceWoVat: itemPriceWoVat,
-                    priceWtVat: itemPriceWtVat,
-                    quantity: item.quantity,
-                    addons: addons.length > 0 ? addons : undefined,
-                };
-                    
-                const createdDetail = await ordersApi.addItemToOrder(selectedOrder.backendNid, itemRequest);
-                
-                // Update the item with backend detail ID
-                (item as any).backendDetailNid = createdDetail.nid;
-            }
-
-            // Update the order in state with the new backendDetailNids
-            const updatedOrder = { ...selectedOrder };
-            setSelectedOrder(updatedOrder);
-            setOriginalOrder(JSON.parse(JSON.stringify(updatedOrder))); // Update original state after save
-            setOrders(prev =>
-                prev.map((o) => (o.nid === selectedOrder.nid ? updatedOrder : o))
-            );
-
-            setOrderDirty(false);
-            setSnackbar({
-                open: true,
-                message: 'Order updated successfully!',
-                type: 'success',
-            });
-        }
-    } catch (error) {
-        console.error('Failed to save order:', error);
-        setSnackbar({
-            open: true,
-            message: 'Failed to save order. Please try again.',
-            type: 'error',
-        });
-    }
-};
-
-    const removeDishFromOrder = (nid: number) => {
-        if (!selectedOrder) return;
-
-        const updated = selectedOrder.items.filter(it => it.nid !== nid);
-        setSelectedOrder({ ...selectedOrder, items: updated });
-        setOrderDirty(true);
-
-        setSnackbar({
-            open: true,
-            message: 'Dish removed from order.',
-            type: 'info',
-        });
-    };
-
-    const openDetails = (item: OrderDish) => {
-        setModalItem(item);
-        setModalSelections(item.selectedOptions ? { ...item.selectedOptions } : {});
-        setModalOpen(true);
-    };
-
-    const closeModal = () => {
-        setModalOpen(false);
-        setModalItem(null);
-        setModalSelections({});
-    };
-
-    const toggleSelectOption = (groupId: number, optionId: number) => {
-        setModalSelections(prev => {
-            if (prev[groupId] === optionId) {
-                const updated = { ...prev };
-                delete updated[groupId];
-                return updated;
-            }
-
-            return { ...prev, [groupId]: optionId };
-        });
-    };
-
-    const saveModal = () => {
-        if (!selectedOrder || !modalItem) return;
-
-        const updatedItems = selectedOrder.items.map(it =>
-            it.nid === modalItem.nid ? { ...it, selectedOptions: { ...modalSelections } } : it
+          }
         );
 
-        // If the item has a backendDetailNid, mark it as modified for backend update
-        if ((modalItem as any).backendDetailNid) {
-            const itemToUpdate = updatedItems.find(it => it.nid === modalItem.nid);
-            if (itemToUpdate) {
-                (itemToUpdate as any).addonsModified = true;
-            }
+        const orderData: OrderCreateDTO = {
+          code: `ORD-${Date.now()}`,
+          vatId: VAT_ID_STANDARD,
+          statusId: STATUS_ID_PENDING,
+          total: total,
+          businessId:
+            businessId ??
+            (() => {
+              throw new Error('Please login to access services');
+            })(),
+          workerId: selectedOrder.staff ? 1 : undefined, // TODO: Map staff name to worker ID
+          orderDetails,
+        };
+
+        const createdOrder = await ordersApi.createOrder(orderData);
+
+        // Update the order with backend ID and backend detail IDs
+        const orderWithDetails = await ordersApi.getOrderWithDetails(
+          createdOrder.nid
+        );
+        const updatedItems = selectedOrder.items.map((item, index) => ({
+          ...item,
+          backendDetailNid: orderWithDetails.details[index]?.nid,
+        }));
+
+        const updatedOrder = {
+          ...selectedOrder,
+          backendNid: createdOrder.nid,
+          items: updatedItems,
+        };
+        setSelectedOrder(updatedOrder);
+        setOriginalOrder(JSON.parse(JSON.stringify(updatedOrder))); // Set original state after creation
+        setOrders((prev) =>
+          prev.map((o) => (o.nid === selectedOrder.nid ? updatedOrder : o))
+        );
+
+        setOrderDirty(false);
+        setSnackbar({
+          open: true,
+          message: 'Order created successfully!',
+          type: 'success',
+        });
+      } else {
+        // Order exists - we need to sync changes with backend
+
+        // Handle deleted items - compare with original order
+        if (originalOrder && originalOrder.backendNid) {
+          const currentItemIds = selectedOrder.items
+            .filter((item) => (item as any).backendDetailNid)
+            .map((item) => (item as any).backendDetailNid);
+
+          const deletedItems = originalOrder.items.filter(
+            (item) =>
+              (item as any).backendDetailNid &&
+              !currentItemIds.includes((item as any).backendDetailNid)
+          );
+
+          for (const item of deletedItems) {
+            console.log(
+              'Deleting item with detail:',
+              (item as any).backendDetailNid
+            );
+            await ordersApi.removeItemFromOrder(
+              selectedOrder.backendNid,
+              (item as any).backendDetailNid
+            );
+          }
         }
 
-        setSelectedOrder({ ...selectedOrder, items: updatedItems });
-        setOrderDirty(true);
-        closeModal();
-    };
+        // Handle items with modified quantities
+        const modifiedQuantityItems = selectedOrder.items.filter(
+          (item) =>
+            (item as any).backendDetailNid && (item as any).quantityModified
+        );
 
-    
-useEffect(() => {
+        for (const item of modifiedQuantityItems) {
+          console.log(
+            'Updating quantity for detail:',
+            (item as any).backendDetailNid,
+            'to',
+            item.quantity
+          );
+          await ordersApi.updateOrderItem(
+            selectedOrder.backendNid,
+            (item as any).backendDetailNid,
+            { quantity: item.quantity }
+          );
+
+          // Clear the modified flag
+          delete (item as any).quantityModified;
+        }
+
+        // Handle items with modified addons
+        const modifiedAddonItems = selectedOrder.items.filter(
+          (item) =>
+            (item as any).backendDetailNid && (item as any).addonsModified
+        );
+
+        for (const item of modifiedAddonItems) {
+          // Update addons using the new endpoint
+          const addons = (item.menuItem.addonGroups || []).flatMap((group) => {
+            const selectedOptionId = item.selectedOptions?.[group.nid];
+            if (!selectedOptionId) return [];
+
+            const option = group.options.find(
+              (opt) => opt.nid === selectedOptionId
+            );
+            if (!option) return [];
+
+            return [
+              {
+                ingredientId: option.nid,
+                priceWoVat: option.price,
+              },
+            ];
+          });
+
+          console.log(
+            'Updating addons for detail:',
+            (item as any).backendDetailNid
+          );
+          await ordersApi.updateOrderItemAddons(
+            selectedOrder.backendNid,
+            (item as any).backendDetailNid,
+            addons
+          );
+
+          // Clear the modified flag
+          delete (item as any).addonsModified;
+        }
+
+        // Find items that don't have a backendDetailNid (newly added)
+        const newItems = selectedOrder.items.filter(
+          (item) => !(item as any).backendDetailNid
+        );
+
+        for (const item of newItems) {
+          const basePrice = item.menuItem.price;
+          let addonsPriceWoVat = 0;
+
+          // Calculate addons price
+          const addons = (item.menuItem.addonGroups || []).flatMap((group) => {
+            const selectedOptionId = item.selectedOptions?.[group.nid];
+            if (!selectedOptionId) return [];
+
+            const option = group.options.find(
+              (opt) => opt.nid === selectedOptionId
+            );
+            if (!option) return [];
+
+            addonsPriceWoVat += option.price;
+
+            return [
+              {
+                ingredientId: option.nid,
+                priceWoVat: option.price,
+              },
+            ];
+          });
+
+          const itemPriceWoVat = (basePrice + addonsPriceWoVat) * item.quantity;
+          const itemPriceWtVat = itemPriceWoVat * vatRate;
+
+          const itemRequest: OrderDetailRequest = {
+            itemId: item.menuItem.nid,
+            priceWoVat: itemPriceWoVat,
+            priceWtVat: itemPriceWtVat,
+            quantity: item.quantity,
+            addons: addons.length > 0 ? addons : undefined,
+          };
+
+          const createdDetail = await ordersApi.addItemToOrder(
+            selectedOrder.backendNid,
+            itemRequest
+          );
+
+          // Update the item with backend detail ID
+          (item as any).backendDetailNid = createdDetail.nid;
+        }
+
+        // Update the order in state with the new backendDetailNids
+        const updatedOrder = { ...selectedOrder };
+        setSelectedOrder(updatedOrder);
+        setOriginalOrder(JSON.parse(JSON.stringify(updatedOrder))); // Update original state after save
+        setOrders((prev) =>
+          prev.map((o) => (o.nid === selectedOrder.nid ? updatedOrder : o))
+        );
+
+        setOrderDirty(false);
+        setSnackbar({
+          open: true,
+          message: 'Order updated successfully!',
+          type: 'success',
+        });
+      }
+    } catch (error) {
+      console.error('Failed to save order:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to save order. Please try again.',
+        type: 'error',
+      });
+    }
+  };
+
+  const removeDishFromOrder = (nid: number) => {
+    if (!selectedOrder) return;
+
+    const updated = selectedOrder.items.filter((it) => it.nid !== nid);
+    setSelectedOrder({ ...selectedOrder, items: updated });
+    setOrderDirty(true);
+
+    setSnackbar({
+      open: true,
+      message: 'Dish removed from order.',
+      type: 'info',
+    });
+  };
+
+  const openDetails = (item: OrderDish) => {
+    setModalItem(item);
+    setModalSelections(item.selectedOptions ? { ...item.selectedOptions } : {});
+    setModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setModalOpen(false);
+    setModalItem(null);
+    setModalSelections({});
+  };
+
+  const toggleSelectOption = (groupId: number, optionId: number) => {
+    setModalSelections((prev) => {
+      if (prev[groupId] === optionId) {
+        const updated = { ...prev };
+        delete updated[groupId];
+        return updated;
+      }
+
+      return { ...prev, [groupId]: optionId };
+    });
+  };
+
+  const saveModal = () => {
+    if (!selectedOrder || !modalItem) return;
+
+    const updatedItems = selectedOrder.items.map((it) =>
+      it.nid === modalItem.nid
+        ? { ...it, selectedOptions: { ...modalSelections } }
+        : it
+    );
+
+    // If the item has a backendDetailNid, mark it as modified for backend update
+    if ((modalItem as any).backendDetailNid) {
+      const itemToUpdate = updatedItems.find((it) => it.nid === modalItem.nid);
+      if (itemToUpdate) {
+        (itemToUpdate as any).addonsModified = true;
+      }
+    }
+
+    setSelectedOrder({ ...selectedOrder, items: updatedItems });
+    setOrderDirty(true);
+    closeModal();
+  };
+
+  useEffect(() => {
     const anyState = (location as any).state;
     if (anyState && anyState.addedDish) {
-        // Create a unique key using the dish's unique nid from DishSelection
-        const stateKey = `${anyState.orderId}-${anyState.addedDish.nid}`;
-        
-        // Check both in-memory ref AND sessionStorage for processed states
-        const processedStates = JSON.parse(sessionStorage.getItem('processedDishStates') || '[]');
-        
-        if (processedStateRef.current === stateKey || processedStates.includes(stateKey)) {
-            return;
-        }
-        
-        // Mark as processed in both memory and sessionStorage
-        processedStateRef.current = stateKey;
-        processedStates.push(stateKey);
-        sessionStorage.setItem('processedDishStates', JSON.stringify(processedStates));
+      // Create a unique key using the dish's unique nid from DishSelection
+      const stateKey = `${anyState.orderId}-${anyState.addedDish.nid}`;
 
-        const payload = anyState.addedDish as {
-            nid: number;
-            menuItem: MenuItem;
-            quantity: number;
-            selectedOptions?: Record<number, number>;
-        };
+      // Check both in-memory ref AND sessionStorage for processed states
+      const processedStates = JSON.parse(
+        sessionStorage.getItem('processedDishStates') || '[]'
+      );
 
-        const newItem: OrderDish = {
-            nid: payload.nid, // Use the nid from payload, not Date.now()
-            menuItem: payload.menuItem,
-            quantity: payload.quantity,
-            selectedOptions: payload.selectedOptions || {}
-        };
+      if (
+        processedStateRef.current === stateKey ||
+        processedStates.includes(stateKey)
+      ) {
+        return;
+      }
 
-        const targetOrderId = anyState.orderId;
+      // Mark as processed in both memory and sessionStorage
+      processedStateRef.current = stateKey;
+      processedStates.push(stateKey);
+      sessionStorage.setItem(
+        'processedDishStates',
+        JSON.stringify(processedStates)
+      );
 
-        if (targetOrderId) {
-            setOrders(prevOrders => {
-                const orderExists = prevOrders.some(o => o.nid === targetOrderId);
-                
-                if (!orderExists) {
-                    // Order doesn't exist (stale navigation state), ignore silently
-                    console.warn('Ignoring stale navigation state for non-existent order:', targetOrderId);
-                    return prevOrders;
-                }
-                
-                const updatedOrders = prevOrders.map(order => {
-                    if (order.nid === targetOrderId) {
-                        const updatedOrder = { ...order, items: [...order.items, newItem] };
-                        pendingOrderRef.current = updatedOrder; // Store in ref
-                        return updatedOrder;
-                    }
-                    return order;
-                });
-                
-                return updatedOrders;
-            });
-            
-            // Use the ref to set selected order
-            const orderToSelect = pendingOrderRef.current;
-            if (orderToSelect) {
-                setSelectedOrder(orderToSelect);
-                setOrderDirty(true);
-                setSnackbar({
-                    open: true,
-                    message: 'Dish added to order. Click Save to save changes.',
-                    type: 'success',
-                });
-                pendingOrderRef.current = null; // Clear the ref
+      const payload = anyState.addedDish as {
+        nid: number;
+        menuItem: MenuItem;
+        quantity: number;
+        selectedOptions?: Record<number, number>;
+      };
+
+      const newItem: OrderDish = {
+        nid: payload.nid, // Use the nid from payload, not Date.now()
+        menuItem: payload.menuItem,
+        quantity: payload.quantity,
+        selectedOptions: payload.selectedOptions || {},
+      };
+
+      const targetOrderId = anyState.orderId;
+
+      if (targetOrderId) {
+        setOrders((prevOrders) => {
+          const orderExists = prevOrders.some((o) => o.nid === targetOrderId);
+
+          if (!orderExists) {
+            // Order doesn't exist (stale navigation state), ignore silently
+            console.warn(
+              'Ignoring stale navigation state for non-existent order:',
+              targetOrderId
+            );
+            return prevOrders;
+          }
+
+          const updatedOrders = prevOrders.map((order) => {
+            if (order.nid === targetOrderId) {
+              const updatedOrder = {
+                ...order,
+                items: [...order.items, newItem],
+              };
+              pendingOrderRef.current = updatedOrder; // Store in ref
+              return updatedOrder;
             }
+            return order;
+          });
+
+          return updatedOrders;
+        });
+
+        // Use the ref to set selected order
+        const orderToSelect = pendingOrderRef.current;
+        if (orderToSelect) {
+          setSelectedOrder(orderToSelect);
+          setOrderDirty(true);
+          setSnackbar({
+            open: true,
+            message: 'Dish added to order. Click Save to save changes.',
+            type: 'success',
+          });
+          pendingOrderRef.current = null; // Clear the ref
         }
+      }
 
-        // Don't clear navigation state - it causes context to reset
-        // The processedStateRef + sessionStorage prevents duplicate processing
+      // Don't clear navigation state - it causes context to reset
+      // The processedStateRef + sessionStorage prevents duplicate processing
     }
-}, [location.state, navigate, location.pathname, setOrders]);
+  }, [location.state, navigate, location.pathname, setOrders]);
 
-    const totalPrice = selectedOrder
-        ? selectedOrder.items.reduce((sum, it) => {
-            const base = it.menuItem.price * it.quantity;
-            const optionsTotal = (it.menuItem.addonGroups || []).reduce((optSum, group) => {
-                const selId = it.selectedOptions ? it.selectedOptions[group.nid] : undefined;
-                const sel = group.options.find((o) => o.nid === selId);
-                return optSum + (sel ? sel.price * it.quantity : 0);
-            }, 0);
-            return sum + base + optionsTotal;
-        }, 0)
-        : 0;
+  const totalPrice = selectedOrder
+    ? selectedOrder.items.reduce((sum, it) => {
+        const base = it.menuItem.price * it.quantity;
+        const optionsTotal = (it.menuItem.addonGroups || []).reduce(
+          (optSum, group) => {
+            const selId = it.selectedOptions
+              ? it.selectedOptions[group.nid]
+              : undefined;
+            const sel = group.options.find((o) => o.nid === selId);
+            return optSum + (sel ? sel.price * it.quantity : 0);
+          },
+          0
+        );
+        return sum + base + optionsTotal;
+      }, 0)
+    : 0;
 
-    return (
-        <div className="management">
-            {loading ? (
-                <div style={{ padding: 20, textAlign: 'center', width: '100%' }}>
-                    Loading orders from database...
+  return (
+    <div className="management">
+      {loading ? (
+        <div style={{ padding: 20, textAlign: 'center', width: '100%' }}>
+          Loading orders from database...
+        </div>
+      ) : (
+        <>
+          <div className="item-list-container">
+            <div className="item-actions">
+              <Button
+                className="item-action-button new-item"
+                onClick={handleNewOrder}
+              >
+                New Order
+              </Button>
+
+              <Button
+                className={`item-action-button delete-item ${
+                  cancelMode ? 'active' : ''
+                }`}
+                onClick={toggleCancelMode}
+              >
+                Cancel Orders
+              </Button>
+            </div>
+
+            <h3 className="item-list-label">Order List</h3>
+
+            <div className="item-list">
+              {paginatedOrders.map((order) => (
+                <div
+                  key={order.backendNid || order.nid}
+                  className={`item-card ${
+                    selectedOrder?.nid === order.nid ? 'selected' : ''
+                  }`}
+                  onClick={() => handleOrderClick(order)}
+                >
+                  {order.backendNid
+                    ? `Order #${order.backendNid}`
+                    : 'New Order (unsaved)'}
+                  {cancelMode && (
+                    <span
+                      className="delete-x"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCancelOrder(order.nid);
+                      }}
+                    >
+                      ✖
+                    </span>
+                  )}
                 </div>
+              ))}
+            </div>
+
+            <div className="item-list-pagination">
+              <PaginationComponent
+                count={Math.ceil(orders.length / itemsPerPage)}
+                page={page}
+                onChange={(_, value) => setPage(value)} // TODO: change _ back to e if event is needed
+              />
+            </div>
+          </div>
+
+          <div className="info-container">
+            <h2 className="section-title">
+              {' '}
+              {selectedOrder
+                ? selectedOrder.backendNid
+                  ? `Order #${selectedOrder.backendNid} Information`
+                  : 'New Order (unsaved) Information'
+                : ''}
+            </h2>
+
+            {!selectedOrder ? (
+              <p style={{ opacity: 0.5 }}>Select or create an order.</p>
             ) : (
-            <>
-            <div className="item-list-container">
-                <div className="item-actions">
-                    <Button
-                        className="item-action-button new-item"
-                        onClick={handleNewOrder}
-                    >
-                        New Order
-                    </Button>
+              <>
+                <div className="info-grid">
+                  <div className="info-box">
+                    <label>Current Total (€)</label>
+                    <input type="text" value={totalPrice.toFixed(2)} readOnly />
+                  </div>
 
-                    <Button
-                        className={`item-action-button delete-item ${cancelMode ? "active" : ""
-                            }`}
-                        onClick={toggleCancelMode}
+                  <div className="info-box">
+                    <label>Serving Staff</label>
+                    <select
+                      value={selectedOrder.staff}
+                      onChange={(e) => updateStaff(e.target.value)}
                     >
-                        Cancel Orders
-                    </Button>
+                      <option value="">Select staff</option>
+                      {staffList.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
-                <h3 className="item-list-label">Order List</h3>
+                <Button
+                  className={`save-button ${orderDirty ? 'active' : ''}`}
+                  disabled={!orderDirty}
+                  onClick={handleSave}
+                >
+                  Save
+                </Button>
+              </>
+            )}
+          </div>
 
-                <div className="item-list">
-                    {paginatedOrders.map((order) => (
-                        <div
-                            key={order.backendNid || order.nid}
-                            className={`item-card ${selectedOrder?.nid === order.nid ? "selected" : ""
-                                }`}
-                            onClick={() => handleOrderClick(order)}
-                        >
-                            {order.backendNid ? `Order #${order.backendNid}` : 'New Order (unsaved)'}
-                            {cancelMode && (
-                                <span
-                                    className="delete-x"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleCancelOrder(order.nid);
-                                    }}
-                                >
-                                    ✖
-                                </span>
+          <div className="option-container">
+            {selectedOrder && (
+              <>
+                <Button
+                  className="option-tree-button item-action-button new-item"
+                  onClick={addDishToOrder}
+                >
+                  + Add Dish
+                </Button>
+
+                <h2 className="section-title">
+                  Dishes in Order ({selectedOrder.items.length})
+                </h2>
+
+                <div className="option-tree-list">
+                  {selectedOrder.items
+                    .slice(
+                      (dishPage - 1) * dishesPerPage,
+                      dishPage * dishesPerPage
+                    )
+                    .map((it) => {
+                      // Calculate addons price
+                      const addonsPrice = (
+                        it.menuItem.addonGroups || []
+                      ).reduce((sum, group) => {
+                        const selectedOptionId =
+                          it.selectedOptions?.[group.nid];
+                        const selectedOption = group.options.find(
+                          (opt) => opt.nid === selectedOptionId
+                        );
+                        return sum + (selectedOption?.price || 0);
+                      }, 0);
+
+                      const itemTotal =
+                        (it.menuItem.price + addonsPrice) * it.quantity;
+
+                      return (
+                        <div key={it.nid} className="option-tree-box">
+                          <div className="option-row">
+                            <span className="fixed-name">
+                              {it.menuItem.name}
+                            </span>
+
+                            <Button
+                              className="details-button"
+                              onClick={() => openDetails(it)}
+                            >
+                              Details
+                            </Button>
+
+                            <div className="quantity-box">
+                              <button
+                                onClick={() => updateQuantity(it.nid, -1)}
+                              >
+                                −
+                              </button>
+                              <input
+                                type="number"
+                                value={it.quantity}
+                                onChange={(e) =>
+                                  setSelectedOrder((prev) =>
+                                    prev
+                                      ? {
+                                          ...prev,
+                                          items: prev.items.map((item) =>
+                                            item.nid === it.nid
+                                              ? {
+                                                  ...item,
+                                                  quantity: Math.max(
+                                                    1,
+                                                    parseInt(e.target.value) ||
+                                                      1
+                                                  ),
+                                                }
+                                              : item
+                                          ),
+                                        }
+                                      : prev
+                                  )
+                                }
+                                min="1"
+                              />
+                              <button
+                                onClick={() => updateQuantity(it.nid, +1)}
+                              >
+                                +
+                              </button>
+                            </div>
+
+                            <input
+                              type="text"
+                              value={`€ ${itemTotal.toFixed(2)}`}
+                              readOnly
+                              style={{
+                                width: 100,
+                                flexShrink: 0,
+                                fontWeight: 600,
+                              }}
+                              title="Total (with addons)"
+                            />
+
+                            <span
+                              className="delete-dish"
+                              onClick={() => removeDishFromOrder(it.nid)}
+                            >
+                              ✖
+                            </span>
+                          </div>
+
+                          {it.selectedOptions &&
+                            Object.keys(it.selectedOptions).length > 0 && (
+                              <div
+                                style={{
+                                  marginTop: 8,
+                                  color: '#cfcfcf',
+                                  fontSize: '0.9rem',
+                                }}
+                              >
+                                <div>
+                                  Base Price: {it.menuItem.price.toFixed(2)} €
+                                </div>
+                                {it.menuItem.addonGroups?.map((group) => {
+                                  const sel = it.selectedOptions
+                                    ? it.selectedOptions[group.nid]
+                                    : undefined;
+                                  const selOpt = group.options.find(
+                                    (o) => o.nid === sel
+                                  );
+                                  return selOpt ? (
+                                    <div key={group.nid}>
+                                      {group.name}: {selOpt.name}{' '}
+                                      {selOpt.price
+                                        ? ` - ${selOpt.price.toFixed(2)} €`
+                                        : ''}
+                                    </div>
+                                  ) : null;
+                                })}
+                              </div>
                             )}
                         </div>
-                    ))}
+                      );
+                    })}
                 </div>
-
-                <div className="item-list-pagination">
-                    <PaginationComponent
-                        count={Math.ceil(orders.length / itemsPerPage)}
-                        page={page}
-                        onChange={(_, value) => setPage(value)} // TODO: change _ back to e if event is needed
-                    />
-                </div>
-            </div>
-
-            <div className="info-container">
-                <h2 className="section-title" > {selectedOrder ? (selectedOrder.backendNid ? `Order #${selectedOrder.backendNid} Information` : 'New Order (unsaved) Information') : ''}</h2>
-
-                {!selectedOrder ? (
-                    <p style={{ opacity: 0.5 }}>Select or create an order.</p>
-                ) : (
-                    <>
-                        <div className="info-grid">
-                            <div className="info-box">
-                                <label>Current Total (€)</label>
-                                <input type="text" value={totalPrice.toFixed(2)} readOnly />
-                            </div>
-
-                            <div className="info-box">
-                                <label>Serving Staff</label>
-                                <select
-                                    value={selectedOrder.staff}
-                                    onChange={(e) => updateStaff(e.target.value)}
-                                >
-                                    <option value="">Select staff</option>
-                                    {staffList.map((s) => (
-                                        <option key={s} value={s}>
-                                            {s}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-
-                        <Button
-                            className={`save-button ${orderDirty ? "active" : ""}`}
-                            disabled={!orderDirty}
-                            onClick={handleSave}
-                        >
-                            Save
-                        </Button>
-                    </>
+              </>
+            )}
+            <div className="option-tree-pagination">
+              <PaginationComponent
+                count={Math.ceil(
+                  (selectedOrder?.items.length || 0) / dishesPerPage
                 )}
+                page={dishPage}
+                onChange={(_, value) => setDishPage(value)} // TODO: change _ back to e if event is needed
+              />
             </div>
+          </div>
 
-            <div className="option-container">
-                {selectedOrder && (
-                    <>
-                        <Button
-                            className="option-tree-button item-action-button new-item"
-                            onClick={addDishToOrder}
-                        >
-                            + Add Dish
-                        </Button>
-
-                        <h2 className="section-title">Dishes in Order ({selectedOrder.items.length})</h2>
-
-                        <div className="option-tree-list">
-                            {selectedOrder.items
-                                .slice((dishPage - 1) * dishesPerPage, dishPage * dishesPerPage)
-                                .map((it) => {
-                                    // Calculate addons price
-                                    const addonsPrice = (it.menuItem.addonGroups || []).reduce((sum, group) => {
-                                        const selectedOptionId = it.selectedOptions?.[group.nid];
-                                        const selectedOption = group.options.find(opt => opt.nid === selectedOptionId);
-                                        return sum + (selectedOption?.price || 0);
-                                    }, 0);
-                                    
-                                    const itemTotal = (it.menuItem.price + addonsPrice) * it.quantity;
-                                    
-                                    return (
-                                        <div key={it.nid} className="option-tree-box">
-                                            <div className="option-row">
-                                                <span className="fixed-name">{it.menuItem.name}</span>
-
-                                                <Button className="details-button" onClick={() => openDetails(it)}>Details</Button>
-
-                                                <div className="quantity-box">
-                                                    <button onClick={() => updateQuantity(it.nid, -1)}>−</button>
-                                                    <input
-                                                        type="number"
-                                                        value={it.quantity}
-                                                        onChange={(e) => setSelectedOrder(prev => prev ? {
-                                                            ...prev,
-                                                            items: prev.items.map(item =>
-                                                                item.nid === it.nid
-                                                                    ? { ...item, quantity: Math.max(1, parseInt(e.target.value) || 1) }
-                                                                    : item
-                                                            )
-                                                        } : prev)}
-                                                        min="1"
-                                                    />
-                                                    <button onClick={() => updateQuantity(it.nid, +1)}>+</button>
-                                                </div>
-                                                
-                                                <input type="text" value={`€ ${itemTotal.toFixed(2)}`} readOnly style={{ width: 100, flexShrink: 0, fontWeight: 600 }} title="Total (with addons)" />
-                                                
-                                                <span className="delete-dish" onClick={() => removeDishFromOrder(it.nid)}>
-                                                    ✖
-                                                </span>
-
-                                            </div>
-
-                                            {it.selectedOptions && Object.keys(it.selectedOptions).length > 0 && (
-                                                <div style={{ marginTop: 8, color: '#cfcfcf', fontSize: '0.9rem' }}>
-                                                    <div>Base Price: {it.menuItem.price.toFixed(2)} €</div>
-                                                    {it.menuItem.addonGroups?.map(group => {
-                                                        const sel = it.selectedOptions ? it.selectedOptions[group.nid] : undefined;
-                                                        const selOpt = group.options.find(o => o.nid === sel);
-                                                        return selOpt ? <div key={group.nid}>{group.name}: {selOpt.name} {selOpt.price ? ` - ${selOpt.price.toFixed(2)} €` : ''}</div> : null;
-                                                    })}
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                        </div>
-                    </>
-                )}
-                <div className="option-tree-pagination">
-                    <PaginationComponent
-                        count={Math.ceil((selectedOrder?.items.length || 0) / dishesPerPage)}
-                        page={dishPage}
-                        onChange={(_, value) => setDishPage(value)} // TODO: change _ back to e if event is needed
-                    />
+          {modalOpen && modalItem && (
+            <div className="modal-overlay" onClick={closeModal}>
+              <div
+                className="modal-content option-tree-box"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="option-tree-header" style={{ marginBottom: 8 }}>
+                  <input value={modalItem.menuItem.name} readOnly />
+                  <button
+                    className="delete-tree modal-close"
+                    onClick={closeModal}
+                  >
+                    ✖
+                  </button>
                 </div>
 
+                <div className="option-list">
+                  {(modalItem.menuItem.addonGroups || []).map((group) => (
+                    <div
+                      key={group.nid}
+                      className="option-tree-box"
+                      style={{ padding: 10 }}
+                    >
+                      <div style={{ fontWeight: 600, marginBottom: 6 }}>
+                        {group.name}
+                      </div>
+                      <div className="option-list" style={{ gap: 6 }}>
+                        {group.options.map((opt) => {
+                          const selected =
+                            modalSelections[group.nid] === opt.nid;
+                          return (
+                            <label
+                              key={opt.nid}
+                              className="option-row"
+                              style={{ alignItems: 'center' }}
+                            >
+                              <input
+                                type="radio"
+                                name={`group-${group.nid}`}
+                                checked={selected}
+                                onChange={() =>
+                                  toggleSelectOption(group.nid, opt.nid)
+                                }
+                              />
+                              <input type="text" value={opt.name} readOnly />
+                              <input
+                                type="text"
+                                value={`€ ${opt.price.toFixed(2)}`}
+                                readOnly
+                                style={{ width: 90, textAlign: 'right' }}
+                              />
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="modal-actions">
+                  <Button
+                    className="item-action-button delete-item cancel-button"
+                    onClick={() => {
+                      setModalSelections({});
+                      closeModal();
+                    }}
+                  >
+                    Cancel
+                  </Button>
+
+                  <Button
+                    className="item-action-button new-item save-button-modal"
+                    onClick={saveModal}
+                  >
+                    Save
+                  </Button>
+                </div>
+              </div>
             </div>
+          )}
 
-            {modalOpen && modalItem && (
-                <div className="modal-overlay" onClick={closeModal}>
-                    <div className="modal-content option-tree-box" onClick={(e) => e.stopPropagation()}>
-                        <div className="option-tree-header" style={{ marginBottom: 8 }}>
-                            <input value={modalItem.menuItem.name} readOnly />
-                            <button className="delete-tree modal-close" onClick={closeModal}>✖</button>
-                        </div>
-
-                        <div className="option-list">
-                            {(modalItem.menuItem.addonGroups || []).map((group) => (
-                                <div key={group.nid} className="option-tree-box" style={{ padding: 10 }}>
-                                    <div style={{ fontWeight: 600, marginBottom: 6 }}>{group.name}</div>
-                                    <div className="option-list" style={{ gap: 6 }}>
-                                        {group.options.map(opt => {
-                                            const selected = modalSelections[group.nid] === opt.nid;
-                                            return (
-                                                <label key={opt.nid} className="option-row" style={{ alignItems: 'center' }}>
-                                                    <input
-                                                        type="radio"
-                                                        name={`group-${group.nid}`}
-                                                        checked={selected}
-                                                        onChange={() => toggleSelectOption(group.nid, opt.nid)}
-                                                    />
-                                                    <input type="text" value={opt.name} readOnly />
-                                                    <input type="text" value={`€ ${opt.price.toFixed(2)}`} readOnly style={{ width: 90, textAlign: 'right' }} />
-                                                </label>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="modal-actions">
-                            <Button
-                                className="item-action-button delete-item cancel-button"
-                                onClick={() => {
-                                    setModalSelections({});
-                                    closeModal();
-                                }}
-                            >
-                                Cancel
-                            </Button>
-
-                            <Button className="item-action-button new-item save-button-modal" onClick={saveModal}>
-                                Save
-                            </Button>
-                        </div>
-                    </div>
+          {confirmDeleteOpen && orderToDelete && (
+            <div className="modal-overlay" onClick={cancelDelete}>
+              <div
+                className="modal-content option-tree-box"
+                onClick={(e) => e.stopPropagation()}
+                style={{ maxWidth: 400 }}
+              >
+                <div
+                  className="option-tree-header"
+                  style={{ marginBottom: 16 }}
+                >
+                  <h3 style={{ margin: 0 }}>Confirm Delete</h3>
+                  <button
+                    className="delete-tree modal-close"
+                    onClick={cancelDelete}
+                  >
+                    ✖
+                  </button>
                 </div>
-            )}
 
-            {confirmDeleteOpen && orderToDelete && (
-                <div className="modal-overlay" onClick={cancelDelete}>
-                    <div className="modal-content option-tree-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 400 }}>
-                        <div className="option-tree-header" style={{ marginBottom: 16 }}>
-                            <h3 style={{ margin: 0 }}>Confirm Delete</h3>
-                            <button className="delete-tree modal-close" onClick={cancelDelete}>✖</button>
-                        </div>
+                <p style={{ marginBottom: 24, fontSize: '1rem' }}>
+                  Are you sure you want to delete{' '}
+                  {orderToDelete.backendNid
+                    ? `Order #${orderToDelete.backendNid}`
+                    : 'this unsaved order'}
+                  ?
+                  {orderToDelete.backendNid && ' This action cannot be undone.'}
+                </p>
 
-                        <p style={{ marginBottom: 24, fontSize: '1rem' }}>
-                            Are you sure you want to delete {orderToDelete.backendNid ? `Order #${orderToDelete.backendNid}` : 'this unsaved order'}?
-                            {orderToDelete.backendNid && ' This action cannot be undone.'}
-                        </p>
+                <div className="modal-actions">
+                  <Button
+                    className="item-action-button new-item"
+                    onClick={cancelDelete}
+                  >
+                    Cancel
+                  </Button>
 
-                        <div className="modal-actions">
-                            <Button
-                                className="item-action-button new-item"
-                                onClick={cancelDelete}
-                            >
-                                Cancel
-                            </Button>
-
-                            <Button 
-                                onClick={confirmDelete}
-                                sx={{ 
-                                  backgroundColor: '#d32f2f', 
-                                  color: 'white', 
-                                  fontWeight: 'bold',
-                                  '&:hover': { backgroundColor: '#bb2929ff' }
-                                }}
-                            >
-                                Delete
-                            </Button>
-                        </div>
-                    </div>
+                  <Button
+                    onClick={confirmDelete}
+                    sx={{
+                      backgroundColor: '#d32f2f',
+                      color: 'white',
+                      fontWeight: 'bold',
+                      '&:hover': { backgroundColor: '#bb2929ff' },
+                    }}
+                  >
+                    Delete
+                  </Button>
                 </div>
-            )}
+              </div>
+            </div>
+          )}
 
-            <SnackbarNotification
-                open={snackbar.open}
-                onClose={() => setSnackbar({ ...snackbar, open: false })}
-                message={snackbar.message}
-                type={snackbar.type}
-            />
-            </>
-            )}
-        </div>
-    );
+          <SnackbarNotification
+            open={snackbar.open}
+            onClose={() => setSnackbar({ ...snackbar, open: false })}
+            message={snackbar.message}
+            type={snackbar.type}
+          />
+        </>
+      )}
+    </div>
+  );
 }

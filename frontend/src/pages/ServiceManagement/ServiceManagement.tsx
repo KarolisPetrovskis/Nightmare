@@ -74,7 +74,7 @@ export default function ServiceManagement() {
       }
 
       const id = await response.json();
-      console.log(id);
+      //console.log(id);
       return id;
     } catch (error) {
       console.error('Error fetching business ID:', error);
@@ -131,12 +131,13 @@ export default function ServiceManagement() {
       setLoading(true);
       try {
         const id = await fetchBusinessId();
-        console.log('Id is this:', id);
+        //console.log('Id is this:', id);
         updateBusinessId(id);
 
         if (id === null) {
-          navigate('/');
-          return;
+          throw new Error('Please login to access services');
+          //navigate('/');
+          //return;
         }
 
         //console.log('bus Id is this:', businessIdRef.current);
