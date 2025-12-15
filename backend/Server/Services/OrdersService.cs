@@ -458,6 +458,8 @@ namespace backend.Server.Services
             order.Status = status;
             _context.Orders.Update(order);
             await Helper.SaveChangesOrThrowAsync(_context, $"Failed to update order status.");
+        }
+        
         public async Task<decimal> CalculateCost(long orderNid, decimal tip)
         {
             if (orderNid <= 0)
