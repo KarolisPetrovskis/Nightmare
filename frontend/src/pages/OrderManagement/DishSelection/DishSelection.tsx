@@ -10,6 +10,7 @@ import {
   menuAddonsApi,
   addonGroupsApi,
 } from '../../../services/menuAddonsService';
+import LoadingSpinner from '../../../components/Loading/LoadingSpinner';
 
 const BUSINESS_ID = 1; // TODO: Get from auth context
 
@@ -212,9 +213,7 @@ export default function DishSelectionPage() {
   if (loading) {
     return (
       <div className="management">
-        <div style={{ padding: 20, textAlign: 'center' }}>
-          Loading menu items...
-        </div>
+        <LoadingSpinner size="large" fullPage />
       </div>
     );
   }

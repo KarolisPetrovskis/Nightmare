@@ -6,6 +6,7 @@ import PaginationComponent from '../../components/Pagination/PaginationComponent
 import SnackbarNotification from '../../components/SnackBar/SnackNotification';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import LoadingSpinner from '../../components/Loading/LoadingSpinner';
 
 type Service = {
   nid?: number;
@@ -341,7 +342,7 @@ export default function ServiceManagement() {
 
         <div className="item-list">
           {loading ? (
-            <p style={{ opacity: 0.5 }}>Loading services...</p>
+            <LoadingSpinner size="medium" />
           ) : (
             paginatedServices.map((s) => (
               <div

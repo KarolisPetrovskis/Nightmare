@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
 import SnackbarNotification from '../../components/SnackBar/SnackNotification';
 import './Login.css';
 
@@ -112,7 +113,9 @@ export default function Login() {
             className="item-action-button save-button active login-button"
             type="submit"
             disabled={loading}
+            style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
           >
+            {loading && <CircularProgress size={20} sx={{ color: '#646cff' }} />}
             {loading ? 'Logging in...' : 'Log in'}
           </Button>
         </form>
