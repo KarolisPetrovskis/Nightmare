@@ -19,9 +19,9 @@ import "../../Management.css";
 import { useState, useEffect } from "react";
 import Button from "@mui/material/Button";
 import SnackbarNotification from "../../../components/SnackBar/SnackNotification";
+import { useAuth } from "../../../context/AuthContext";
 
-const MOCK_BUSINESS_ID = 12;
-const REFUNDED_STATUS_ID = 3; // Status ID for refunded (may vary by database)
+const REFUNDED_STATUS_ID = 3; 
 
 interface OrderRecord {
   nid: number;
@@ -35,6 +35,7 @@ interface OrderRecord {
 }
 
 export default function OrderHistory() {
+  const { businessId } = useAuth();
   const [orders, setOrders] = useState<OrderRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusMap, setStatusMap] = useState<{ [key: number]: string }>({
@@ -60,15 +61,28 @@ export default function OrderHistory() {
 
   // Fetch orders from API on component mount
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    if (businessId) {
+      fetchOrders();
+    }
+  }, [businessId]);
 
   const fetchOrders = async () => {
+    if (!businessId) {
+      console.log('No businessId available yet');
+      setLoading(false);
+      return;
+    }
+    
     try {
       setLoading(true);
-      const response = await fetch(`/api/orders/business/${MOCK_BUSINESS_ID}`);
+      console.log('Fetching orders for businessId:', businessId);
+      const response = await fetch(`/api/orders/business/${businessId}`, {
+        credentials: 'include',
+      });
+      console.log('Response status:', response.status);
       if (!response.ok) throw new Error('Failed to fetch orders');
       const data = await response.json();
+      console.log('Fetched orders:', data);
       
       // Map statusId to statusName for display
       const ordersWithStatus = data.map((order: OrderRecord) => ({
@@ -77,6 +91,7 @@ export default function OrderHistory() {
       }));
       
       setOrders(ordersWithStatus);
+      console.log('Orders set successfully:', ordersWithStatus.length, 'orders');
     } catch (error) {
       console.error('Error fetching orders:', error);
       showSnackbar('Failed to load orders', 'error');
