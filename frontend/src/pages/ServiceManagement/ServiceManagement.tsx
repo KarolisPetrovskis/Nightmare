@@ -1,9 +1,10 @@
 import './ServiceManagement.css';
 import '../Management.css';
 import Button from '@mui/material/Button';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import PaginationComponent from '../../components/Pagination/PaginationComponent';
 import SnackbarNotification from '../../components/SnackBar/SnackNotification';
+import { useAuth } from '../../context/AuthContext';
 
 type Service = {
   nid?: number;
@@ -24,6 +25,7 @@ type VatOption = {
 };
 
 export default function ServiceManagement() {
+  const { businessId, isLoading: authLoading } = useAuth();
   const [services, setServices] = useState<Service[]>([]);
   const [vatOptions, setVatOptions] = useState<VatOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,8 +39,6 @@ export default function ServiceManagement() {
   const [selectedVatOption, setSelectedVatOption] = useState<VatOption | null>(
     null
   );
-  const [businessId, setBusinessId] = useState<number | null>(null);
-  const businessIdRef = useRef<number | null>(null);
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
@@ -123,6 +123,8 @@ export default function ServiceManagement() {
 
   // Initial data loading.
   useEffect(() => {
+    if (authLoading || !businessId) return;
+
     const loadInitialData = async () => {
       setLoading(true);
       try {
@@ -141,13 +143,14 @@ export default function ServiceManagement() {
         await fetchServices(id);
         await fetchVatOptions();
       } catch (error) {
+        console.error('Error loading initial data:', error);
       } finally {
         setLoading(false);
       }
     };
 
     loadInitialData();
-  }, []);
+  }, [businessId, authLoading]);
 
   // Update selected VAT when service changes
   useEffect(() => {
