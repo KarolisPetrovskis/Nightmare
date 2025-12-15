@@ -6,6 +6,9 @@ import SnackbarNotification from '../../components/SnackBar/SnackNotification';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
 import LocalAtmIcon from '@mui/icons-material/LocalAtm';
 import CardGiftcardIcon from '@mui/icons-material/CardGiftcard';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements } from '@stripe/react-stripe-js';
+import StripeCardForm from './StripeCardForm';
 
 const PaymentMethod = {
   Card: 0,
@@ -59,6 +62,7 @@ export default function PaymentProcessing() {
   const [loading, setLoading] = useState(false);
   const [loadingOrder, setLoadingOrder] = useState(true);
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryItem[]>([]);
+  const [stripePromise, setStripePromise] = useState<any>(null);
 
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
@@ -69,6 +73,35 @@ export default function PaymentProcessing() {
     message: '',
     type: 'success',
   });
+
+  useEffect(() => {
+    // Fetch Stripe publishable key and initialize
+    const initializeStripe = async () => {
+      try {
+        const response = await fetch('/api/payments/create-payment-intent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            orderId: parseInt(orderId || '0'),
+            amount: 1.00,
+            currency: 'eur',
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.publishableKey) {
+            setStripePromise(loadStripe(data.publishableKey));
+          }
+        }
+      } catch (error) {
+        console.error('Failed to initialize Stripe:', error);
+      }
+    };
+
+    initializeStripe();
+  }, []);
 
   useEffect(() => {
     if (orderId) {
@@ -127,52 +160,80 @@ export default function PaymentProcessing() {
       return;
     }
 
-    setLoading(true);
+    // For non-card payments, process directly
+    if (paymentMethod !== PaymentMethod.Card) {
+      setLoading(true);
 
-    try {
-      const response = await fetch('/api/payments/process', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          orderId: parseInt(orderId),
-          amount: parseFloat(amount),
-          currency: currency,
-          paymentMethod: paymentMethod,
-          customerEmail: customerEmail || undefined,
-        }),
-      });
+      try {
+        const response = await fetch('/api/payments/process', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            orderId: parseInt(orderId),
+            amount: parseFloat(amount),
+            currency: currency,
+            paymentMethod: paymentMethod,
+            customerEmail: customerEmail || undefined,
+          }),
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Payment processing failed');
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Payment processing failed');
+        }
+
+        const result = await response.json();
+
+        setSnackbar({
+          open: true,
+          message: `Payment processed successfully! Transaction ID: ${result.transactionId}`,
+          type: 'success',
+        });
+
+        // Refresh payment history
+        await fetchPaymentHistory();
+
+        // Reset form
+        setCustomerEmail('');
+        if (order) {
+          setAmount(order.total.toString());
+        }
+      } catch (error: any) {
+        setSnackbar({
+          open: true,
+          message: error.message || 'Payment processing failed',
+          type: 'error',
+        });
+      } finally {
+        setLoading(false);
       }
-
-      const result = await response.json();
-
-      setSnackbar({
-        open: true,
-        message: `Payment processed successfully! Transaction ID: ${result.transactionId}`,
-        type: 'success',
-      });
-
-      // Refresh payment history
-      await fetchPaymentHistory();
-
-      // Reset form
-      setCustomerEmail('');
-      if (order) {
-        setAmount(order.total.toString());
-      }
-    } catch (error: any) {
-      setSnackbar({
-        open: true,
-        message: error.message || 'Payment processing failed',
-        type: 'error',
-      });
-    } finally {
-      setLoading(false);
     }
+  };
+
+  const handleStripeSuccess = async (transactionId: string) => {
+    setSnackbar({
+      open: true,
+      message: `Payment processed successfully! Transaction ID: ${transactionId}`,
+      type: 'success',
+    });
+
+    // Refresh payment history
+    await fetchPaymentHistory();
+
+    // Reset form
+    setCustomerEmail('');
+    if (order) {
+      setAmount(order.total.toString());
+    }
+  };
+
+  const handleStripeError = (message: string) => {
+    setSnackbar({
+      open: true,
+      message: message,
+      type: 'error',
+    });
   };
 
   const getPaymentMethodIcon = (method: PaymentMethodType) => {
@@ -336,20 +397,37 @@ export default function PaymentProcessing() {
               </button>
             </div>
           </div>
+
+          {/* Stripe Card Payment Form */}
+          {paymentMethod === PaymentMethod.Card && stripePromise && orderId && (
+            <Elements stripe={stripePromise}>
+              <StripeCardForm
+                amount={amount}
+                currency={currency}
+                orderId={orderId}
+                customerEmail={customerEmail}
+                onSuccess={handleStripeSuccess}
+                onError={handleStripeError}
+              />
+            </Elements>
+          )}
         </div>
 
-        <div className="payment-actions">
-          <button
-            className="btn-pay"
-            onClick={handleProcessPayment}
-            disabled={loading || !amount || parseFloat(amount) <= 0}
-          >
-            {loading ? 'Processing...' : 'Process Payment'}
-          </button>
-          <button className="btn-cancel" onClick={() => navigate('/orders')}>
-            Cancel
-          </button>
-        </div>
+        {/* Show regular payment button for non-card payments */}
+        {paymentMethod !== PaymentMethod.Card && (
+          <div className="payment-actions">
+            <button
+              className="btn-pay"
+              onClick={handleProcessPayment}
+              disabled={loading || !amount || parseFloat(amount) <= 0}
+            >
+              {loading ? 'Processing...' : 'Process Payment'}
+            </button>
+            <button className="btn-cancel" onClick={() => navigate('/order-management')}>
+              Cancel
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="payment-history">

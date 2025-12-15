@@ -22,6 +22,9 @@ public class ProcessPaymentDTO
     [StringLength(100)]
     public string? StripePaymentMethodId { get; set; }
 
+    [StringLength(200)]
+    public string? PaymentIntentId { get; set; }
+
     [EmailAddress(ErrorMessage = "Invalid email format")]
     [StringLength(100)]
     public string? CustomerEmail { get; set; }
