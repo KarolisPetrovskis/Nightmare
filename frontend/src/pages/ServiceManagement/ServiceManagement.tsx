@@ -1,9 +1,11 @@
 import './ServiceManagement.css';
 import '../Management.css';
 import Button from '@mui/material/Button';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import PaginationComponent from '../../components/Pagination/PaginationComponent';
 import SnackbarNotification from '../../components/SnackBar/SnackNotification';
+import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 type Service = {
   nid?: number;
@@ -24,6 +26,7 @@ type VatOption = {
 };
 
 export default function ServiceManagement() {
+  const { businessId, isLoading: authLoading } = useAuth();
   const [services, setServices] = useState<Service[]>([]);
   const [vatOptions, setVatOptions] = useState<VatOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,13 +35,13 @@ export default function ServiceManagement() {
   const [dirty, setDirty] = useState(false);
   const [page, setPage] = useState(1);
   const servicesPerPage = 7;
+  const navigate = useNavigate();
 
   const [vatDropdownOpen, setVatDropdownOpen] = useState(false);
   const [selectedVatOption, setSelectedVatOption] = useState<VatOption | null>(
     null
   );
-  const [businessId, setBusinessId] = useState<number | null>(null);
-  const businessIdRef = useRef<number | null>(null);
+
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
@@ -48,11 +51,6 @@ export default function ServiceManagement() {
     message: '',
     type: 'success',
   });
-
-  const updateBusinessId = (id: number | null) => {
-    setBusinessId(id);
-    businessIdRef.current = id;
-  };
 
   // Fetch business ID
   const fetchBusinessId = async (): Promise<number> => {
@@ -70,6 +68,7 @@ export default function ServiceManagement() {
       }
 
       const id = await response.json();
+      //setBusinessId(id);
       //console.log(id);
       return id;
     } catch (error) {
@@ -79,11 +78,11 @@ export default function ServiceManagement() {
   };
 
   // Fetch services
-  const fetchServices = async () => {
+  const fetchServices = async (id: number) => {
     try {
-      console.log(businessIdRef.current); // This will have the value
+      console.log(id);
       const response = await fetch(
-        `/api/services?businessId=${businessIdRef.current}&page=1&perPage=100`
+        `/api/services?businessId=${id}&page=1&perPage=100`
       );
       if (!response.ok) throw new Error('Failed to fetch services');
       const data = await response.json();
@@ -93,7 +92,6 @@ export default function ServiceManagement() {
       throw error;
     }
   };
-
   // Fetch VAT options
   const fetchVatOptions = async () => {
     try {
@@ -123,31 +121,34 @@ export default function ServiceManagement() {
 
   // Initial data loading.
   useEffect(() => {
+    if (authLoading || !businessId) return;
+
     const loadInitialData = async () => {
       setLoading(true);
       try {
         const id = await fetchBusinessId();
-        //console.log('Id is this:', id);
-        updateBusinessId(id);
+        console.log('Id is this:', id);
+        //updateBusinessId(id);
 
         if (id === null) {
-          throw new Error('Please login to access services');
-          //navigate('/');
+          //throw new Error('Please login to access services');
+          navigate('/');
           //return;
         }
 
         //console.log('bus Id is this:', businessIdRef.current);
 
-        await fetchServices();
+        await fetchServices(id);
         await fetchVatOptions();
       } catch (error) {
+        console.error('Error loading initial data:', error);
       } finally {
         setLoading(false);
       }
     };
 
     loadInitialData();
-  }, []);
+  }, [businessId, authLoading]);
 
   // Update selected VAT when service changes
   useEffect(() => {
