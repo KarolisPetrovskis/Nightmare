@@ -303,3 +303,103 @@
   margin-bottom: 20px;
   font-size: 14px;
 }
+/* Add these styles to your existing PaymentProcessing.css */
+
+/* Tip input styling */
+.tip-input {
+  font-size: 1.1rem;
+  font-weight: 500;
+  border: 2px solid #646cff !important;
+  background-color: #1f1f1f !important;
+}
+
+.tip-input:focus {
+  background-color: #262626 !important;
+  border-color: #747bff !important;
+  box-shadow: 0 0 0 2px rgba(100, 108, 255, 0.2) !important;
+}
+
+.tip-hint {
+  color: #888;
+  font-size: 0.8rem;
+  margin-top: 4px;
+  display: block;
+}
+
+/* Cost summary styling */
+.cost-summary {
+  background-color: #2b2b2b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+}
+
+.cost-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.cost-row:last-child {
+  border-bottom: none;
+}
+
+.cost-row.total-cost {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 2px solid #646cff;
+  font-size: 1.1rem;
+}
+
+.final-amount {
+  color: #646cff;
+  font-size: 1.2rem;
+}
+
+.cost-note {
+  text-align: center;
+  margin-top: 12px;
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.loading-text {
+  color: #888;
+  font-style: italic;
+}
+
+/* Payment amount display */
+.payment-amount-display {
+  background-color: #2d2d2d;
+  border: 1px solid #646cff;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 12px 0;
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .cost-summary {
+    padding: 12px;
+  }
+
+  .cost-row {
+    padding: 6px 0;
+    font-size: 0.9rem;
+  }
+
+  .cost-row.total-cost {
+    font-size: 1rem;
+  }
+
+  .final-amount {
+    font-size: 1.1rem;
+  }
+}
