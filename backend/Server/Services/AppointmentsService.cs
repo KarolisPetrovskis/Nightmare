@@ -66,6 +66,12 @@ namespace backend.Server.Services
             {
                 throw new ApiException(409, $"Appointment with the code {request.Code} already exists");
             }
+            var bus = await _context.Businesses.FindAsync(request.BusinessId) ?? throw new ApiException(404, $"Business not found");
+            if (request.AppointmentStart.TimeOfDay < bus.WorkStart.TimeOfDay)
+                throw new ApiException(400, $"Appointment cannot start before business starts work");
+            if (request.AppointmentEnd.TimeOfDay > bus.WorkEnd.TimeOfDay)
+                throw new ApiException(400, $"Appointment cannot extend past working hours");
+
 
             var appointment = new Appointment
             {
@@ -108,6 +114,16 @@ namespace backend.Server.Services
             {
                 throw new ApiException(400, "Nid must be a positive number");
             }
+
+
+            var server = await _context.Users.FindAsync(request.EmployeeId) ?? throw new ApiException(404, $"Such personnel not found");
+            var bus = await _context.Businesses.FindAsync(server.BusinessId) ?? throw new ApiException(404, $"Business not found");
+            
+            if (request.AppointmentStart.HasValue && request.AppointmentStart.Value.TimeOfDay < bus.WorkStart.TimeOfDay)
+                throw new ApiException(400, $"Appointment cannot start before business starts work");
+            if (request.AppointmentEnd.HasValue && request.AppointmentEnd.Value.TimeOfDay > bus.WorkEnd.TimeOfDay)
+                throw new ApiException(400, $"Appointment cannot extend past working hours");
+
             var appointment = await _context.Appointment.FindAsync(nid) ?? throw new ApiException(404, $"Appointment {nid} not found");
 
             if (request.EmployeeId.HasValue) appointment.EmployeeId = request.EmployeeId.Value;
