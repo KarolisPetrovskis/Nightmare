@@ -26,10 +26,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true);
       // Try to fetch business ID to check if user is authenticated
-      const response = await fetch('/api/auth/businessId');
+      const response = await fetch('/api/auth/businessId', {
+        credentials: 'include', // Ensure cookies are sent
+      });
       if (response.ok) {
         const id = await response.json();
         setBusinessId(id);
+        // Also set userId from localStorage if available
+        const storedUserId = localStorage.getItem('userId');
+        if (storedUserId) {
+          setUserId(parseInt(storedUserId));
+        }
       } else {
         // User is not authenticated
         setUserId(null);

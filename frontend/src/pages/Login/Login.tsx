@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import SnackbarNotification from '../../components/SnackBar/SnackNotification';
+import { useAuth } from '../../context/AuthContext';
 import './Login.css';
 
 export default function Login() {
   const navigate = useNavigate();
+  const { validateSession } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -72,6 +74,9 @@ export default function Login() {
       localStorage.setItem('userId', data.userId.toString());
       localStorage.setItem('userType', data.userType);
     }
+
+    // Validate session to populate AuthContext with businessId
+    await validateSession();
 
     setSnackbar({
       open: true,
