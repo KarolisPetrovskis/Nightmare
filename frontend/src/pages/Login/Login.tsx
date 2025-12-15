@@ -52,6 +52,30 @@ export default function Login() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(createPayload),
     });
+
+    if (!response.ok) {
+      setSnackbar({
+        open: true,
+        message: 'Invalid email or password.',
+        type: 'error',
+      });
+      setLoading(false);
+      return;
+    }
+
+    const data = await response.json();
+    
+    // Store auth token if provided by backend
+    if (data.token) {
+      localStorage.setItem('authToken', data.token);
+    }
+
+    setSnackbar({
+      open: true,
+      message: 'Login successful!',
+      type: 'success',
+    });
+
     navigate('/');
   };
 

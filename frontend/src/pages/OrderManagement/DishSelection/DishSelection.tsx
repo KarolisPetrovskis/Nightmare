@@ -86,7 +86,7 @@ export default function DishSelectionPage() {
 
         // Fetch addon groups for each item
         const itemsWithAddons = await Promise.all(
-          items.map(async (item) => {
+          items.map(async (item: any) => {
             try {
               const groups = await addonGroupsApi.getGroupsByMenuItemNid(
                 item.nid
@@ -94,23 +94,29 @@ export default function DishSelectionPage() {
 
               // Fetch addons for each group
               const addonGroups = await Promise.all(
-                groups.map(async (group) => {
+                groups.map(async (group: { nid: number; name: string }) => {
                   const addons = await menuAddonsApi.getAddonsByGroupNid(
                     group.nid
                   );
                   return {
                     nid: group.nid,
                     name: group.name,
-                    options: addons.map((addon) => {
-                      if (addon.price === undefined || addon.price === null) {
-                        console.warn('Addon missing price:', addon);
+                    options: addons.map(
+                      (addon: {
+                        nid: number;
+                        name: string;
+                        price?: number | null;
+                      }) => {
+                        if (addon.price === undefined || addon.price === null) {
+                          console.warn('Addon missing price:', addon);
+                        }
+                        return {
+                          nid: addon.nid,
+                          name: addon.name,
+                          price: addon.price || 0,
+                        };
                       }
-                      return {
-                        nid: addon.nid,
-                        name: addon.name,
-                        price: addon.price || 0,
-                      };
-                    }),
+                    ),
                   };
                 })
               );
@@ -124,6 +130,10 @@ export default function DishSelectionPage() {
                 addonGroups,
               };
             } catch (error) {
+              console.error(
+                `Failed to fetch addon groups for item ${item.nid}:`,
+                error
+              );
               return {
                 nid: item.nid,
                 name: item.name,

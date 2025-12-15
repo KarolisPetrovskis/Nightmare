@@ -154,28 +154,6 @@ export default function MenuManagement() {
     loadInitialData();
   }, []);
 
-  // Update selected VAT when editableItem changes
-  useEffect(() => {
-    if (editableItem?.vatId && vatOptions.length > 0) {
-      const vatOption = vatOptions.find(
-        (vat) => vat.vatId === editableItem.vatId
-      );
-      if (vatOption) {
-        setSelectedVatOption(vatOption);
-      } else if (vatOptions.length > 0) {
-        // If VAT ID not found in options, use first one
-        setSelectedVatOption(vatOptions[0]);
-      }
-    } else if (
-      !editableItem?.vatId &&
-      vatOptions.length > 0 &&
-      selectedVatOption
-    ) {
-      // Set default VAT if none is selected
-      setSelectedVatOption(vatOptions[0]);
-    }
-  }, [editableItem, vatOptions]);
-
   const loadMenuItems = async () => {
     try {
       const id = await fetchBusinessId();
@@ -335,11 +313,17 @@ export default function MenuManagement() {
         const createdGroups: OptionGroup[] = [];
         for (const group of editableItem.optionGroups) {
           // Create the group
-          const groupData: MenuAddonGroupCreateDTO = {
+          const groupPayload = {
             name: group.name,
             menuItemId: newItem.nid,
           };
-          const createdGroup = await addonGroupsApi.createGroup(groupData);
+          const groupRes = await fetch('/api/menu/addon-groups', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(groupPayload),
+          });
+          if (!groupRes.ok) throw new Error('Failed to create addon group');
+          const createdGroup = await groupRes.json();
 
           // Create addons for this group
           const createdAddons: Array<{
@@ -348,12 +332,18 @@ export default function MenuManagement() {
             price: number;
           }> = [];
           for (const addon of group.options) {
-            const addonData: MenuAddonCreateDTO = {
+            const addonPayload = {
               name: addon.name,
               groupId: createdGroup.nid,
               price: addon.price,
             };
-            const created = await menuAddonsApi.createAddon(addonData);
+            const addonRes = await fetch('/api/menu/addons', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(addonPayload),
+            });
+            if (!addonRes.ok) throw new Error('Failed to create addon');
+            const created = await addonRes.json();
             createdAddons.push(created);
           }
 
@@ -383,7 +373,8 @@ export default function MenuManagement() {
         setSelectedItem(localItem);
         setEditableItem(localItem);
       } else {
-        const updateData: MenuUpdateDTO = {
+        // Update existing menu item
+        const updatePayload = {
           name: editableItem.name,
           price: editableItem.price,
           discount: editableItem.discount || null,
@@ -407,10 +398,15 @@ export default function MenuManagement() {
             editableItem.optionGroups.filter((g) => g.id >= 0).map((g) => g.id)
           );
 
-          // Delete removed groups (this will cascade delete addons)
+          // Delete removed groups
           for (const group of existingGroups) {
             if (!currentGroupIds.has(group.nid)) {
-              await addonGroupsApi.deleteGroup(group.nid);
+              const deleteRes = await fetch(
+                `/api/menu/addon-groups/${group.nid}`,
+                { method: 'DELETE' }
+              );
+              if (!deleteRes.ok)
+                throw new Error(`Failed to delete group ${group.nid}`);
             }
           }
 
@@ -462,7 +458,9 @@ export default function MenuManagement() {
               // Delete removed addons
               for (const addon of existingAddons) {
                 if (!currentAddonIds.has(addon.nid)) {
-                  await menuAddonsApi.deleteAddon(addon.nid);
+                  await fetch(`/api/menu/addons/${addon.nid}`, {
+                    method: 'DELETE',
+                  });
                 }
               }
 
@@ -546,8 +544,12 @@ export default function MenuManagement() {
 
         // Load addons for each group
         const optionGroups: OptionGroup[] = await Promise.all(
-          groups.map(async (group) => {
-            const addons = await menuAddonsApi.getAddonsByGroupNid(group.nid);
+          groups.map(async (group: any) => {
+            const addonsRes = await fetch(
+              `/api/menu/addons/by-group/${group.nid}`
+            );
+            if (!addonsRes.ok) throw new Error('Failed to fetch addons');
+            const addons = await addonsRes.json();
             return {
               id: group.nid,
               name: group.name,
@@ -913,7 +915,7 @@ export default function MenuManagement() {
                             <input
                               type="number"
                               value={opt.price}
-                              placeholder="Price (€)"
+                              placeholder="0.00 €"
                               min="0"
                               onChange={(e) => {
                                 const updated = [...editableItem.optionGroups];

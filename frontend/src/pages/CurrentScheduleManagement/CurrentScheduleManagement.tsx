@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import Button from "@mui/material/Button";
 import SnackbarNotification from "../../components/SnackBar/SnackNotification";
+import { useAuth } from "../../context/AuthContext";
 
 interface Appointment {
   nid: number;
@@ -73,6 +74,7 @@ function getSlotIndex(time: string, businessStartTime: string = DEFAULT_EARLIEST
 
 export default function CurrentScheduleManagement() {
   const { date } = useParams<{ date: string }>();
+  const { businessId } = useAuth();
   const [business, setBusiness] = useState<Business | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -119,12 +121,14 @@ export default function CurrentScheduleManagement() {
   // Fetch business, employees, services, and appointments
   useEffect(() => {
     const fetchData = async () => {
+      if (!businessId) return; // Wait for business ID to load
+      
       setLoading(true);
       try {
         const [busRes, empRes, servRes] = await Promise.all([
-          fetch(`/api/business/${MOCK_BUSINESS_ID}`),
-          fetch(`/api/employees?businessId=${MOCK_BUSINESS_ID}&page=1&perPage=100`),
-          fetch(`/api/services?businessId=${MOCK_BUSINESS_ID}&page=1&perPage=100`),
+          fetch(`/api/business/${businessId}`),
+          fetch(`/api/employees?businessId=${businessId}&page=1&perPage=100`),
+          fetch(`/api/services?businessId=${businessId}&page=1&perPage=100`),
         ]);
 
         if (!busRes.ok || !empRes.ok || !servRes.ok) throw new Error('Failed to fetch data');
@@ -173,7 +177,7 @@ export default function CurrentScheduleManagement() {
     };
 
     fetchData();
-  }, [date]);
+  }, [date, businessId]);
 
   const parseDate = (dateStr: string | undefined): Date => {
     if (dateStr) {
@@ -321,7 +325,7 @@ export default function CurrentScheduleManagement() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             code: `APT-${Date.now()}`,
-            businessId: MOCK_BUSINESS_ID,
+            businessId: businessId,
             serviceId: Number(newAppointment.serviceId),
             employeeId: Number(newAppointment.employeeId),
             appointmentDate: appointmentDateISO,
