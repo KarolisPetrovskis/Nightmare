@@ -39,6 +39,7 @@ export default function ServiceManagement() {
   const [selectedVatOption, setSelectedVatOption] = useState<VatOption | null>(
     null
   );
+
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
@@ -48,11 +49,6 @@ export default function ServiceManagement() {
     message: '',
     type: 'success',
   });
-
-  const updateBusinessId = (id: number | null) => {
-    setBusinessId(id);
-    businessIdRef.current = id;
-  };
 
   // Fetch business ID
   const fetchBusinessId = async (): Promise<number> => {
@@ -70,7 +66,7 @@ export default function ServiceManagement() {
       }
 
       const id = await response.json();
-      setBusinessId(id);
+      //setBusinessId(id);
       //console.log(id);
       return id;
     } catch (error) {
@@ -130,7 +126,7 @@ export default function ServiceManagement() {
       try {
         const id = await fetchBusinessId();
         console.log('Id is this:', id);
-        updateBusinessId(id);
+        //updateBusinessId(id);
 
         if (id === null) {
           throw new Error('Please login to access services');
