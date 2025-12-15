@@ -1180,8 +1180,7 @@ export default function OrderManagement() {
                               style={{ alignItems: 'center' }}
                             >
                               <input
-                                type="radio"
-                                name={`group-${group.nid}`}
+                                type="checkbox"
                                 checked={selected}
                                 onChange={() =>
                                   toggleSelectOption(group.nid, opt.nid)
