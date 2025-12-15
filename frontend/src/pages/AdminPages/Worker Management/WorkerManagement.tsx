@@ -1,14 +1,11 @@
 // TODO: What is planid???
+// TODO: Superadmin neeeds to view all employees across businesses, needed changes in backend for it.
 import "./WorkerManagement.css";
 import Button from "@mui/material/Button";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import SnackbarNotification from "../../../components/SnackBar/SnackNotification";
-
-// Configuration
-// After auth is implemented, these should come from user who is currently logged in and creating.
-const MOCK_BUSINESS_ID = 12;
-const MOCK_USER_ID = 1; // Current user ID (would come from auth context)
-const USER_TYPE_EMPLOYEE = 3;
+import { useAuth } from "../../../context/AuthContext";
 
 type Worker = {
   nid?: number;
@@ -22,6 +19,7 @@ type Worker = {
   salary?: string;
   bankAccount?: string;
   bossId?: string;
+  userType: number;
 };
 
 type ApiWorker = {
@@ -34,6 +32,7 @@ type ApiWorker = {
   salary?: number;
   bankAccount?: string;
   bossId?: number;
+  userType: number;
 };
 
 type SnackbarState = {
@@ -43,6 +42,8 @@ type SnackbarState = {
 };
 
 export default function WorkerManagement() {
+  const navigate = useNavigate();
+  const { businessId, userId, isLoading: authLoading } = useAuth();
   const [workers, setWorkers] = useState<ApiWorker[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentWorker, setCurrentWorker] = useState<ApiWorker | null>(null);
@@ -56,19 +57,62 @@ export default function WorkerManagement() {
     salary: '',
     bankAccount: '',
     bossId: '',
+    userType: 1, // Default to staff
   });
   const [loading, setLoading] = useState(false);
+  const [currentUserType, setCurrentUserType] = useState<number | null>(null);
   const [snackbar, setSnackbar] = useState<SnackbarState>({ open: false, message: '', type: 'info' });
+
+  // Fetch current user's type and validate permissions
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      if (!userId) return;
+      
+      try {
+        const response = await fetch(`/api/employees/${userId}`, {
+          credentials: 'include',
+        });
+        if (!response.ok) throw new Error('Failed to fetch user info');
+        const userData = await response.json();
+        setCurrentUserType(userData.userType);
+        
+        // Check if user has permission (manager=2 or super admin=3)
+        if (userData.userType !== 2 && userData.userType !== 3) {
+          showSnackbar('You do not have permission to access this page', 'error');
+          navigate('/');
+          return;
+        }
+      } catch (error) {
+        console.error('Error fetching user info:', error);
+        showSnackbar('Failed to load user information', 'error');
+      }
+    };
+    
+    fetchCurrentUser();
+  }, [userId, navigate]);
 
   // Fetch employees on component mount
   useEffect(() => {
-    fetchEmployees();
-  }, []);
+    if (businessId && currentUserType !== null) {
+      fetchEmployees();
+    }
+  }, [businessId, currentUserType]);
 
   const fetchEmployees = async () => {
+    if (!businessId && currentUserType !== 3) {
+      showSnackbar('Business ID not available', 'error');
+      return;
+    }
+    
     try {
       setLoading(true);
-      const response = await fetch(`/api/employees/business?businessId=${MOCK_BUSINESS_ID}`);
+      
+      // For now, use business endpoint for all users
+      const url = `/api/employees/business?businessId=${businessId}&page=0&perPage=1000`;
+      
+      const response = await fetch(url, {
+        credentials: 'include',
+      });
       if (!response.ok) throw new Error('Failed to fetch employees');
       const data = await response.json();
       setWorkers(data);
@@ -89,6 +133,11 @@ export default function WorkerManagement() {
   };
 
   const handleNew = () => {
+    if (!userId || !businessId) {
+      showSnackbar('Authentication required', 'error');
+      return;
+    }
+    
     setCurrentWorker(null);
     setFormData({
       name: '',
@@ -99,7 +148,8 @@ export default function WorkerManagement() {
       address: '',
       salary: '',
       bankAccount: '',
-      bossId: MOCK_USER_ID.toString(),
+      bossId: userId.toString(),
+      userType: 1, // Default to staff
     });
     setIsModalOpen(true);
   };
@@ -115,7 +165,8 @@ export default function WorkerManagement() {
       address: w.address || '',
       salary: w.salary ? w.salary.toString() : '',
       bankAccount: w.bankAccount || '',
-      bossId: w.bossId ? w.bossId.toString() : MOCK_USER_ID.toString(),
+      bossId: w.bossId ? w.bossId.toString() : (userId ? userId.toString() : ''),
+      userType: w.userType || 1,
     });
     setIsModalOpen(true);
   };
@@ -133,6 +184,7 @@ export default function WorkerManagement() {
       salary: '',
       bankAccount: '',
       bossId: '',
+      userType: 1,
     });
   };
 
@@ -146,6 +198,17 @@ export default function WorkerManagement() {
       showSnackbar('Please fill in all required fields', 'warning');
       return;
     }
+    
+    if (!userId || !businessId) {
+      showSnackbar('Authentication required', 'error');
+      return;
+    }
+    
+    // Validate userType is either staff (1) or manager (2)
+    if (formData.userType !== 1 && formData.userType !== 2) {
+      showSnackbar('User type must be either Staff or Manager', 'warning');
+      return;
+    }
 
     try {
       setLoading(true);
@@ -156,12 +219,12 @@ export default function WorkerManagement() {
           surname: formData.surname,
           email: formData.email,
           telephone: formData.phone,
-          userType: USER_TYPE_EMPLOYEE,
-          businessId: MOCK_BUSINESS_ID,
+          userType: formData.userType,
+          businessId: businessId,
           address: formData.address,
           salary: formData.salary ? parseFloat(formData.salary) : undefined,
           bankAccount: formData.bankAccount,
-          bossId: MOCK_USER_ID,
+          bossId: userId,
         };
         
         if (formData.password) {
@@ -171,6 +234,7 @@ export default function WorkerManagement() {
         const response = await fetch(`/api/employees/${currentWorker.nid}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify(updatePayload),
         });
         if (!response.ok) throw new Error('Failed to update employee');
@@ -186,18 +250,19 @@ export default function WorkerManagement() {
         const response = await fetch(`/api/employees`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({
             name: formData.name,
             surname: formData.surname,
             email: formData.email,
             password: formData.password,
             telephone: formData.phone,
-            userType: USER_TYPE_EMPLOYEE,
-            businessId: MOCK_BUSINESS_ID,
+            userType: formData.userType,
+            businessId: businessId,
             address: formData.address,
             salary: formData.salary ? parseFloat(formData.salary) : undefined,
             bankAccount: formData.bankAccount,
-            bossId: MOCK_USER_ID,
+            bossId: userId,
           }),
         });
         if (!response.ok) {
@@ -226,6 +291,7 @@ export default function WorkerManagement() {
       setLoading(true);
       const response = await fetch(`/api/employees/${worker.nid}`, {
         method: 'DELETE',
+        credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to delete employee');
       showSnackbar('Employee deleted successfully', 'success');
@@ -357,6 +423,18 @@ export default function WorkerManagement() {
                 onChange={(e) => handleInputChange('salary', e.target.value)}
                 placeholder="Salary"
               />
+            </div>
+
+            <div className="info-box">
+              <label>User Type *</label>
+              <select
+                value={formData.userType}
+                onChange={(e) => handleInputChange('userType', parseInt(e.target.value))}
+                style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+              >
+                <option value={1}>Staff</option>
+                <option value={2}>Manager</option>
+              </select>
             </div>
 
             <div className="info-box">
