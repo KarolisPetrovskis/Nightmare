@@ -185,7 +185,10 @@ export default function OrderManagement() {
                   try {
                     // Fetch menu item
                     const itemRes = await fetch(`/api/menu/${detail.itemId}`);
-                    if (!itemRes.ok) throw new Error(`Failed to fetch menu item`);
+                    if (!itemRes.ok) {
+                      console.warn(`Menu item ${detail.itemId} not found, skipping detail ${detail.nid}`);
+                      return null;
+                    }
                     const menuItem = await itemRes.json();
 
                     // Fetch addon groups for this menu item

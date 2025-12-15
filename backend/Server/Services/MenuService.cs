@@ -135,6 +135,15 @@ public class MenuService(ApplicationDbContext context, IMenuAddonsService menuAd
             }
             var menuItem = await _context.MenuItems.FindAsync(nid) ?? throw new ApiException(404, $"Menu item {nid} not found.");
             
+            // Check if this menu item is used in any orders
+            var usedInOrders = await _context.OrderDetails
+                .AnyAsync(od => od.ItemId == nid);
+            
+            if (usedInOrders)
+            {
+                throw new ApiException(400, "Cannot delete menu item because it is used in existing orders. Consider marking it as unavailable instead.");
+            }
+            
             // Get all addon groups for this menu item
             var groups = await _context.MenuItemIngredientGroups
                 .Where(g => g.MenuItemId == nid)
