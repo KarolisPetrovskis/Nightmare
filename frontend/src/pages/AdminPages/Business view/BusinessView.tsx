@@ -1,10 +1,12 @@
 import "./BusinessView.css";
 import "../../Management.css";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import SnackbarNotification from "../../../components/SnackBar/SnackNotification";
+import { useAuth } from "../../../context/AuthContext";
 
 interface Business {
   nid: number;
@@ -45,6 +47,8 @@ const emptyBusiness: FormData = {
 };
 
 export default function BusinessView() {
+  const navigate = useNavigate();
+  const { userId } = useAuth();
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -61,6 +65,41 @@ export default function BusinessView() {
     message: '',
     type: 'success',
   });
+
+  // Check if user is super admin
+  useEffect(() => {
+    const checkPermissions = async () => {
+      if (!userId) return;
+      
+      try {
+        const response = await fetch(`/api/employees/${userId}`, {
+          credentials: 'include',
+        });
+        if (!response.ok) throw new Error('Failed to fetch user info');
+        const userData = await response.json();
+        
+        // Only super admin (type 3) can access this page
+        if (userData.userType !== 3) {
+          setSnackbar({
+            open: true,
+            message: 'Access denied. Only super admins can access this page.',
+            type: 'error',
+          });
+          navigate('/');
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking permissions:', error);
+        setSnackbar({
+          open: true,
+          message: 'Failed to verify permissions',
+          type: 'error',
+        });
+      }
+    };
+    
+    checkPermissions();
+  }, [userId, navigate]);
 
   // Fetch businesses from API on component mount
   useEffect(() => {
