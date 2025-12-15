@@ -458,6 +458,29 @@ namespace backend.Server.Services
             order.Status = status;
             _context.Orders.Update(order);
             await Helper.SaveChangesOrThrowAsync(_context, $"Failed to update order status.");
+        public async Task<decimal> CalculateCost(long orderNid, decimal tip)
+        {
+            if (orderNid <= 0)
+            {
+                throw new ApiException(400, "Order Nid must be a positive number");
+            }
+
+            var order = await _context.Orders.FindAsync(orderNid) ?? throw new ApiException(404, "Order not found");
+
+            var details = await _context.OrderDetails
+                .AsNoTracking()
+                .Where(d => d.OrderId == orderNid)
+                .ToListAsync();
+
+            decimal total = 0m;
+            foreach (var item in details)
+            {
+                total += item.PriceWtVat * item.Quantity;
+            }
+                
+            total += tip;
+            decimal roundedTotal = decimal.Round(total, 2, MidpointRounding.AwayFromZero);
+            return roundedTotal;
         }
     }
 }

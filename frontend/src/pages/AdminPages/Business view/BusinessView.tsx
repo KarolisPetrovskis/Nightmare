@@ -106,14 +106,52 @@ export default function BusinessView() {
     const fetchBusinesses = async () => {
       setLoading(true);
       try {
-        // Super admin sees all businesses - fetch without owner filter using special value
-        // Backend requires OwnerId, so use 1 but with page=0 to get all
-        const response = await fetch(`/api/business?OwnerId=1&Page=0&PerPage=10000`, {
+        console.log('Fetching all businesses for super admin...');
+        
+        // Fetch all employees to get potential owner IDs
+        // Note: BusinessId=1 is a dummy value to satisfy DTO validation
+        const employeesResponse = await fetch(`/api/employees?BusinessId=1&Page=0&PerPage=1000`, {
           credentials: 'include',
         });
-        if (!response.ok) throw new Error('Failed to fetch businesses');
-        const data = await response.json();
-        setBusinesses(data);
+        
+        if (!employeesResponse.ok) {
+          const errorText = await employeesResponse.text();
+          console.error('Failed to fetch employees:', errorText);
+          throw new Error('Failed to fetch employees');
+        }
+        
+        const employees = await employeesResponse.json();
+        console.log('Fetched employees:', employees);
+        
+        // Get unique owner IDs (employee nids could be business owners)
+        const potentialOwnerIds = [...new Set(employees.map((emp: any) => emp.nid))];
+        console.log('Potential owner IDs:', potentialOwnerIds);
+        
+        // Fetch businesses for each potential owner
+        const businessPromises = potentialOwnerIds.map(async (ownerId: number) => {
+          try {
+            const response = await fetch(`/api/business?OwnerId=${ownerId}`, {
+              credentials: 'include',
+            });
+            if (response.ok) {
+              const businesses = await response.json();
+              return Array.isArray(businesses) ? businesses : [];
+            }
+            return [];
+          } catch (error) {
+            console.error(`Failed to fetch businesses for owner ${ownerId}:`, error);
+            return [];
+          }
+        });
+        
+        const businessArrays = await Promise.all(businessPromises);
+        // Flatten arrays and remove duplicates by nid
+        const allBusinesses = businessArrays.flat();
+        const uniqueBusinesses = Array.from(
+          new Map(allBusinesses.map(b => [b.nid, b])).values()
+        );
+        console.log('Fetched businesses:', uniqueBusinesses);
+        setBusinesses(uniqueBusinesses);
       } catch (error) {
         console.error('Error fetching businesses:', error);
         setSnackbar({

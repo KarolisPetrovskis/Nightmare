@@ -24,5 +24,7 @@ namespace backend.Server.Interfaces
         Task UpdateOrderDetailAsync(long orderNid, long detailNid, OrderDetailUpdateDTO request);
         Task UpdateOrderDetailAddOnsAsync(long orderNid, long detailNid, List<OrderAddOnsDTO> addons);
         Task UpdateOrderStatusAsync(long orderNid, OrderStatus status);
+        Task<decimal> CalculateCost(long orderNid, decimal tip);
+
     }
 }

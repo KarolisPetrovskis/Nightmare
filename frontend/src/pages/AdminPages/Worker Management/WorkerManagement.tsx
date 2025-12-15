@@ -95,8 +95,11 @@ export default function WorkerManagement() {
 
   // Fetch employees on component mount
   useEffect(() => {
-    if (businessId && currentUserType !== null) {
-      fetchEmployees();
+    if (currentUserType !== null) {
+      // Super admin doesn't need businessId to fetch all employees
+      if (currentUserType === 3 || businessId) {
+        fetchEmployees();
+      }
     }
   }, [businessId, currentUserType]);
 
@@ -109,14 +112,22 @@ export default function WorkerManagement() {
     try {
       setLoading(true);
       
-      // For now, use business endpoint for all users
-      const url = `/api/employees/business?businessId=${businessId}&page=0&perPage=1000`;
+      let url: string;
+      if (currentUserType === 3) {
+        // Super admin: fetch all employees (BusinessId=1 is a dummy value to satisfy DTO validation, need to change the DTO to not require it for all user fethcing)
+        url = `/api/employees?BusinessId=1&Page=0&PerPage=1000`;
+      } else {
+        // Manager: fetch employees from their business only
+        url = `/api/employees/business?businessId=${businessId}&page=0&perPage=1000`;
+      }
       
+      console.log('Fetching employees with URL:', url);
       const response = await fetch(url, {
         credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to fetch employees');
       const data = await response.json();
+      console.log('Fetched employees:', data);
       setWorkers(data);
     } catch (error) {
       showSnackbar('Error fetching employees', 'error');

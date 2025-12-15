@@ -57,6 +57,7 @@ export default function PaymentProcessing() {
   const [order, setOrder] = useState<Order | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>(PaymentMethod.Card);
   const [amount, setAmount] = useState<string>('');
+  const [tip, setTip] = useState<string>('0');
   const [customerEmail, setCustomerEmail] = useState<string>('');
   const [currency] = useState<string>('EUR');
   const [loading, setLoading] = useState(false);
@@ -165,13 +166,14 @@ export default function PaymentProcessing() {
       setLoading(true);
 
       try {
+        const totalWithTip = parseFloat(amount) + parseFloat(tip || '0');
         const response = await fetch('/api/payments/process', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
           body: JSON.stringify({
             orderId: parseInt(orderId),
-            amount: parseFloat(amount),
+            amount: totalWithTip,
             currency: currency,
             paymentMethod: paymentMethod,
             customerEmail: customerEmail || undefined,
@@ -196,6 +198,7 @@ export default function PaymentProcessing() {
 
         // Reset form
         setCustomerEmail('');
+        setTip('0');
         if (order) {
           setAmount(order.total.toString());
         }
@@ -223,6 +226,7 @@ export default function PaymentProcessing() {
 
     // Reset form
     setCustomerEmail('');
+    setTip('0');
     if (order) {
       setAmount(order.total.toString());
     }
@@ -350,8 +354,20 @@ export default function PaymentProcessing() {
               step="0.01"
               min="0.01"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              readOnly
               placeholder="Enter amount"
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Tip (Optional)</label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={tip}
+              onChange={(e) => setTip(e.target.value)}
+              placeholder="Enter tip amount"
             />
           </div>
 
@@ -402,7 +418,7 @@ export default function PaymentProcessing() {
           {paymentMethod === PaymentMethod.Card && stripePromise && orderId && (
             <Elements stripe={stripePromise}>
               <StripeCardForm
-                amount={amount}
+                amount={(parseFloat(amount) + parseFloat(tip || '0')).toString()}
                 currency={currency}
                 orderId={orderId}
                 customerEmail={customerEmail}
