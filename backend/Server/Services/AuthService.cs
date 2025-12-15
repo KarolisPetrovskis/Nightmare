@@ -1,3 +1,6 @@
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 using backend.Server.Database;
 using backend.Server.Exceptions;
 using backend.Server.Interfaces;
@@ -6,9 +9,6 @@ using backend.Server.Models.DTOs.Auth;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace backend.Server.Services
 {
@@ -21,7 +21,7 @@ namespace backend.Server.Services
             _context = context;
         }
 
-        private string HashPassword(string password)
+        public string HashPassword(string password)
         {
             using (var sha256 = SHA256.Create())
             {

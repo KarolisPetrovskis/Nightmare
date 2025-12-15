@@ -8,9 +8,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace backend.Server.Services
 {
-    public class EmployeesService (ApplicationDbContext context) : IEmployeesService 
+    public class EmployeesService(ApplicationDbContext context, IAuthService authService) : IEmployeesService
     {
         private readonly ApplicationDbContext _context = context;
+        private readonly IAuthService _authService = authService;
+
         public async Task<List<User>> GetAllEmployeesAsync(int page, int perPage)
         {
             if (page < 0)
@@ -79,7 +81,7 @@ namespace backend.Server.Services
                 Name = request.Name,
                 Surname = request.Surname,
                 Email = request.Email,
-                Password = request.Password,
+                Password = _authService.HashPassword(request.Password),
                 UserType = request.UserType,
                 Address = request.Address,
                 Telephone = request.Telephone,
@@ -130,7 +132,7 @@ namespace backend.Server.Services
             var employee = await _context.Users.FindAsync(nid) ?? throw new ApiException(404, $"Employee with Nid {nid} not found.");
 
             if (request.Email != null) employee.Email = request.Email;
-            if (request.Password != null) employee.Password = request.Password;
+            if (request.Password != null) employee.Password = _authService.HashPassword(request.Password);
             if (request.UserType.HasValue) employee.UserType = request.UserType.Value;
             if (request.BusinessId.HasValue) employee.BusinessId = request.BusinessId.Value;
 
