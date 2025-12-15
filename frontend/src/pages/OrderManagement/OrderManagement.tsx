@@ -4,6 +4,7 @@ import Button from '@mui/material/Button';
 
 import PaginationComponent from '../../components/Pagination/PaginationComponent';
 import SnackbarNotification from '../../components/SnackBar/SnackNotification';
+import { getOrderStatusLabel, OrderStatus } from '../../types/orderStatus';
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useOrderContext } from '../../context/OrderContext';
@@ -12,7 +13,6 @@ import LoadingSpinner from '../../components/Loading/LoadingSpinner';
 type OrderCreateDTO = {
   code: string;
   vatId: number;
-  statusId: number;
   total: number;
   businessId: number;
   workerId?: number;
@@ -29,7 +29,6 @@ type OrderDetailRequest = {
 
 // TODO: Get from auth context
 const VAT_ID_STANDARD = 1; // TODO: Get from VAT settings
-const STATUS_ID_PENDING = 1; // TODO: Get from status enum
 
 type Option = {
   nid: number;
@@ -63,6 +62,7 @@ type Order = {
   nid: number;
   items: OrderDish[];
   staff: string;
+  status?: number; // Order status from backend
   backendNid?: number; // Track backend order ID
 };
 
@@ -105,9 +105,14 @@ export default function OrderManagement() {
   const processedStateRef = useRef<string | null>(null);
   const pendingOrderRef = useRef<Order | null>(null);
 
+  // Filter to show only active orders (In Progress) and unsaved orders
+  const activeOrders = orders.filter((order) => 
+    !order.backendNid || order.status === OrderStatus.InProgress
+  );
+
   const start = (page - 1) * itemsPerPage;
   const end = start + itemsPerPage;
-  const paginatedOrders = orders.slice(start, end);
+  const paginatedOrders = activeOrders.slice(start, end);
 
   const [staffList, setStaffList] = useState<Array<{ nid: number; name: string; surname: string }>>([]);
 
@@ -284,6 +289,7 @@ export default function OrderManagement() {
                 staff: backendOrder.workerId
                   ? `Worker ${backendOrder.workerId}`
                   : '',
+                status: backendOrder.status,
                 backendNid: backendOrder.nid,
               };
             } catch (error) {
@@ -343,7 +349,7 @@ export default function OrderManagement() {
     setOrderDirty(false);
 
     // Navigate to last page where the new order will be
-    const newTotalOrders = orders.length + 1;
+    const newTotalOrders = activeOrders.length + 1;
     const lastPage = Math.ceil(newTotalOrders / itemsPerPage);
     setPage(lastPage);
   };
@@ -369,32 +375,50 @@ export default function OrderManagement() {
     }
   };
 
-  const confirmDelete = async () => {
+  const confirmCancel = async () => {
     if (!orderToDelete) return;
 
     try {
-      // If order has backend ID, delete from backend
-      if (orderToDelete.backendNid) {
-        const response = await fetch(`/api/orders/${orderToDelete.backendNid}`, { method: 'DELETE' });
-        if (!response.ok) throw new Error('Failed to delete order');
-      }
+      // Only allow canceling orders that have been saved to backend
+      if (!orderToDelete.backendNid) {
+        // For unsaved orders, just remove from local state
+        setOrders((prev) => prev.filter((o) => o.nid !== orderToDelete.nid));
+        if (selectedOrder?.nid === orderToDelete.nid) {
+          setSelectedOrder(null);
+        }
+        setSnackbar({
+          open: true,
+          message: 'Unsaved order removed.',
+          type: 'success',
+        });
+      } else {
+        // For saved orders, update status to Cancelled
+        const response = await fetch(`/api/orders/${orderToDelete.backendNid}/status/${OrderStatus.Cancelled}`, { 
+          method: 'PUT' 
+        });
+        if (!response.ok) throw new Error('Failed to cancel order');
 
-      // Remove from local state
-      setOrders((prev) => prev.filter((o) => o.nid !== orderToDelete.nid));
-      if (selectedOrder?.nid === orderToDelete.nid) {
-        setSelectedOrder(null);
-      }
+        // Update local state with cancelled status
+        setOrders((prev) =>
+          prev.map((o) =>
+            o.nid === orderToDelete.nid ? { ...o, status: OrderStatus.Cancelled } : o
+          )
+        );
+        if (selectedOrder?.nid === orderToDelete.nid) {
+          setSelectedOrder({ ...selectedOrder, status: OrderStatus.Cancelled });
+        }
 
-      setSnackbar({
-        open: true,
-        message: 'Order deleted successfully.',
-        type: 'success',
-      });
+        setSnackbar({
+          open: true,
+          message: 'Order cancelled successfully.',
+          type: 'success',
+        });
+      }
     } catch (error) {
-      console.error('Failed to delete order:', error);
+      console.error('Failed to cancel order:', error);
       setSnackbar({
         open: true,
-        message: 'Failed to delete order. Please try again.',
+        message: 'Failed to cancel order. Please try again.',
         type: 'error',
       });
     } finally {
@@ -501,7 +525,6 @@ export default function OrderManagement() {
         const orderData: OrderCreateDTO = {
           code: `ORD-${Date.now()}`,
           vatId: VAT_ID_STANDARD,
-          statusId: STATUS_ID_PENDING,
           total: total,
           businessId:
             businessId ??
@@ -901,9 +924,16 @@ export default function OrderManagement() {
                   }`}
                   onClick={() => handleOrderClick(order)}
                 >
-                  {order.backendNid
-                    ? `Order #${order.backendNid}`
-                    : 'New Order (unsaved)'}
+                  <div>
+                    {order.backendNid
+                      ? `Order #${order.backendNid}`
+                      : 'New Order (unsaved)'}
+                  </div>
+                  {order.status !== undefined && (
+                    <div style={{ fontSize: '0.85rem', color: '#999', marginTop: '4px' }}>
+                      Status: {getOrderStatusLabel(order.status)}
+                    </div>
+                  )}
                   {cancelMode && (
                     <span
                       className="delete-x"
@@ -921,7 +951,7 @@ export default function OrderManagement() {
 
             <div className="item-list-pagination">
               <PaginationComponent
-                count={Math.ceil(orders.length / itemsPerPage)}
+                count={Math.ceil(activeOrders.length / itemsPerPage)}
                 page={page}
                 onChange={(_, value) => setPage(value)} // TODO: change _ back to e if event is needed
               />
@@ -1235,7 +1265,7 @@ export default function OrderManagement() {
                   className="option-tree-header"
                   style={{ marginBottom: 16 }}
                 >
-                  <h3 style={{ margin: 0 }}>Confirm Delete</h3>
+                  <h3 style={{ margin: 0 }}>Confirm Cancellation</h3>
                   <button
                     className="delete-tree modal-close"
                     onClick={cancelDelete}
@@ -1245,12 +1275,13 @@ export default function OrderManagement() {
                 </div>
 
                 <p style={{ marginBottom: 24, fontSize: '1rem' }}>
-                  Are you sure you want to delete{' '}
+                  Are you sure you want to cancel{' '}
                   {orderToDelete.backendNid
                     ? `Order #${orderToDelete.backendNid}`
                     : 'this unsaved order'}
                   ?
-                  {orderToDelete.backendNid && ' This action cannot be undone.'}
+                  {orderToDelete.backendNid && ' The order status will be changed to Cancelled.'}
+                  {!orderToDelete.backendNid && ' This unsaved order will be removed.'}
                 </p>
 
                 <div className="modal-actions">
@@ -1258,11 +1289,11 @@ export default function OrderManagement() {
                     className="item-action-button new-item"
                     onClick={cancelDelete}
                   >
-                    Cancel
+                    Go Back
                   </Button>
 
                   <Button
-                    onClick={confirmDelete}
+                    onClick={confirmCancel}
                     sx={{
                       backgroundColor: '#d32f2f',
                       color: 'white',
@@ -1270,7 +1301,7 @@ export default function OrderManagement() {
                       '&:hover': { backgroundColor: '#bb2929ff' },
                     }}
                   >
-                    Delete
+                    Cancel Order
                   </Button>
                 </div>
               </div>

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using backend.Server.Models.Enums;
 
 namespace backend.Server.Models.DatabaseObjects;
 public class Order
@@ -7,7 +8,7 @@ public class Order
     public long Nid { get; set; }
     public string? Code { get; set; }
     public long VatId { get; set; }
-    public long StatusId { get; set; }
+    public OrderStatus Status { get; set; }
     public decimal Total { get; set; }
     public DateTime DateCreated { get; set; }
     public long BusinessId { get; set; }

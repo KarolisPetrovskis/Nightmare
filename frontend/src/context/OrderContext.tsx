@@ -31,6 +31,7 @@ type Order = {
     nid: number;
     items: OrderDish[];
     staff: string;
+    status?: number; // Order status from backend
     backendNid?: number; // Track backend order ID
 };
 
