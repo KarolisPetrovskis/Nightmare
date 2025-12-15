@@ -276,13 +276,8 @@ export default function OrderManagement() {
           (order): order is Order => order !== null
         );
 
-        // Merge with any unsaved orders from context (don't overwrite them)
-        setOrders((prevOrders) => {
-          // Keep unsaved orders (those without backendNid)
-          const unsavedOrders = prevOrders.filter((o) => !o.backendNid);
-          // Combine with backend orders
-          return [...validOrders, ...unsavedOrders];
-        });
+        // Replace with saved orders from database (don't keep unsaved from previous session)
+        setOrders(validOrders);
       } catch (error) {
         console.error('Failed to load orders:', error);
         setSnackbar({
@@ -497,13 +492,40 @@ export default function OrderManagement() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(orderData),
         });
-        if (!createdOrderRes.ok) throw new Error('Failed to create order');
+        if (!createdOrderRes.ok) {
+          const errorText = await createdOrderRes.text();
+          console.error('Create order error:', errorText);
+          throw new Error('Failed to create order');
+        }
         const createdOrder = await createdOrderRes.json();
+        console.log('Order created:', createdOrder);
 
         // Update the order with backend ID and backend detail IDs
         const detailsRes = await fetch(`/api/orders/${createdOrder.nid}/details`);
-        if (!detailsRes.ok) throw new Error('Failed to fetch order details');
+        if (!detailsRes.ok) {
+          const errorText = await detailsRes.text();
+          console.error('Fetch details error:', errorText);
+          // If we can't fetch details, still mark order as created but continue
+          const updatedOrder = {
+            ...selectedOrder,
+            backendNid: createdOrder.nid,
+            items: selectedOrder.items,
+          };
+          setSelectedOrder(updatedOrder);
+          setOriginalOrder(JSON.parse(JSON.stringify(updatedOrder)));
+          setOrders((prev) =>
+            prev.map((o) => (o.nid === selectedOrder.nid ? updatedOrder : o))
+          );
+          setOrderDirty(false);
+          setSnackbar({
+            open: true,
+            message: 'Order created successfully!',
+            type: 'success',
+          });
+          return;
+        }
         const details = await detailsRes.json();
+        console.log('Order details:', details);
         
         const updatedItems = selectedOrder.items.map((item, index) => ({
           ...item,
@@ -642,9 +664,11 @@ export default function OrderManagement() {
       }
     } catch (error) {
       console.error('Failed to save order:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Full error:', error);
       setSnackbar({
         open: true,
-        message: 'Failed to save order. Please try again.',
+        message: `Failed to save order: ${errorMessage}`,
         type: 'error',
       });
     }
