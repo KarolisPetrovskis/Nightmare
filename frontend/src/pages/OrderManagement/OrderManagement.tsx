@@ -97,10 +97,10 @@ export default function OrderManagement() {
   const location = useLocation();
 
   const [page, setPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 7;
 
   const [dishPage, setDishPage] = useState(1);
-  const dishesPerPage = 8;
+  const dishesPerPage = 4;
 
   const processedStateRef = useRef<string | null>(null);
   const pendingOrderRef = useRef<Order | null>(null);
@@ -109,7 +109,7 @@ export default function OrderManagement() {
   const end = start + itemsPerPage;
   const paginatedOrders = orders.slice(start, end);
 
-  const staffList = ['Alice', 'Bob', 'Charlie', 'Diana'];
+  const [staffList, setStaffList] = useState<Array<{ nid: number; name: string; surname: string }>>([]);
 
   const toggleCancelMode = () => {
     setCancelMode((prev) => !prev);
@@ -145,6 +145,23 @@ export default function OrderManagement() {
     } catch (error) {
       console.error('Error fetching business ID:', error);
       throw error;
+    }
+  };
+
+  // Fetch staff (employees) from database
+  const fetchStaff = async (businessId: number) => {
+    try {
+      const response = await fetch(`/api/employees/business?businessId=${businessId}&page=0&perPage=999`);
+      if (!response.ok) throw new Error('Failed to fetch staff');
+      const data = await response.json();
+      setStaffList(data);
+    } catch (error) {
+      console.error('Error fetching staff:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to load staff list.',
+        type: 'error',
+      });
     }
   };
 
@@ -283,6 +300,9 @@ export default function OrderManagement() {
 
         // Replace with saved orders from database (don't keep unsaved from previous session)
         setOrders(validOrders);
+
+        // Fetch staff after getting business ID
+        await fetchStaff(id);
       } catch (error) {
         console.error('Failed to load orders:', error);
         setSnackbar({
@@ -934,10 +954,10 @@ export default function OrderManagement() {
                       value={selectedOrder.staff}
                       onChange={(e) => updateStaff(e.target.value)}
                     >
-                      <option value="">Select staff</option>
+                      <option value="" disabled>Select staff</option>
                       {staffList.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
+                        <option key={s.nid} value={`${s.name} ${s.surname}`}>
+                          {s.name} {s.surname}
                         </option>
                       ))}
                     </select>
