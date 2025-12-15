@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import PaginationComponent from '../../components/Pagination/PaginationComponent';
 import SnackbarNotification from '../../components/SnackBar/SnackNotification';
 import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 type Service = {
   nid?: number;
@@ -34,6 +35,7 @@ export default function ServiceManagement() {
   const [dirty, setDirty] = useState(false);
   const [page, setPage] = useState(1);
   const servicesPerPage = 7;
+  const navigate = useNavigate();
 
   const [vatDropdownOpen, setVatDropdownOpen] = useState(false);
   const [selectedVatOption, setSelectedVatOption] = useState<VatOption | null>(
@@ -129,8 +131,8 @@ export default function ServiceManagement() {
         //updateBusinessId(id);
 
         if (id === null) {
-          throw new Error('Please login to access services');
-          //navigate('/');
+          //throw new Error('Please login to access services');
+          navigate('/');
           //return;
         }
 
