@@ -1,9 +1,10 @@
 import './ServiceManagement.css';
 import '../Management.css';
 import Button from '@mui/material/Button';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import PaginationComponent from '../../components/Pagination/PaginationComponent';
 import SnackbarNotification from '../../components/SnackBar/SnackNotification';
+import { useAuth } from '../../context/AuthContext';
 
 type Service = {
   nid?: number;
@@ -24,6 +25,7 @@ type VatOption = {
 };
 
 export default function ServiceManagement() {
+  const { businessId, isLoading: authLoading } = useAuth();
   const [services, setServices] = useState<Service[]>([]);
   const [vatOptions, setVatOptions] = useState<VatOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,8 +39,6 @@ export default function ServiceManagement() {
   const [selectedVatOption, setSelectedVatOption] = useState<VatOption | null>(
     null
   );
-  const [businessId, setBusinessId] = useState<number | null>(null);
-  const businessIdRef = useRef<number | null>(null);
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
@@ -49,41 +49,14 @@ export default function ServiceManagement() {
     type: 'success',
   });
 
-  const updateBusinessId = (id: number | null) => {
-    setBusinessId(id);
-    businessIdRef.current = id;
-  };
 
-  // Fetch business ID
-  const fetchBusinessId = async (): Promise<number> => {
-    try {
-      const response = await fetch('/api/auth/businessId', {
-        method: 'GET',
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error('Please login to access services');
-        }
-        throw new Error(`Failed to get business ID: ${response.statusText}`);
-      }
-
-      const id = await response.json();
-      //console.log(id);
-      return id;
-    } catch (error) {
-      console.error('Error fetching business ID:', error);
-      throw error;
-    }
-  };
 
   // Fetch services
   const fetchServices = async () => {
     try {
-      console.log(businessIdRef.current); // This will have the value
+      console.log(businessId); // This will have the value
       const response = await fetch(
-        `/api/services?businessId=${businessIdRef.current}&page=1&perPage=100`
+        `/api/services?businessId=${businessId}&page=1&perPage=100`
       );
       if (!response.ok) throw new Error('Failed to fetch services');
       const data = await response.json();
@@ -123,31 +96,22 @@ export default function ServiceManagement() {
 
   // Initial data loading.
   useEffect(() => {
+    if (authLoading || !businessId) return;
+
     const loadInitialData = async () => {
       setLoading(true);
       try {
-        const id = await fetchBusinessId();
-        //console.log('Id is this:', id);
-        updateBusinessId(id);
-
-        if (id === null) {
-          throw new Error('Please login to access services');
-          //navigate('/');
-          //return;
-        }
-
-        //console.log('bus Id is this:', businessIdRef.current);
-
         await fetchServices();
         await fetchVatOptions();
       } catch (error) {
+        console.error('Error loading initial data:', error);
       } finally {
         setLoading(false);
       }
     };
 
     loadInitialData();
-  }, []);
+  }, [businessId, authLoading]);
 
   // Update selected VAT when service changes
   useEffect(() => {
