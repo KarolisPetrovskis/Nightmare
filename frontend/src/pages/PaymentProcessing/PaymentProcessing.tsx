@@ -46,7 +46,7 @@ type Order = {
   nid: number;
   code: string;
   total: number;
-  statusId: number;
+  status: number;
   dateCreated: string;
 };
 
