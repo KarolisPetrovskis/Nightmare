@@ -350,7 +350,7 @@ export default function MenuManagement() {
           createdGroups.push({
             id: createdGroup.nid,
             name: createdGroup.name,
-            options: createdAddons.map((addon) => ({
+            options: createdAddons.map((addon: { nid: number; name: string; price: number }) => ({
               id: addon.nid,
               name: addon.name,
               price: addon.price,
@@ -374,7 +374,7 @@ export default function MenuManagement() {
         setEditableItem(localItem);
       } else {
         // Update existing menu item
-        const updatePayload = {
+        const updateData: MenuUpdateDTO = {
           name: editableItem.name,
           price: editableItem.price,
           discount: editableItem.discount || null,
@@ -553,7 +553,7 @@ export default function MenuManagement() {
             return {
               id: group.nid,
               name: group.name,
-              options: addons.map((addon) => ({
+              options: addons.map((addon: any) => ({
                 id: addon.nid,
                 name: addon.name,
                 price: addon.price,
