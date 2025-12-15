@@ -1,19 +1,3 @@
-// INSERT INTO public."Orders" 
-// ("Nid", "Code", "VatId", "StatusId", "Total", "DateCreated", "BusinessId", "WorkerId", "Discount")
-// VALUES
-// -- Row 1
-// (1, 'ORD-001', '1', 1, 100.50, '2025-12-14 10:30:00', 12, 201, 5.00),
-// -- Row 2
-// (2, 'ORD-002', '2', 2, 250.00, '2025-12-13 14:15:00', 12, 202, 10.00),
-// -- Row 3
-// (3, 'ORD-003', '3', 1, 75.25, '2025-12-12 09:00:00', 12, 203, 0.00),
-// -- Row 4
-// (4, 'ORD-004', '4', 3, 500.00, '2025-12-10 16:45:00', 12, 201, 20.00),
-// -- Row 5
-// (5, 'ORD-005', '5', 2, 320.75, '2025-12-11 11:20:00', 12, 204, 15.00);
-// Insert this for testing purposes.
-
-
 import "./OrderHistory.css";
 import "../../Management.css";
 import { useState, useEffect } from "react";
