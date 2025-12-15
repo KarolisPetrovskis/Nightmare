@@ -10,6 +10,17 @@ const MOCK_BUSINESS_ID = 12;
 const MOCK_USER_ID = 1; // Current user ID (would come from auth context)
 const USER_TYPE_EMPLOYEE = 3;
 
+// SHA256 hashing function
+async function hashPassword(password: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  // Convert to Base64 to match backend format
+  return btoa(String.fromCharCode.apply(null, hashArray as any));
+}
+
 type Worker = {
   nid?: number;
   name: string;
@@ -151,22 +162,28 @@ export default function WorkerManagement() {
       setLoading(true);
       if (currentWorker) {
         // Update existing worker
+        const updatePayload: any = {
+          name: formData.name,
+          surname: formData.surname,
+          email: formData.email,
+          telephone: formData.phone,
+          userType: USER_TYPE_EMPLOYEE,
+          businessId: MOCK_BUSINESS_ID,
+          address: formData.address,
+          salary: formData.salary ? parseFloat(formData.salary) : undefined,
+          bankAccount: formData.bankAccount,
+          bossId: MOCK_USER_ID,
+        };
+        
+        // Hash password if provided
+        if (formData.password) {
+          updatePayload.password = await hashPassword(formData.password);
+        }
+        
         const response = await fetch(`/api/employees/${currentWorker.nid}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: formData.name,
-            surname: formData.surname,
-            email: formData.email,
-            telephone: formData.phone,
-            password: formData.password || undefined,
-            userType: USER_TYPE_EMPLOYEE,
-            businessId: MOCK_BUSINESS_ID,
-            address: formData.address,
-            salary: formData.salary ? parseFloat(formData.salary) : undefined,
-            bankAccount: formData.bankAccount,
-            bossId: MOCK_USER_ID,
-          }),
+          body: JSON.stringify(updatePayload),
         });
         if (!response.ok) throw new Error('Failed to update employee');
         showSnackbar('Employee updated successfully', 'success');
@@ -177,6 +194,10 @@ export default function WorkerManagement() {
           setLoading(false);
           return;
         }
+        
+        // Hash password before sending
+        const hashedPassword = await hashPassword(formData.password);
+        
         const response = await fetch(`/api/employees`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -184,7 +205,7 @@ export default function WorkerManagement() {
             name: formData.name,
             surname: formData.surname,
             email: formData.email,
-            password: formData.password,
+            password: hashedPassword,
             telephone: formData.phone,
             userType: USER_TYPE_EMPLOYEE,
             businessId: MOCK_BUSINESS_ID,
