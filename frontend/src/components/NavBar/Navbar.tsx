@@ -8,6 +8,10 @@ const links = [
   { to: '/order-management', label: 'Order Management' },
   { to: '/service-management', label: 'Service Management' },
   { to: '/schedule-management', label: 'Schedule Management' },
+  { to: '/admin/business-view', label: 'Business Management' },
+  { to: '/admin/worker-management', label: 'Worker Management' },
+  { to: '/admin/order-history', label: 'Order History' },
+  { to: '/admin/vat', label: 'VAT Management' },
 ];
 
 export default function Navbar() {
@@ -15,18 +19,7 @@ export default function Navbar() {
   const navigate = useNavigate();
 
   const getCurrentPageTitle = () => {
-    if (location.pathname.startsWith('/current-schedule-management/')) {
-      return 'Current Schedule Management';
-    }
-    if (location.pathname === '/admin/business-view') {
-      return 'Business Management';
-    }
-    if (location.pathname === '/admin/worker-management') {
-      return 'Worker Management'
-    }
-    if (location.pathname === '/admin/order-history') {
-      return 'Order History'
-    }
+
     return links.find(link => link.to === location.pathname)?.label || 'Home';
   };
 

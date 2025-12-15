@@ -46,7 +46,7 @@ namespace backend.Server.Controllers
             return Ok(order);
         }
 
-        [HttpGet("{orderNid}/details")]
+        [HttpGet("item/{orderNid}")]
         public async Task<ActionResult<List<OrderDetail>>> GetOrderDetailsByOrderNid(long orderNid)
         {
             var order = await _ordersService.GetOrderByNidAsync(orderNid);
@@ -54,13 +54,6 @@ namespace backend.Server.Controllers
             var orderDetails = await _ordersService.GetOrderDetailsByOrderId(order.Nid);
 
             return Ok(orderDetails);
-        }
-
-        [HttpGet("details/{detailNid}/addons")]
-        public async Task<ActionResult<List<OrderDetailAddOn>>> GetAddonsByDetailNid(long detailNid)
-        {
-            var addOns = await _ordersService.GetOrderDetailAddOnsByDetailId(detailNid);
-            return Ok(addOns);
         }
 
         [HttpGet("item/addons/{orderNid}")]
@@ -99,28 +92,28 @@ namespace backend.Server.Controllers
             return NoContent();
         }
 
-        [HttpPost("{orderNid}/details")]
+        [HttpPost("{orderNid}/items")]
         public async Task<ActionResult<OrderDetail>> AddItemToOrder(long orderNid, [FromBody] OrderDetailRequest request)
         {
             var orderDetail = await _ordersService.AddOrderDetailAsync(orderNid, request);
             return CreatedAtAction(nameof(GetOrderDetailsByOrderNid), new { orderNid }, orderDetail);
         }
 
-        [HttpDelete("{orderNid}/details/{detailNid}")]
+        [HttpDelete("{orderNid}/items/{detailNid}")]
         public async Task<IActionResult> RemoveItemFromOrder(long orderNid, long detailNid)
         {
             await _ordersService.DeleteOrderDetailAsync(orderNid, detailNid);
             return NoContent();
         }
 
-        [HttpPut("{orderNid}/details/{detailNid}")]
+        [HttpPut("{orderNid}/items/{detailNid}")]
         public async Task<IActionResult> UpdateOrderItem(long orderNid, long detailNid, [FromBody] OrderDetailUpdateDTO request)
         {
             await _ordersService.UpdateOrderDetailAsync(orderNid, detailNid, request);
             return NoContent();
         }
 
-        [HttpPut("{orderNid}/details/{detailNid}/addons")]
+        [HttpPut("{orderNid}/items/{detailNid}/addons")]
         public async Task<IActionResult> UpdateOrderItemAddons(long orderNid, long detailNid, [FromBody] List<OrderAddOnsDTO> addons)
         {
             await _ordersService.UpdateOrderDetailAddOnsAsync(orderNid, detailNid, addons);
@@ -132,6 +125,13 @@ namespace backend.Server.Controllers
         {
             await _ordersService.UpdateOrderStatusAsync(orderNid, status);
             return NoContent();
+        }
+        
+        [HttpGet("getFinalCost/{orderNid}/{tip}")]
+        public async Task<ActionResult<decimal>> CalculateCost(long orderNid, decimal tip)
+        {
+            var cost = await _ordersService.CalculateCost(orderNid, tip);
+            return Ok(cost);
         }
     }
 }

@@ -1,27 +1,13 @@
-// INSERT INTO public."Orders" 
-// ("Nid", "Code", "VatId", "StatusId", "Total", "DateCreated", "BusinessId", "WorkerId", "Discount")
-// VALUES
-// -- Row 1
-// (1, 'ORD-001', '1', 1, 100.50, '2025-12-14 10:30:00', 12, 201, 5.00),
-// -- Row 2
-// (2, 'ORD-002', '2', 2, 250.00, '2025-12-13 14:15:00', 12, 202, 10.00),
-// -- Row 3
-// (3, 'ORD-003', '3', 1, 75.25, '2025-12-12 09:00:00', 12, 203, 0.00),
-// -- Row 4
-// (4, 'ORD-004', '4', 3, 500.00, '2025-12-10 16:45:00', 12, 201, 20.00),
-// -- Row 5
-// (5, 'ORD-005', '5', 2, 320.75, '2025-12-11 11:20:00', 12, 204, 15.00);
-// Insert this for testing purposes.
-
-
 import "./OrderHistory.css";
 import "../../Management.css";
 import { useState, useEffect } from "react";
 import Button from "@mui/material/Button";
 import SnackbarNotification from "../../../components/SnackBar/SnackNotification";
 import { OrderStatus, getOrderStatusLabel } from "../../../types/orderStatus";
+import { useAuth } from "../../../context/AuthContext";
 
 const MOCK_BUSINESS_ID = 12;
+const REFUNDED_STATUS_ID = 3; 
 
 interface OrderRecord {
   nid: number;
@@ -35,6 +21,7 @@ interface OrderRecord {
 }
 
 export default function OrderHistory() {
+  const { businessId } = useAuth();
   const [orders, setOrders] = useState<OrderRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [snackbar, setSnackbar] = useState({
@@ -55,15 +42,28 @@ export default function OrderHistory() {
 
   // Fetch orders from API on component mount
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    if (businessId) {
+      fetchOrders();
+    }
+  }, [businessId]);
 
   const fetchOrders = async () => {
+    if (!businessId) {
+      console.log('No businessId available yet');
+      setLoading(false);
+      return;
+    }
+    
     try {
       setLoading(true);
-      const response = await fetch(`/api/orders/business/${MOCK_BUSINESS_ID}`);
+      console.log('Fetching orders for businessId:', businessId);
+      const response = await fetch(`/api/orders/business/${businessId}`, {
+        credentials: 'include',
+      });
+      console.log('Response status:', response.status);
       if (!response.ok) throw new Error('Failed to fetch orders');
       const data = await response.json();
+      console.log('Fetched orders:', data);
       
       // Map status to statusName for display
       const ordersWithStatus = data.map((order: OrderRecord) => ({
@@ -72,6 +72,7 @@ export default function OrderHistory() {
       }));
       
       setOrders(ordersWithStatus);
+      console.log('Orders set successfully:', ordersWithStatus.length, 'orders');
     } catch (error) {
       console.error('Error fetching orders:', error);
       showSnackbar('Failed to load orders', 'error');
