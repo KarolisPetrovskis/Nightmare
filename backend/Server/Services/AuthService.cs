@@ -55,10 +55,10 @@ namespace backend.Server.Services
             httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         }
 
-        public Guid? GetRequesterNid(HttpContext httpContext)
+        public long? GetRequesterNid(HttpContext httpContext)
         {
             var claim = httpContext.User.Claims.FirstOrDefault(x => x.Type == ClaimTypes.NameIdentifier)?.Value;
-            if (Guid.TryParse(claim, out Guid requesterId))
+            if (long.TryParse(claim, out long requesterId))
             {
                 return requesterId;
             }
@@ -116,7 +116,17 @@ namespace backend.Server.Services
             return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
         }
 
+        public async Task<long> GetUserBusinessId(long? nid)
+        {            
+            if (nid == null)
+                throw new ApiException(40, "Unauthorized");
 
+            var user = await _context.Users.FindAsync(nid);
+
+            if (user == null)
+                throw new ApiException(404, "User not found");
+            return user.BusinessId;
+        }
 
     }
 }
