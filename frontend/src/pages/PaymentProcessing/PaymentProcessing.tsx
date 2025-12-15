@@ -513,7 +513,6 @@ export default function PaymentProcessingWithTip() {
                   currency={currency}
                   orderId={orderId}
                   customerEmail={customerEmail}
-                  tipAmount={parseFloat(tip) || 0}
                   onSuccess={handleStripeSuccess}
                   onError={handleStripeError}
                 />
