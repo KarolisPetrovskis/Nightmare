@@ -1,4 +1,5 @@
 using backend.server.Models.DTOs.Auth;
+using backend.Server.Database;
 using backend.Server.Interfaces;
 using backend.Server.Models.DTOs.Auth;
 using Microsoft.AspNetCore.Mvc;
@@ -11,10 +12,11 @@ namespace backend.Server.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
-
-        public AuthController(IAuthService authService)
+        private readonly ApplicationDbContext _context;
+        public AuthController(IAuthService authService, ApplicationDbContext context)
         {
             _authService = authService;
+            _context = context;
         }
 
         [HttpPost("login")]
@@ -50,5 +52,12 @@ namespace backend.Server.Controllers
             _authService.RemoveCookie(HttpContext);
             return Ok();
         }
+        [HttpGet("businessId")]
+        public async Task<ActionResult<long>> GetBusinessId()
+        {
+            var businessId = await _authService.GetUserBusinessId(HttpContext);
+            return Ok(businessId);
+        }
+        
     }
 }

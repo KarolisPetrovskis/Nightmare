@@ -116,7 +116,19 @@ namespace backend.Server.Services
             return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
         }
 
+        public async Task<long> GetUserBusinessId(HttpContext httpContext)
+        {
+            var userId = GetRequesterNid(httpContext);
+            
+            if (userId == null)
+                throw new ApiException(401, "Unauthorized access");
 
+            var user = await _context.Users.FindAsync(userId);
+
+            if (user == null)
+                throw new ApiException(404, "User not found");
+            return user.BusinessId;
+        }
 
     }
 }
