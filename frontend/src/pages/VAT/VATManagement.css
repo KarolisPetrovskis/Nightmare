@@ -1,0 +1,194 @@
+/* VAT Management Specific Styles */
+.vat-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vat-name {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.vat-percentage-display {
+  font-size: 0.9rem;
+  color: #646cff;
+  font-weight: 500;
+}
+
+.vat-date {
+  font-size: 0.8rem;
+  color: #888;
+  margin-top: 2px;
+}
+
+.readonly-field {
+  padding: 8px;
+  border-radius: 6px;
+  background-color: #2d2d2d;
+  color: #aaa;
+  font-size: 0.95rem;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+}
+
+.help-container {
+  flex-grow: 2;
+  flex-basis: 0;
+  background-color: #1a1a1a;
+  margin: 10px;
+  padding: 16px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.help-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.help-content h3 {
+  margin-top: 16px;
+  margin-bottom: 8px;
+  color: #646cff;
+  font-size: 1.1rem;
+}
+
+.help-content ul {
+  margin: 0;
+  padding-left: 20px;
+  margin-bottom: 16px;
+}
+
+.help-content li {
+  margin-bottom: 6px;
+  line-height: 1.4;
+  color: #ccc;
+}
+
+.help-content strong {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Scrollbar styling */
+.help-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.help-content::-webkit-scrollbar-track {
+  background: #2d2d2d;
+  border-radius: 3px;
+}
+
+.help-content::-webkit-scrollbar-thumb {
+  background: #646cff;
+  border-radius: 3px;
+}
+
+.help-content::-webkit-scrollbar-thumb:hover {
+  background: #747bff;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .management {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .item-list-container,
+  .info-container,
+  .help-container {
+    flex-grow: 1;
+    flex-basis: auto;
+    min-width: auto;
+    margin: 8px;
+  }
+
+  .item-list-container {
+    order: 1;
+  }
+
+  .info-container {
+    order: 2;
+  }
+
+  .help-container {
+    order: 3;
+  }
+}
+
+@media (max-width: 768px) {
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .vat-item-content {
+    gap: 2px;
+  }
+
+  .vat-name {
+    font-size: 0.95rem;
+  }
+
+  .vat-percentage-display {
+    font-size: 0.85rem;
+  }
+
+  .vat-date {
+    font-size: 0.75rem;
+  }
+}
+
+/* VAT-specific input styling */
+.info-box input[type='number'] {
+  font-family: monospace;
+  font-size: 1.1rem;
+}
+
+.info-box input::placeholder {
+  color: #666;
+  font-style: italic;
+}
+
+/* Warning for percentage 0 */
+.info-box input[value='0'] {
+  border-left: 3px solid #ffa500;
+}
+
+.info-box input[value=''] {
+  border-left: 3px solid #888;
+}
+
+/* Status indicators */
+.vat-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.vat-status.exempt {
+  background-color: #2d5a27;
+  color: #8bc34a;
+}
+
+.vat-status.standard {
+  background-color: #2d3e50;
+  color: #64b5f6;
+}
+
+.vat-status.reduced {
+  background-color: #4a2d5a;
+  color: #ba68c8;
+}

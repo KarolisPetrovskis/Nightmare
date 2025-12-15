@@ -8,6 +8,7 @@ import OrderManagement from './pages/OrderManagement/OrderManagement';
 import ServiceManagement from './pages/ServiceManagement/ServiceManagement';
 import ScheduleManagement from './pages/ScheduleManagement/ScheduleManagement';
 import CurrentScheduleManagement from './pages/CurrentScheduleManagement/CurrentScheduleManagement';
+import VATManagement from './pages/VAT/VATManagement';
 import DishSelection from './pages/OrderManagement/DishSelection/DishSelection';
 import PaymentProcessing from './pages/PaymentProcessing/PaymentProcessing';
 import Login from './pages/Login/Login';
@@ -40,7 +41,10 @@ export default function App() {
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/menu-management" element={<MenuManagement />} />
-                  <Route path="/order-management" element={<OrderManagement />} />
+                  <Route
+                    path="/order-management"
+                    element={<OrderManagement />}
+                  />
                   <Route
                     path="/order-management/select-dish"
                     element={<DishSelection />}
@@ -62,12 +66,19 @@ export default function App() {
                     element={<CurrentScheduleManagement />}
                   />
                   <Route path="/login" element={<Login />} />
-                  <Route path="/admin/business-view" element={<BusinessView />} />
+                  <Route
+                    path="/admin/business-view"
+                    element={<BusinessView />}
+                  />
                   <Route
                     path="/admin/worker-management"
                     element={<WorkerManagement />}
                   />
-                  <Route path="/admin/order-history" element={<OrderHistory />} />
+                  <Route
+                    path="/admin/order-history"
+                    element={<OrderHistory />}
+                  />
+                  <Route path="/vat" element={<VATManagement />} />
                 </Routes>
               </main>
               <div className="side-container" />
