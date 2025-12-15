@@ -99,7 +99,7 @@ namespace backend.Server.Services
                 BankAccount = registerDetails.BankAccount,
                 Email = registerDetails.Email,
                 Password = HashPassword(registerDetails.Password),
-                BusinessId = 0  // Default value for registration
+                BusinessId = 1  // Default value for registration
             };
 
             _context.Users.Add(user);

@@ -51,6 +51,7 @@ export default function Login() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(createPayload),
+      credentials: 'include', // Important: include cookies
     });
 
     if (!response.ok) {
@@ -65,9 +66,10 @@ export default function Login() {
 
     const data = await response.json();
     
-    // Store auth token if provided by backend
-    if (data.token) {
-      localStorage.setItem('authToken', data.token);
+    // Backend returns {UserId, UserType} and sets authentication cookie
+    if (data.userId) {
+      localStorage.setItem('userId', data.userId.toString());
+      localStorage.setItem('userType', data.userType);
     }
 
     setSnackbar({
