@@ -10,17 +10,6 @@ const MOCK_BUSINESS_ID = 12;
 const MOCK_USER_ID = 1; // Current user ID (would come from auth context)
 const USER_TYPE_EMPLOYEE = 3;
 
-// SHA256 hashing function
-async function hashPassword(password: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  // Convert to Base64 to match backend format
-  return btoa(String.fromCharCode.apply(null, hashArray as any));
-}
-
 type Worker = {
   nid?: number;
   name: string;
@@ -175,9 +164,8 @@ export default function WorkerManagement() {
           bossId: MOCK_USER_ID,
         };
         
-        // Hash password if provided
         if (formData.password) {
-          updatePayload.password = await hashPassword(formData.password);
+          updatePayload.password = formData.password;
         }
         
         const response = await fetch(`/api/employees/${currentWorker.nid}`, {
@@ -195,9 +183,6 @@ export default function WorkerManagement() {
           return;
         }
         
-        // Hash password before sending
-        const hashedPassword = await hashPassword(formData.password);
-        
         const response = await fetch(`/api/employees`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -205,7 +190,7 @@ export default function WorkerManagement() {
             name: formData.name,
             surname: formData.surname,
             email: formData.email,
-            password: hashedPassword,
+            password: formData.password,
             telephone: formData.phone,
             userType: USER_TYPE_EMPLOYEE,
             businessId: MOCK_BUSINESS_ID,

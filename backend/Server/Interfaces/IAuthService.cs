@@ -12,6 +12,6 @@ namespace backend.Server.Interfaces
         bool VerifyPassword(string password, string storedHash);
         public Task AddCookie(HttpContext httpContext, long userId, bool isPersistent);
         public Task<long> GetUserBusinessId(long? nid);
-
+        public string HashPassword(string password);
     }
 }
