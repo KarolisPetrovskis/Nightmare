@@ -7,6 +7,7 @@ import SnackbarNotification from '../../components/SnackBar/SnackNotification';
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useOrderContext } from '../../context/OrderContext';
+import LoadingSpinner from '../../components/Loading/LoadingSpinner';
 
 type OrderCreateDTO = {
   code: string;
@@ -847,9 +848,7 @@ export default function OrderManagement() {
   return (
     <div className="management">
       {loading ? (
-        <div style={{ padding: 20, textAlign: 'center', width: '100%' }}>
-          Loading orders from database...
-        </div>
+        <LoadingSpinner size="large" fullPage />
       ) : (
         <>
           <div className="item-list-container">

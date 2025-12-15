@@ -5,6 +5,7 @@ import { useParams } from "react-router-dom";
 import Button from "@mui/material/Button";
 import SnackbarNotification from "../../components/SnackBar/SnackNotification";
 import { useAuth } from "../../context/AuthContext";
+import LoadingSpinner from "../../components/Loading/LoadingSpinner";
 
 interface Appointment {
   nid: number;
@@ -385,7 +386,9 @@ export default function CurrentScheduleManagement() {
       <div className="schedule-main">
         <div className="schedule-header">
           {loading ? (
-            <div style={{ opacity: 0.5 }}>Loading employees...</div>
+            <div style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
+              <LoadingSpinner size="large" />
+            </div>
           ) : (
             employees.map((employee) => (
               <div key={employee.nid} className="worker-column-header">

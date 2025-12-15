@@ -4,6 +4,7 @@ import Button from '@mui/material/Button';
 import { useState, useEffect } from 'react';
 import PaginationComponent from '../../components/Pagination/PaginationComponent';
 import SnackbarNotification from '../../components/SnackBar/SnackNotification';
+import LoadingSpinner from '../../components/Loading/LoadingSpinner';
 import {
   menuApi,
   type MenuCreateDTO,
@@ -661,7 +662,7 @@ export default function MenuManagement() {
         <h3 className="item-list-label">Dish List</h3>
         <div className="item-list">
           {loading ? (
-            <p style={{ opacity: 0.5, padding: '20px' }}>Loading...</p>
+            <LoadingSpinner size="medium" />
           ) : items.length === 0 ? (
             <p style={{ opacity: 0.5, padding: '20px' }}>
               No dishes found. Create one!
