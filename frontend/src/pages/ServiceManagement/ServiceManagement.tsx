@@ -4,8 +4,6 @@ import Button from '@mui/material/Button';
 import { useEffect, useRef, useState } from 'react';
 import PaginationComponent from '../../components/Pagination/PaginationComponent';
 import SnackbarNotification from '../../components/SnackBar/SnackNotification';
-import { useNavigate } from 'react-router-dom';
-import { BusinessSharp } from '@mui/icons-material';
 
 type Service = {
   nid?: number;
@@ -24,7 +22,6 @@ type VatOption = {
   name: string;
   percentage: number;
 };
-const MOCK_UP_BUSINESS_ID = 1;
 
 export default function ServiceManagement() {
   const [services, setServices] = useState<Service[]>([]);
@@ -35,7 +32,6 @@ export default function ServiceManagement() {
   const [dirty, setDirty] = useState(false);
   const [page, setPage] = useState(1);
   const servicesPerPage = 7;
-  const navigate = useNavigate();
 
   const [vatDropdownOpen, setVatDropdownOpen] = useState(false);
   const [selectedVatOption, setSelectedVatOption] = useState<VatOption | null>(

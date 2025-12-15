@@ -1,11 +1,9 @@
 import '../Management.css';
 import './MenuManagement.css';
 import Button from '@mui/material/Button';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import PaginationComponent from '../../components/Pagination/PaginationComponent';
 import SnackbarNotification from '../../components/SnackBar/SnackNotification';
-import { menuApi, type MenuCreateDTO, type MenuUpdateDTO } from '../../services/menuService';
-import { menuAddonsApi, addonGroupsApi, type MenuAddonCreateDTO, type MenuAddonUpdateDTO, type MenuAddonGroupCreateDTO } from '../../services/menuAddonsService';
 
 type Option = {
   id: number;
@@ -25,12 +23,9 @@ type MenuItem = {
   price: number;
   discount: number;
   discountExpiration: string;
-  vat: string;
+  vatId: number;
   optionGroups: OptionGroup[];
 };
-
-const BUSINESS_ID = 1; // TODO: Get from auth context
-const VAT_ID_STANDARD = 1; // TODO: Map VAT types properly
 
 export default function MenuManagement() {
   const [items, setItems] = useState<MenuItem[]>([]);
@@ -40,6 +35,9 @@ export default function MenuManagement() {
   const [itemDirty, setItemDirty] = useState(false);
   const [optionsDirty, setOptionsDirty] = useState(false);
   const [deleteMode, setDeleteMode] = useState(false);
+  const businessIdRef = useRef<number | null>(null);
+  const [defaultVatId, setDefaultVatId] = useState<number | null>(null);
+  const [vatOptions, setVatOptions] = useState<Array<{ vatId: number; name: string; percentage: number }>>([]);
 
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [dishToDelete, setDishToDelete] = useState<MenuItem | null>(null);
@@ -61,20 +59,79 @@ export default function MenuManagement() {
   const treesPerPage = 3;
 
   useEffect(() => {
-    loadMenuItems();
+    const init = async () => {
+      setLoading(true);
+      try {
+        const id = await fetchBusinessId();
+        businessIdRef.current = id;
+        await fetchVatOptions();
+        await loadMenuItems();
+      } catch (error) {
+        // error snackbar set in fetchBusinessId or loadMenuItems
+      } finally {
+        setLoading(false);
+      }
+    };
+    init();
   }, []);
+
+  const fetchVatOptions = async () => {
+    try {
+      const response = await fetch(`/api/VAT?page=0&perPage=100`);
+      if (!response.ok) throw new Error('Failed to fetch VAT options');
+      const vatData = await response.json();
+
+      const mappedVatOptions = vatData.map((vat: any) => ({
+        vatId: vat.nid,
+        name: vat.name,
+        percentage: vat.percentage,
+      }));
+
+      setVatOptions(mappedVatOptions);
+
+      if (mappedVatOptions.length > 0) {
+        setDefaultVatId(mappedVatOptions[0].vatId);
+      }
+    } catch (error) {
+      console.error('Error fetching VAT options:', error);
+    }
+  };
+
+  const fetchBusinessId = async (): Promise<number> => {
+    try {
+      const response = await fetch('/api/auth/businessId', {
+        method: 'GET',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Please login to access menu');
+        }
+        throw new Error(`Failed to get business ID: ${response.statusText}`);
+      }
+      const id = await response.json();
+      return id;
+    } catch (error) {
+      console.error('Error fetching business ID:', error);
+      setSnackbar({ open: true, message: 'Unable to determine business', type: 'error' });
+      throw error as Error;
+    }
+  };
 
   const loadMenuItems = async () => {
     try {
       setLoading(true);
-      const apiItems = await menuApi.getMenu(BUSINESS_ID);
-      const transformedItems = apiItems.map(item => ({
+      if (!businessIdRef.current) throw new Error('Business not available');
+      const response = await fetch(`/api/menu?BusinessId=${businessIdRef.current}&Page=0&PerPage=100`);
+      if (!response.ok) throw new Error('Failed to fetch menu items');
+      const apiItems = await response.json();
+      const transformedItems = apiItems.map((item: any) => ({
         id: item.nid,
         name: item.name,
         price: item.price,
         discount: item.discount || 0,
         discountExpiration: item.discountTime || "",
-        vat: "standard",
+        vatId: item.vatId,
         optionGroups: []
       }));
       setItems(transformedItems);
@@ -101,7 +158,7 @@ export default function MenuManagement() {
       price: 0,
       discount: 0,
       discountExpiration: "",
-      vat: "standard",
+      vatId: defaultVatId || 1,
       optionGroups: []
     };
 
@@ -117,7 +174,7 @@ export default function MenuManagement() {
       editableItem.price !== selectedItem.price ||
       editableItem.discount !== selectedItem.discount ||
       editableItem.discountExpiration !== selectedItem.discountExpiration ||
-      editableItem.vat !== selectedItem.vat;
+      editableItem.vatId !== selectedItem.vatId;
 
     const groupsChanged = JSON.stringify(editableItem.optionGroups) !== JSON.stringify(selectedItem.optionGroups);
 
@@ -162,35 +219,54 @@ export default function MenuManagement() {
 
     try {
       if (editableItem.id === -1) {
-        const createData: MenuCreateDTO = {
+        // Create new menu item
+        const createPayload = {
           name: editableItem.name,
-          businessId: BUSINESS_ID,
+          businessId: businessIdRef.current,
           price: editableItem.price,
           discount: editableItem.discount || null,
-          vatId: VAT_ID_STANDARD,
+          vatId: defaultVatId || 1,
           discountTime: editableItem.discountExpiration || null
         };
-        const newItem = await menuApi.createMenuItem(createData);
+        const response = await fetch('/api/menu', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(createPayload),
+        });
+        if (!response.ok) throw new Error('Failed to create menu item');
+        const newItem = await response.json();
 
         // Create addon groups and addons on backend
         const createdGroups: OptionGroup[] = [];
         for (const group of editableItem.optionGroups) {
           // Create the group
-          const groupData: MenuAddonGroupCreateDTO = {
+          const groupPayload = {
             name: group.name,
             menuItemId: newItem.nid
           };
-          const createdGroup = await addonGroupsApi.createGroup(groupData);
+          const groupRes = await fetch('/api/menu/addon-groups', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(groupPayload),
+          });
+          if (!groupRes.ok) throw new Error('Failed to create addon group');
+          const createdGroup = await groupRes.json();
 
           // Create addons for this group
           const createdAddons: Array<{ nid: number; name: string; price: number }> = [];
           for (const addon of group.options) {
-            const addonData: MenuAddonCreateDTO = {
+            const addonPayload = {
               name: addon.name,
               groupId: createdGroup.nid,
               price: addon.price
             };
-            const created = await menuAddonsApi.createAddon(addonData);
+            const addonRes = await fetch('/api/menu/addons', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(addonPayload),
+            });
+            if (!addonRes.ok) throw new Error('Failed to create addon');
+            const created = await addonRes.json();
             createdAddons.push(created);
           }
 
@@ -211,32 +287,39 @@ export default function MenuManagement() {
           price: newItem.price,
           discount: newItem.discount || 0,
           discountExpiration: newItem.discountTime || "",
-          vat: "standard",
+          vatId: newItem.vatId,
           optionGroups: createdGroups
         };
         setItems(prev => [...prev, localItem]);
         setSelectedItem(localItem);
         setEditableItem(localItem);
       } else {
-        const updateData: MenuUpdateDTO = {
+        // Update existing menu item
+        const updatePayload = {
           name: editableItem.name,
           price: editableItem.price,
           discount: editableItem.discount || null,
-          vatId: VAT_ID_STANDARD,
+          vatId: defaultVatId || 1,
           discountTime: editableItem.discountExpiration || null
         };
-        await menuApi.updateMenuItem(editableItem.id, updateData);
+        const response = await fetch(`/api/menu/${editableItem.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatePayload),
+        });
+        if (!response.ok) throw new Error('Failed to update menu item');
 
         // Sync groups and addons with backend
         if (optionsDirty && selectedItem) {
-          const existingGroups = await addonGroupsApi.getGroupsByMenuItemNid(editableItem.id);
-          const existingGroupIds = new Set(existingGroups.map(g => g.nid));
+          const groupsRes = await fetch(`/api/menu/addon-groups/by-menu-item/${editableItem.id}`);
+          if (!groupsRes.ok) throw new Error('Failed to fetch groups');
+          const existingGroups = await groupsRes.json();
           const currentGroupIds = new Set(editableItem.optionGroups.filter(g => g.id >= 0).map(g => g.id));
 
-          // Delete removed groups (this will cascade delete addons)
+          // Delete removed groups
           for (const group of existingGroups) {
             if (!currentGroupIds.has(group.nid)) {
-              await addonGroupsApi.deleteGroup(group.nid);
+              await fetch(`/api/menu/addon-groups/${group.nid}`, { method: 'DELETE' });
             }
           }
 
@@ -245,21 +328,26 @@ export default function MenuManagement() {
           for (const group of editableItem.optionGroups) {
             if (group.id < 0) {
               // Create new group
-              const groupData: MenuAddonGroupCreateDTO = {
-                name: group.name,
-                menuItemId: editableItem.id
-              };
-              const createdGroup = await addonGroupsApi.createGroup(groupData);
+              const groupPayload = { name: group.name, menuItemId: editableItem.id };
+              const groupRes = await fetch('/api/menu/addon-groups', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(groupPayload),
+              });
+              if (!groupRes.ok) throw new Error('Failed to create group');
+              const createdGroup = await groupRes.json();
               
               // Create addons for new group
               const createdOptions: Option[] = [];
               for (const option of group.options) {
-                const addonData: MenuAddonCreateDTO = {
-                  name: option.name,
-                  groupId: createdGroup.nid,
-                  price: option.price
-                };
-                const createdAddon = await menuAddonsApi.createAddon(addonData);
+                const addonPayload = { name: option.name, groupId: createdGroup.nid, price: option.price };
+                const addonRes = await fetch('/api/menu/addons', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(addonPayload),
+                });
+                if (!addonRes.ok) throw new Error('Failed to create addon');
+                const createdAddon = await addonRes.json();
                 createdOptions.push({
                   id: createdAddon.nid,
                   name: createdAddon.name,
@@ -274,15 +362,16 @@ export default function MenuManagement() {
               });
             } else {
               // Update existing group
-              // Get existing addons for this group
-              const existingAddons = await menuAddonsApi.getAddonsByGroupNid(group.id);
-              const existingAddonIds = new Set(existingAddons.map(a => a.nid));
+              const addonsRes = await fetch(`/api/menu/addons/by-group/${group.id}`);
+              if (!addonsRes.ok) throw new Error('Failed to fetch addons');
+              const existingAddons = await addonsRes.json();
+              const existingAddonIds = new Set(existingAddons.map((a: any) => a.nid));
               const currentAddonIds = new Set(group.options.filter(o => o.id >= 0).map(o => o.id));
 
               // Delete removed addons
               for (const addon of existingAddons) {
                 if (!currentAddonIds.has(addon.nid)) {
-                  await menuAddonsApi.deleteAddon(addon.nid);
+                  await fetch(`/api/menu/addons/${addon.nid}`, { method: 'DELETE' });
                 }
               }
 
@@ -291,12 +380,14 @@ export default function MenuManagement() {
               for (const option of group.options) {
                 if (option.id < 0) {
                   // Create new addon
-                  const addonData: MenuAddonCreateDTO = {
-                    name: option.name,
-                    groupId: group.id,
-                    price: option.price
-                  };
-                  const createdAddon = await menuAddonsApi.createAddon(addonData);
+                  const addonPayload = { name: option.name, groupId: group.id, price: option.price };
+                  const addonRes = await fetch('/api/menu/addons', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(addonPayload),
+                  });
+                  if (!addonRes.ok) throw new Error('Failed to create addon');
+                  const createdAddon = await addonRes.json();
                   updatedOptions.push({
                     id: createdAddon.nid,
                     name: createdAddon.name,
@@ -304,11 +395,13 @@ export default function MenuManagement() {
                   });
                 } else if (existingAddonIds.has(option.id)) {
                   // Update existing addon
-                  const addonData: MenuAddonUpdateDTO = {
-                    name: option.name,
-                    price: option.price
-                  };
-                  await menuAddonsApi.updateAddon(option.id, addonData);
+                  const addonPayload = { name: option.name, price: option.price };
+                  const updateRes = await fetch(`/api/menu/addons/${option.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(addonPayload),
+                  });
+                  if (!updateRes.ok) throw new Error('Failed to update addon');
                   updatedOptions.push(option);
                 } else {
                   updatedOptions.push(option);
@@ -323,7 +416,6 @@ export default function MenuManagement() {
             }
           }
           
-          // Update the editable item with the new IDs
           editableItem.optionGroups = updatedGroups;
         }
 
@@ -357,16 +449,20 @@ export default function MenuManagement() {
     if (!deleteMode) {
       try {
         // Load addon groups for this menu item
-        const groups = await addonGroupsApi.getGroupsByMenuItemNid(item.id);
+        const groupsRes = await fetch(`/api/menu/addon-groups/by-menu-item/${item.id}`);
+        if (!groupsRes.ok) throw new Error('Failed to fetch groups');
+        const groups = await groupsRes.json();
         
         // Load addons for each group
         const optionGroups: OptionGroup[] = await Promise.all(
-          groups.map(async (group) => {
-            const addons = await menuAddonsApi.getAddonsByGroupNid(group.nid);
+          groups.map(async (group: any) => {
+            const addonsRes = await fetch(`/api/menu/addons/by-group/${group.nid}`);
+            if (!addonsRes.ok) throw new Error('Failed to fetch addons');
+            const addons = await addonsRes.json();
             return {
               id: group.nid,
               name: group.name,
-              options: addons.map(addon => ({
+              options: addons.map((addon: any) => ({
                 id: addon.nid,
                 name: addon.name,
                 price: addon.price
@@ -400,7 +496,9 @@ export default function MenuManagement() {
     if (!dishToDelete) return;
 
     try {
-      await menuApi.deleteMenuItem(dishToDelete.id);
+      const response = await fetch(`/api/menu/${dishToDelete.id}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Failed to delete menu item');
+      
       setItems(prev => prev.filter(i => i.id !== dishToDelete.id));
       if (selectedItem?.id === dishToDelete.id) {
         setSelectedItem(null);
@@ -550,12 +648,14 @@ export default function MenuManagement() {
               <div className="info-box">
                 <label>VAT Type</label>
                 <select
-                  value={editableItem?.vat || "standard"}
-                  onChange={(e) => updateField("vat", e.target.value)}
+                  value={editableItem?.vatId || ""}
+                  onChange={(e) => updateField("vatId", parseInt(e.target.value, 10))}
                 >
-                  <option value="standard">Standard VAT</option>
-                  <option value="reduced">Reduced VAT</option>
-                  <option value="none">No VAT</option>
+                  {vatOptions.map(vat => (
+                    <option key={vat.vatId} value={vat.vatId}>
+                      {vat.name} ({vat.percentage}%)
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
