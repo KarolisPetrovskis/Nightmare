@@ -123,6 +123,14 @@ export default function ServiceManagement() {
       setLoading(true);
       try {
         // 1. Get business ID
+
+        //const response = fetch('/api/auth/businessId', {
+        //  method: 'GET',
+        //  credentials: 'include',
+        //});
+        //console.log(response);
+
+        //fetch('/api/weatherforeca
         //const id = await fetchBusinessId();
         //setBusinessId(id);
         setBusinessId(MOCK_UP_BUSINESS_ID);

@@ -53,10 +53,11 @@ namespace backend.Server.Controllers
             return Ok();
         }
         [HttpGet("businessId")]
-        public async Task<ActionResult<long>> GetBusinessId()
+        public async Task<ActionResult<Guid?>> GetBusinessId()
         {
-            var businessId = await _authService.GetUserBusinessId(HttpContext);
-            return Ok(businessId);
+            var nid = _authService.GetRequesterNid(HttpContext);
+            //var businessId = await _authService.GetUserBusinessId(nid);
+            return Ok(nid);
         }
         
     }

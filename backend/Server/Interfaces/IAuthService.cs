@@ -6,12 +6,12 @@ namespace backend.Server.Interfaces
     public interface IAuthService
     {
         void RemoveCookie(HttpContext httpContext);
-        Guid? GetRequesterNid(HttpContext httpContext);
+        long? GetRequesterNid(HttpContext httpContext);
         Task CreateUserAsync(RegisterDTO registerDetails);
         public Task<User?> GetUserByEmail(string email);
         bool VerifyPassword(string password, string storedHash);
         public Task AddCookie(HttpContext httpContext, long userId, bool isPersistent);
-        public Task<long> GetUserBusinessId(HttpContext httpContext);
+        public Task<long> GetUserBusinessId(long? nid);
 
     }
 }
