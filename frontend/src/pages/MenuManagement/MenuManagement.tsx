@@ -41,6 +41,9 @@ export default function MenuManagement() {
   const [optionsDirty, setOptionsDirty] = useState(false);
   const [deleteMode, setDeleteMode] = useState(false);
 
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [dishToDelete, setDishToDelete] = useState<MenuItem | null>(null);
+
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
@@ -385,11 +388,21 @@ export default function MenuManagement() {
     }
   };
 
-  const handleDeleteDish = async (id: number) => {
+  const handleDeleteDish = (id: number) => {
+    const dish = items.find(i => i.id === id);
+    if (dish) {
+      setDishToDelete(dish);
+      setConfirmDeleteOpen(true);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!dishToDelete) return;
+
     try {
-      await menuApi.deleteMenuItem(id);
-      setItems(prev => prev.filter(i => i.id !== id));
-      if (selectedItem?.id === id) {
+      await menuApi.deleteMenuItem(dishToDelete.id);
+      setItems(prev => prev.filter(i => i.id !== dishToDelete.id));
+      if (selectedItem?.id === dishToDelete.id) {
         setSelectedItem(null);
         setEditableItem(null);
         setItemDirty(false);
@@ -407,7 +420,16 @@ export default function MenuManagement() {
         message: 'Failed to delete dish',
         type: 'error',
       });
+    } finally {
+      setConfirmDeleteOpen(false);
+      setDishToDelete(null);
+      setDeleteMode(false);
     }
+  };
+
+  const cancelDelete = () => {
+    setConfirmDeleteOpen(false);
+    setDishToDelete(null);
   };
 
 
@@ -688,6 +710,43 @@ export default function MenuManagement() {
         </div>
 
       </div>
+      
+      {confirmDeleteOpen && dishToDelete && (
+        <div className="modal-overlay" onClick={cancelDelete}>
+          <div className="modal-content option-tree-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 400 }}>
+            <div className="option-tree-header" style={{ marginBottom: 16 }}>
+              <h3 style={{ margin: 0 }}>Confirm Delete</h3>
+              <button className="delete-tree modal-close" onClick={cancelDelete}>✖</button>
+            </div>
+
+            <p style={{ marginBottom: 24, fontSize: '1rem' }}>
+              Are you sure you want to delete "{dishToDelete.name}"? This will also delete all its option groups and options. This action cannot be undone.
+            </p>
+
+            <div className="modal-actions">
+              <Button
+                className="item-action-button new-item"
+                onClick={cancelDelete}
+              >
+                Cancel
+              </Button>
+
+              <Button 
+                onClick={confirmDelete}
+                sx={{ 
+                  backgroundColor: '#d32f2f', 
+                  color: 'white', 
+                  fontWeight: 'bold',
+                  '&:hover': { backgroundColor: '#bb2929ff' }
+                }}
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <SnackbarNotification
         open={snackbar.open}
         onClose={() => setSnackbar({ ...snackbar, open: false })}

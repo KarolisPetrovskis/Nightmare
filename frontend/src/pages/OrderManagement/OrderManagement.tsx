@@ -947,16 +947,20 @@ useEffect(() => {
 
                         <div className="modal-actions">
                             <Button
-                                className="item-action-button delete-item cancel-button"
+                                className="item-action-button new-item"
                                 onClick={cancelDelete}
                             >
                                 Cancel
                             </Button>
 
                             <Button 
-                                className="item-action-button delete-item" 
                                 onClick={confirmDelete}
-                                style={{ backgroundColor: '#d32f2f' }}
+                                sx={{ 
+                                  backgroundColor: '#d32f2f', 
+                                  color: 'white', 
+                                  fontWeight: 'bold',
+                                  '&:hover': { backgroundColor: '#bb2929ff' }
+                                }}
                             >
                                 Delete
                             </Button>
