@@ -16,17 +16,35 @@ namespace backend.Server.Controllers
         }
 
         [HttpPost("process")]
-        public IActionResult ProcessPayment([FromBody] ProcessPaymentDTO request)
+        public async Task<IActionResult> ProcessPayment([FromBody] ProcessPaymentDTO request)
         {
-            _paymentsService.placeholderMethod();
-            return Ok("Payment processed successfully.");
+            var result = await _paymentsService.ProcessPaymentAsync(request);
+            return Ok(result);
         }
 
         [HttpPost("refund")]
-        public IActionResult RefundPayment([FromBody] RefundDTO request)
+        public async Task<IActionResult> RefundPayment([FromBody] RefundDTO request)
         {
-            _paymentsService.placeholderMethod();
-            return Ok("Payment refunded successfully.");
+            var result = await _paymentsService.RefundPaymentAsync(request);
+            return Ok(result);
+        }
+
+        [HttpGet("{paymentId}")]
+        public async Task<IActionResult> GetPayment(long paymentId)
+        {
+            var payment = await _paymentsService.GetPaymentByIdAsync(paymentId);
+            if (payment == null)
+            {
+                return NotFound("Payment not found");
+            }
+            return Ok(payment);
+        }
+
+        [HttpGet("order/{orderId}")]
+        public async Task<IActionResult> GetPaymentsByOrder(long orderId)
+        {
+            var payments = await _paymentsService.GetPaymentsByOrderIdAsync(orderId);
+            return Ok(payments);
         }
     }
 }

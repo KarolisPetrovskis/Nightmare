@@ -1,0 +1,386 @@
+import './PaymentProcessing.css';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import Button from '@mui/material/Button';
+import SnackbarNotification from '../../components/SnackBar/SnackNotification';
+import CreditCardIcon from '@mui/icons-material/CreditCard';
+import LocalAtmIcon from '@mui/icons-material/LocalAtm';
+import CardGiftcardIcon from '@mui/icons-material/CardGiftcard';
+
+const PaymentMethod = {
+  Card: 0,
+  Cash: 1,
+  GiftCard: 2,
+} as const;
+
+type PaymentMethodType = typeof PaymentMethod[keyof typeof PaymentMethod];
+
+const PaymentStatus = {
+  Pending: 0,
+  Processing: 1,
+  Completed: 2,
+  Failed: 3,
+  Refunded: 4,
+  PartiallyRefunded: 5,
+} as const;
+
+type PaymentStatusType = typeof PaymentStatus[keyof typeof PaymentStatus];
+
+type PaymentHistoryItem = {
+  paymentId: number;
+  orderId: number;
+  amount: number;
+  currency: string;
+  paymentMethod: PaymentMethodType;
+  status: PaymentStatusType;
+  createdAt: string;
+  processedAt?: string;
+  transactionId?: string;
+  errorMessage?: string;
+};
+
+type Order = {
+  nid: number;
+  code: string;
+  total: number;
+  statusId: number;
+  dateCreated: string;
+};
+
+export default function PaymentProcessing() {
+  const { orderId } = useParams<{ orderId: string }>();
+  const navigate = useNavigate();
+
+  const [order, setOrder] = useState<Order | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>(PaymentMethod.Card);
+  const [amount, setAmount] = useState<string>('');
+  const [customerEmail, setCustomerEmail] = useState<string>('');
+  const [currency] = useState<string>('EUR');
+  const [loading, setLoading] = useState(false);
+  const [loadingOrder, setLoadingOrder] = useState(true);
+  const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryItem[]>([]);
+
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+  }>({
+    open: false,
+    message: '',
+    type: 'success',
+  });
+
+  useEffect(() => {
+    if (orderId) {
+      fetchOrder();
+      fetchPaymentHistory();
+    }
+  }, [orderId]);
+
+  const fetchOrder = async () => {
+    try {
+      setLoadingOrder(true);
+      const response = await fetch(`/api/orders/${orderId}`, {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch order');
+      }
+
+      const data = await response.json();
+      setOrder(data);
+      setAmount(data.total.toString());
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: 'Failed to load order details',
+        type: 'error',
+      });
+    } finally {
+      setLoadingOrder(false);
+    }
+  };
+
+  const fetchPaymentHistory = async () => {
+    try {
+      const response = await fetch(`/api/payments/order/${orderId}`, {
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setPaymentHistory(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch payment history:', error);
+    }
+  };
+
+  const handleProcessPayment = async () => {
+    if (!orderId || !amount || parseFloat(amount) <= 0) {
+      setSnackbar({
+        open: true,
+        message: 'Please enter a valid amount',
+        type: 'error',
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch('/api/payments/process', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          orderId: parseInt(orderId),
+          amount: parseFloat(amount),
+          currency: currency,
+          paymentMethod: paymentMethod,
+          customerEmail: customerEmail || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Payment processing failed');
+      }
+
+      const result = await response.json();
+
+      setSnackbar({
+        open: true,
+        message: `Payment processed successfully! Transaction ID: ${result.transactionId}`,
+        type: 'success',
+      });
+
+      // Refresh payment history
+      await fetchPaymentHistory();
+
+      // Reset form
+      setCustomerEmail('');
+      if (order) {
+        setAmount(order.total.toString());
+      }
+    } catch (error: any) {
+      setSnackbar({
+        open: true,
+        message: error.message || 'Payment processing failed',
+        type: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getPaymentMethodIcon = (method: PaymentMethodType) => {
+    switch (method) {
+      case PaymentMethod.Card:
+        return <CreditCardIcon />;
+      case PaymentMethod.Cash:
+        return <LocalAtmIcon />;
+      case PaymentMethod.GiftCard:
+        return <CardGiftcardIcon />;
+      default:
+        return <CreditCardIcon />;
+    }
+  };
+
+  const getStatusClassName = (status: PaymentStatusType) => {
+    switch (status) {
+      case PaymentStatus.Completed:
+        return 'completed';
+      case PaymentStatus.Pending:
+      case PaymentStatus.Processing:
+        return 'pending';
+      case PaymentStatus.Failed:
+        return 'failed';
+      case PaymentStatus.Refunded:
+      case PaymentStatus.PartiallyRefunded:
+        return 'refunded';
+      default:
+        return '';
+    }
+  };
+
+  const getStatusText = (status: PaymentStatusType) => {
+    switch (status) {
+      case PaymentStatus.Pending:
+        return 'Pending';
+      case PaymentStatus.Processing:
+        return 'Processing';
+      case PaymentStatus.Completed:
+        return 'Completed';
+      case PaymentStatus.Failed:
+        return 'Failed';
+      case PaymentStatus.Refunded:
+        return 'Refunded';
+      case PaymentStatus.PartiallyRefunded:
+        return 'Partially Refunded';
+      default:
+        return 'Unknown';
+    }
+  };
+
+  if (loadingOrder) {
+    return (
+      <div className="payment-container">
+        <div className="loading">Loading order details...</div>
+      </div>
+    );
+  }
+
+  if (!order) {
+    return (
+      <div className="payment-container">
+        <div className="error-message">Order not found</div>
+        <Button variant="contained" onClick={() => navigate('/orders')}>
+          Back to Orders
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="payment-container">
+      <div className="payment-header">
+        <h1>Payment Processing</h1>
+        <Button variant="outlined" onClick={() => navigate('/orders')}>
+          Back to Orders
+        </Button>
+      </div>
+
+      <div className="payment-form">
+        <div className="order-summary">
+          <h3>Order Summary</h3>
+          <div className="summary-row">
+            <span>Order Number:</span>
+            <span>{order.code}</span>
+          </div>
+          <div className="summary-row">
+            <span>Order Date:</span>
+            <span>{new Date(order.dateCreated).toLocaleDateString()}</span>
+          </div>
+          <div className="summary-row total">
+            <span>Total Amount:</span>
+            <span>
+              {order.total.toFixed(2)} {currency}
+            </span>
+          </div>
+        </div>
+
+        <div className="form-section">
+          <h2>Payment Details</h2>
+
+          <div className="form-group">
+            <label>Amount to Pay</label>
+            <input
+              type="number"
+              step="0.01"
+              min="0.01"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="Enter amount"
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Customer Email (Optional)</label>
+            <input
+              type="email"
+              value={customerEmail}
+              onChange={(e) => setCustomerEmail(e.target.value)}
+              placeholder="customer@example.com"
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Payment Method</label>
+            <div className="payment-method-options">
+              <button
+                className={`payment-method-btn ${
+                  paymentMethod === PaymentMethod.Card ? 'selected' : ''
+                }`}
+                onClick={() => setPaymentMethod(PaymentMethod.Card)}
+              >
+                <CreditCardIcon />
+                <span>Card</span>
+              </button>
+              <button
+                className={`payment-method-btn ${
+                  paymentMethod === PaymentMethod.Cash ? 'selected' : ''
+                }`}
+                onClick={() => setPaymentMethod(PaymentMethod.Cash)}
+              >
+                <LocalAtmIcon />
+                <span>Cash</span>
+              </button>
+              <button
+                className={`payment-method-btn ${
+                  paymentMethod === PaymentMethod.GiftCard ? 'selected' : ''
+                }`}
+                onClick={() => setPaymentMethod(PaymentMethod.GiftCard)}
+              >
+                <CardGiftcardIcon />
+                <span>Gift Card</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="payment-actions">
+          <button
+            className="btn-pay"
+            onClick={handleProcessPayment}
+            disabled={loading || !amount || parseFloat(amount) <= 0}
+          >
+            {loading ? 'Processing...' : 'Process Payment'}
+          </button>
+          <button className="btn-cancel" onClick={() => navigate('/orders')}>
+            Cancel
+          </button>
+        </div>
+      </div>
+
+      <div className="payment-history">
+        <h2>Payment History</h2>
+        {paymentHistory.length > 0 ? (
+          <div className="payment-list">
+            {paymentHistory.map((payment) => (
+              <div key={payment.paymentId} className="payment-item">
+                <div className="payment-info">
+                  <div className="transaction-id">
+                    {getPaymentMethodIcon(payment.paymentMethod)}{' '}
+                    {payment.transactionId || 'N/A'}
+                  </div>
+                  <div className="payment-date">
+                    {new Date(payment.createdAt).toLocaleString()} •{' '}
+                    {payment.amount.toFixed(2)} {payment.currency}
+                  </div>
+                </div>
+                <div
+                  className={`payment-status ${getStatusClassName(
+                    payment.status
+                  )}`}
+                >
+                  {getStatusText(payment.status)}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="no-payments">No payment history available</div>
+        )}
+      </div>
+
+      <SnackbarNotification
+        open={snackbar.open}
+        message={snackbar.message}
+        type={snackbar.type}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      />
+    </div>
+  );
+}

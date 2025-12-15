@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/NavBar/Navbar';
 import Home from './pages/Home/Home';
@@ -9,6 +9,7 @@ import ServiceManagement from './pages/ServiceManagement/ServiceManagement';
 import ScheduleManagement from './pages/ScheduleManagement/ScheduleManagement';
 import CurrentScheduleManagement from './pages/CurrentScheduleManagement/CurrentScheduleManagement';
 import DishSelection from './pages/OrderManagement/DishSelection/DishSelection';
+import PaymentProcessing from './pages/PaymentProcessing/PaymentProcessing';
 import Login from './pages/Login/Login';
 import BusinessView from './pages/AdminPages/Business view/BusinessView';
 import WorkerManagement from './pages/AdminPages/Worker Management/WorkerManagement';
@@ -43,6 +44,10 @@ export default function App() {
                   <Route
                     path="/order-management/select-dish"
                     element={<DishSelection />}
+                  />
+                  <Route
+                    path="/payment/:orderId"
+                    element={<PaymentProcessing />}
                   />
                   <Route
                     path="/service-management"

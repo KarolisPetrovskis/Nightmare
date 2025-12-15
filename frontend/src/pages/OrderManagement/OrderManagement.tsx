@@ -942,13 +942,25 @@ export default function OrderManagement() {
                   </div>
                 </div>
 
-                <Button
-                  className={`save-button ${orderDirty ? 'active' : ''}`}
-                  disabled={!orderDirty}
-                  onClick={handleSave}
-                >
-                  Save
-                </Button>
+                <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                  <Button
+                    className={`save-button ${orderDirty ? 'active' : ''}`}
+                    disabled={!orderDirty}
+                    onClick={handleSave}
+                  >
+                    Save
+                  </Button>
+                  
+                  {selectedOrder.backendNid && (
+                    <Button
+                      variant="contained"
+                      color="success"
+                      onClick={() => navigate(`/payment/${selectedOrder.backendNid}`)}
+                    >
+                      Process Payment
+                    </Button>
+                  )}
+                </div>
               </>
             )}
           </div>
