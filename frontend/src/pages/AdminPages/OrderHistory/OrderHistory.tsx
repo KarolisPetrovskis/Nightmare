@@ -3,11 +3,22 @@ import "../../Management.css";
 import { useState, useEffect } from "react";
 import Button from "@mui/material/Button";
 import SnackbarNotification from "../../../components/SnackBar/SnackNotification";
-import { OrderStatus, getOrderStatusLabel } from "../../../types/orderStatus";
+import { getOrderStatusLabel } from "../../../types/orderStatus";
 import { useAuth } from "../../../context/AuthContext";
+import RefundDialog from "../../../components/RefundDialog/RefundDialog";
+import { paymentService } from "../../../services/paymentService";
 
-const MOCK_BUSINESS_ID = 12;
-const REFUNDED_STATUS_ID = 3; 
+interface Payment {
+  paymentId: number;
+  orderId: number;
+  amount: number;
+  currency: string;
+  paymentMethod: number;
+  status: number;
+  createdAt: string;
+  processedAt?: string;
+  transactionId?: string;
+}
 
 interface OrderRecord {
   nid: number;
@@ -17,7 +28,8 @@ interface OrderRecord {
   dateCreated: string;
   status: number;
   businessId: number;
-  statusName?: string; // Display name for status
+  statusName?: string;
+  payments?: Payment[];
 }
 
 export default function OrderHistory() {
@@ -30,6 +42,9 @@ export default function OrderHistory() {
     type: 'info' as 'success' | 'error' | 'warning' | 'info',
   });
   const [searchQuery, setSearchQuery] = useState("");
+  const [showRefundDialog, setShowRefundDialog] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   
   // Filter states
   const [dateFrom, setDateFrom] = useState("2025-01-01");
@@ -39,6 +54,11 @@ export default function OrderHistory() {
   const [filterId, setFilterId] = useState("");
   const [filterName, setFilterName] = useState("");
   const [filterState, setFilterState] = useState("");
+  const [filterWorkerId, setFilterWorkerId] = useState("");
+  
+  // Payment details modal
+  const [showPaymentDetails, setShowPaymentDetails] = useState(false);
+  const [selectedOrderPayments, setSelectedOrderPayments] = useState<Payment[]>([]);
 
   // Fetch orders from API on component mount
   useEffect(() => {
@@ -99,37 +119,62 @@ export default function OrderHistory() {
     const matchesDateTo = new Date(order.dateCreated) <= new Date(dateTo);
     const matchesTotal = order.total >= parseFloat(totalMin || "0") && order.total <= parseFloat(totalMax || "999999");
     const matchesId = filterId === "" || order.nid.toString() === filterId;
-    const matchesName = filterName === "" || (order.code && order.code.includes(filterName));
+    const matchesName = filterName === "" || (order.code && order.code.toLowerCase().includes(filterName.toLowerCase()));
+    const matchesWorkerId = filterWorkerId === "" || (order.workerId && order.workerId.toString() === filterWorkerId);
     
     const statusMatches = filterState === "" || filterState === (order.statusName?.toLowerCase() || '');
 
-    return matchesSearch && matchesDateFrom && matchesDateTo && matchesTotal && matchesId && matchesName && statusMatches;
+    return matchesSearch && matchesDateFrom && matchesDateTo && matchesTotal && matchesId && matchesName && statusMatches && matchesWorkerId;
   });
 
-  const handleRefund = async (orderNid: number) => {
+  const handleRefundClick = async (orderNid: number) => {
     try {
-      const response = await fetch(`/api/orders/${orderNid}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          statusId: REFUNDED_STATUS_ID,
-        }),
-      });
+      // Fetch payments for this order
+      const payments = await paymentService.getPaymentsByOrder(orderNid);
       
-      if (!response.ok) throw new Error('Failed to refund order');
+      // Find the most recent completed payment
+      const completedPayment = payments.find(p => p.status === 2); // Status 2 = Completed
       
-      // Update local state
-      setOrders(orders.map(o => 
-        o.nid === orderNid 
-          ? { ...o, statusId: REFUNDED_STATUS_ID, statusName: 'Refunded' } 
-          : o
-      ));
+      if (!completedPayment) {
+        showSnackbar('No completed payment found for this order', 'error');
+        return;
+      }
       
-      showSnackbar('Order refunded successfully', 'success');
+      setSelectedPayment(completedPayment);
+      setSelectedOrderId(orderNid);
+      setShowRefundDialog(true);
     } catch (error) {
-      console.error('Error refunding order:', error);
-      showSnackbar('Failed to refund order', 'error');
+      console.error('Error fetching payment details:', error);
+      showSnackbar('Failed to load payment details', 'error');
     }
+  };
+
+  const handleShowPaymentDetails = async (orderNid: number) => {
+    try {
+      const payments = await paymentService.getPaymentsByOrder(orderNid);
+      setSelectedOrderPayments(payments);
+      setShowPaymentDetails(true);
+    } catch (error) {
+      console.error('Error fetching payment details:', error);
+      showSnackbar('Failed to load payment details', 'error');
+    }
+  };
+
+  const handleRefundSuccess = async () => {
+    setShowRefundDialog(false);
+    setSelectedPayment(null);
+    setSelectedOrderId(null);
+    
+    // Refresh orders to show updated status
+    await fetchOrders();
+    
+    showSnackbar('Refund processed successfully', 'success');
+  };
+
+  const handleRefundCancel = () => {
+    setShowRefundDialog(false);
+    setSelectedPayment(null);
+    setSelectedOrderId(null);
   };
 
   return (
@@ -211,6 +256,16 @@ export default function OrderHistory() {
             </div>
 
             <div className="filter-item">
+              <label>Worker ID:</label>
+              <input
+                type="text"
+                value={filterWorkerId}
+                onChange={(e) => setFilterWorkerId(e.target.value)}
+                placeholder="123"
+              />
+            </div>
+
+            <div className="filter-item">
               <label>State:</label>
               <div className="state-options">
                 <label>
@@ -253,6 +308,26 @@ export default function OrderHistory() {
                   />
                   refunded
                 </label>
+                <label>
+                  <input
+                    type="radio"
+                    name="state"
+                    value="partially refunded"
+                    checked={filterState === "partially refunded"}
+                    onChange={(e) => setFilterState(e.target.value)}
+                  />
+                  partially refunded
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    name="state"
+                    value="cancelled"
+                    checked={filterState === "cancelled"}
+                    onChange={(e) => setFilterState(e.target.value)}
+                  />
+                  cancelled
+                </label>
               </div>
             </div>
           </fieldset>
@@ -283,18 +358,36 @@ export default function OrderHistory() {
                     <td>{new Date(order.dateCreated).toLocaleDateString()}</td>
                     <td>{order.statusName}</td>
                     <td>
-                      {order.statusName === "Paid" && (
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-start' }}>
                         <Button
-                          className="refund-btn"
-                          variant="contained"
+                          variant="outlined"
                           size="small"
-                          onClick={() => handleRefund(order.nid)}
-                          disabled={loading}
+                          onClick={() => handleShowPaymentDetails(order.nid)}
+                          sx={{
+                            fontSize: '0.75rem',
+                            padding: '4px 8px',
+                            textTransform: 'none',
+                          }}
                         >
-                          Refund
+                          Details
                         </Button>
-                      )}
-                      {order.statusName === "Refunded" && <span className="refunded-badge">Refunded</span>}
+                        {(order.statusName === "Paid" || order.statusName === "Partially Refunded") && (
+                          <Button
+                            variant="contained"
+                            size="small"
+                            onClick={() => handleRefundClick(order.nid)}
+                            disabled={loading}
+                            sx={{
+                              backgroundColor: '#d32f2f',
+                              fontSize: '0.75rem',
+                              padding: '4px 8px',
+                              '&:hover': { backgroundColor: '#bb2929ff' },
+                            }}
+                          >
+                            Refund
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -309,6 +402,110 @@ export default function OrderHistory() {
           </table>
         </div>
       </div>
+
+      {/* Refund Dialog */}
+      {showRefundDialog && selectedPayment && selectedOrderId && (
+        <RefundDialog
+          paymentId={selectedPayment.paymentId}
+          orderId={selectedOrderId}
+          maxAmount={selectedPayment.amount}
+          currency={selectedPayment.currency}
+          onSuccess={handleRefundSuccess}
+          onCancel={handleRefundCancel}
+        />
+      )}
+
+      {/* Payment Details Modal */}
+      {showPaymentDetails && (
+        <div className="modal-overlay" onClick={() => setShowPaymentDetails(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '700px' }}>
+            <h3 className="modal-title">Payment History</h3>
+            
+            <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
+              {selectedOrderPayments.length === 0 ? (
+                <p style={{ textAlign: 'center', color: '#999' }}>No payments found</p>
+              ) : (
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                      <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '0.9rem' }}>ID</th>
+                      <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '0.9rem' }}>Amount</th>
+                      <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '0.9rem' }}>Method</th>
+                      <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '0.9rem' }}>Status</th>
+                      <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '0.9rem' }}>Date</th>
+                      <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '0.9rem' }}>Transaction</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedOrderPayments.map((payment) => (
+                      <tr key={payment.paymentId} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                        <td style={{ padding: '12px 8px', fontSize: '0.85rem' }}>{payment.paymentId}</td>
+                        <td style={{ 
+                          padding: '12px 8px', 
+                          fontSize: '0.85rem',
+                          color: payment.amount < 0 ? '#ff6b6b' : '#4caf50',
+                          fontWeight: 500
+                        }}>
+                          {payment.amount < 0 ? '-' : ''}{payment.currency} {Math.abs(payment.amount).toFixed(2)}
+                        </td>
+                        <td style={{ padding: '12px 8px', fontSize: '0.85rem' }}>
+                          {payment.paymentMethod === 0 ? 'Card' : payment.paymentMethod === 1 ? 'Cash' : 'Gift Card'}
+                        </td>
+                        <td style={{ padding: '12px 8px', fontSize: '0.85rem' }}>
+                          <span style={{
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            fontSize: '0.75rem',
+                            backgroundColor: 
+                              payment.status === 2 ? '#1a4d1a' :
+                              payment.status === 4 || payment.status === 5 ? '#4d1a1a' :
+                              payment.status === 3 ? '#4d1a1a' : '#3a3a3a',
+                            color: 'white'
+                          }}>
+                            {payment.status === 0 ? 'Pending' :
+                             payment.status === 1 ? 'Processing' :
+                             payment.status === 2 ? 'Completed' :
+                             payment.status === 3 ? 'Failed' :
+                             payment.status === 4 ? 'Refunded' :
+                             payment.status === 5 ? 'Partial Refund' : 'Unknown'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 8px', fontSize: '0.85rem', color: '#999' }}>
+                          {new Date(payment.createdAt).toLocaleString()}
+                        </td>
+                        <td style={{ padding: '12px 8px', fontSize: '0.75rem', color: '#999', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {payment.transactionId || '-'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            <div className="modal-actions" style={{ marginTop: '20px' }}>
+              <Button
+                variant="contained"
+                onClick={() => setShowPaymentDetails(false)}
+                sx={{
+                  backgroundColor: '#3e44b3',
+                  '&:hover': { backgroundColor: '#2e34a3' },
+                }}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Snackbar */}
+      <SnackbarNotification
+        open={snackbar.open}
+        onClose={closeSnackbar}
+        message={snackbar.message}
+        type={snackbar.type}
+      />
     </div>
   );
 }

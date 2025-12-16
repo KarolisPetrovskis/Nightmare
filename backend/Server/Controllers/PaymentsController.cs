@@ -36,6 +36,12 @@ namespace backend.Server.Controllers
             });
         }
 
+        [HttpGet("config")]
+        public IActionResult GetStripeConfig()
+        {
+            return Ok(new { publishableKey = _stripeSettings.PublishableKey });
+        }
+
         [HttpPost("process")]
         public async Task<IActionResult> ProcessPayment([FromBody] ProcessPaymentDTO request)
         {

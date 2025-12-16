@@ -205,10 +205,14 @@ namespace backend.Server.Services
                     if (request.Amount == payment.Amount)
                     {
                         payment.Status = PaymentStatus.Refunded;
+                        // Update order status to Refunded
+                        await _ordersService.UpdateOrderStatusAsync(payment.OrderId, OrderStatus.Refunded);
                     }
                     else
                     {
                         payment.Status = PaymentStatus.PartiallyRefunded;
+                        // Update order status to PartiallyRefunded
+                        await _ordersService.UpdateOrderStatusAsync(payment.OrderId, OrderStatus.PartiallyRefunded);
                     }
 
                     _context.Payments.Add(refundPayment);
@@ -236,10 +240,14 @@ namespace backend.Server.Services
                     if (request.Amount == payment.Amount)
                     {
                         payment.Status = PaymentStatus.Refunded;
+                        // Update order status to Refunded
+                        await _ordersService.UpdateOrderStatusAsync(payment.OrderId, OrderStatus.Refunded);
                     }
                     else
                     {
                         payment.Status = PaymentStatus.PartiallyRefunded;
+                        // Update order status to PartiallyRefunded
+                        await _ordersService.UpdateOrderStatusAsync(payment.OrderId, OrderStatus.PartiallyRefunded);
                     }
 
                     _context.Payments.Add(refundPayment);

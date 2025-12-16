@@ -83,19 +83,21 @@ export default function PaymentProcessingWithTip() {
     type: 'success',
   });
 
-  // Initialize Stripe
+  // Initialize Stripe only when card payment method is selected
   useEffect(() => {
     const initializeStripe = async () => {
+      if (paymentMethod !== PaymentMethod.Card) {
+        return; // Don't initialize Stripe if not using card payment
+      }
+
+      if (stripePromise) {
+        return; // Already initialized
+      }
+
       try {
-        const response = await fetch('/api/payments/create-payment-intent', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        // Fetch Stripe publishable key without creating a payment intent
+        const response = await fetch('/api/payments/config', {
           credentials: 'include',
-          body: JSON.stringify({
-            orderId: parseInt(orderId || '0'),
-            amount: 1.0,
-            currency: 'eur',
-          }),
         });
 
         if (response.ok) {
@@ -110,7 +112,7 @@ export default function PaymentProcessingWithTip() {
     };
 
     initializeStripe();
-  }, [orderId]);
+  }, [orderId, paymentMethod, stripePromise]);
 
   // Fetch order details
   useEffect(() => {
