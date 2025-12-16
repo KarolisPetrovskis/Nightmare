@@ -101,6 +101,7 @@ export default function PaymentProcessingWithTip() {
   );
   const [stripePromise, setStripePromise] = useState<any>(null);
   const [stripeReceiptUrl, setStripeReceiptUrl] = useState<string | null>(null);
+  const [hasReceipt, setHasReceipt] = useState<boolean>(false);
 
   // Tip related states
   const [tip, setTip] = useState<string>('0');
@@ -310,6 +311,24 @@ export default function PaymentProcessingWithTip() {
         // Refresh payment history
         await fetchPaymentHistory();
 
+        // Fetch receipt to enable local receipt button
+        if (orderId) {
+          try {
+            const receiptResponse = await fetch(`/api/receipts/order/${orderId}`, {
+              credentials: 'include',
+            });
+            if (receiptResponse.ok) {
+              const receipt = await receiptResponse.json();
+              setHasReceipt(true);
+              if (receipt.stripeReceiptUrl) {
+                setStripeReceiptUrl(receipt.stripeReceiptUrl);
+              }
+            }
+          } catch (error) {
+            console.error('Failed to fetch receipt:', error);
+          }
+        }
+
         // Reset form
         setCustomerEmail('');
         setTip('0');
@@ -335,7 +354,7 @@ export default function PaymentProcessingWithTip() {
     // Refresh payment history
     await fetchPaymentHistory();
 
-    // Fetch Stripe receipt URL
+    // Fetch receipt URL
     if (orderId) {
       try {
         const response = await fetch(`/api/receipts/order/${orderId}`, {
@@ -343,6 +362,7 @@ export default function PaymentProcessingWithTip() {
         });
         if (response.ok) {
           const receipt = await response.json();
+          setHasReceipt(true);
           if (receipt.stripeReceiptUrl) {
             setStripeReceiptUrl(receipt.stripeReceiptUrl);
           }
@@ -694,16 +714,18 @@ export default function PaymentProcessingWithTip() {
           </div>
         )}
 
-        {/* Stripe Receipt Button */}
-        {stripeReceiptUrl && (
-          <div className="payment-actions" style={{ marginTop: '10px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            <button
-              className="btn-pay"
-              onClick={() => window.open(stripeReceiptUrl, '_blank')}
-              style={{ backgroundColor: '#635bff' }}
-            >
-              View Stripe Receipt
-            </button>
+        {/* Receipt Buttons */}
+        {hasReceipt && (
+          <div className="payment-actions" style={{ marginTop: '10px', display: 'grid', gridTemplateColumns: stripeReceiptUrl ? '1fr 1fr' : '1fr', gap: '10px' }}>
+            {stripeReceiptUrl && (
+              <button
+                className="btn-pay"
+                onClick={() => window.open(stripeReceiptUrl, '_blank')}
+                style={{ backgroundColor: '#635bff' }}
+              >
+                View Stripe Receipt
+              </button>
+            )}
             <button
               className="btn-pay"
               onClick={() => window.open(`/api/receipts/local/${orderId}`, '_blank')}

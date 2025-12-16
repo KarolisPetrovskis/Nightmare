@@ -455,21 +455,36 @@ export default function OrderHistory() {
                       Total: {selectedOrderReceipt.currency} {selectedOrderReceipt.total.toFixed(2)}
                     </p>
                   </div>
-                  {selectedOrderReceipt.stripeReceiptUrl && (
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {selectedOrderReceipt.stripeReceiptUrl && (
+                      <Button
+                        variant="contained"
+                        size="small"
+                        onClick={() => window.open(selectedOrderReceipt.stripeReceiptUrl, '_blank')}
+                        sx={{
+                          backgroundColor: '#635bff',
+                          fontSize: '0.8rem',
+                          padding: '6px 16px',
+                          '&:hover': { backgroundColor: '#5347e8' },
+                        }}
+                      >
+                        Stripe Receipt
+                      </Button>
+                    )}
                     <Button
                       variant="contained"
                       size="small"
-                      onClick={() => window.open(selectedOrderReceipt.stripeReceiptUrl, '_blank')}
+                      onClick={() => window.open(`/api/receipts/local/${selectedOrderPayments[0]?.orderId}`, '_blank')}
                       sx={{
-                        backgroundColor: '#3e44b3',
+                        backgroundColor: '#4caf50',
                         fontSize: '0.8rem',
                         padding: '6px 16px',
-                        '&:hover': { backgroundColor: '#2e34a3' },
+                        '&:hover': { backgroundColor: '#43a047' },
                       }}
                     >
-                      View Receipt
+                      Local Receipt
                     </Button>
-                  )}
+                  </div>
                 </div>
               </div>
             )}
