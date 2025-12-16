@@ -390,7 +390,7 @@ export default function CurrentScheduleManagement() {
         <Button className="add-appointment-btn" onClick={handleOpenModal}>
           Add new appointment
         </Button>
-        <span className="current-date">{formatDate(currentDate)}</span>
+        <span className="current-date">{formatDate(currentDate)}: {businessHours.start} - {businessHours.end}</span>
         
         <div className="time-labels">
           <div className="time-label-header-spacer"></div>
