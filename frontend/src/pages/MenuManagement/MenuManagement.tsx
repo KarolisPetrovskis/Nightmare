@@ -60,9 +60,8 @@ export default function MenuManagement() {
   const [deleteMode, setDeleteMode] = useState(false);
   const [vatOptions, setVatOptions] = useState<VatOption[]>([]);
   const [vatDropdownOpen, setVatDropdownOpen] = useState(false);
-  const [selectedVatOption, setSelectedVatOption] = useState<VatOption | null>(
-    null
-  );
+  const [selectedVatOption, setSelectedVatOption] = useState<VatOption | null>(null);
+  const [vatTouched, setVatTouched] = useState(false);
 
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [dishToDelete, setDishToDelete] = useState<MenuItem | null>(null);
@@ -98,11 +97,7 @@ export default function MenuManagement() {
       }));
 
       setVatOptions(mappedVatOptions);
-
-      // Set default VAT option
-      if (mappedVatOptions.length > 0) {
-        setSelectedVatOption(mappedVatOptions[0]);
-      }
+      // Do not set any default VAT selection
     } catch (error) {
       console.error('Error fetching VAT options:', error);
       setVatOptions([]);
@@ -209,30 +204,31 @@ export default function MenuManagement() {
   };
 
   const handleNewItem = () => {
-    const defaultVatId =
-      vatOptions.length > 0 ? vatOptions[0].vatId : undefined;
-    const defaultVatName =
-      vatOptions.length > 0 ? vatOptions[0].name : 'Standard';
-    const defaultVatPercentage =
-      vatOptions.length > 0 ? vatOptions[0].percentage : 21;
-
     const emptyItem: MenuItem = {
       id: -1,
       name: '',
       price: 0,
       discount: 0,
       discountExpiration: '',
-      vatId: defaultVatId,
-      vatName: defaultVatName,
-      vatPercentage: defaultVatPercentage,
+      vatId: undefined,
+      vatName: undefined,
+      vatPercentage: undefined,
       optionGroups: [],
     };
-
     setSelectedItem(emptyItem);
     setEditableItem(emptyItem);
-    setSelectedVatOption(vatOptions.length > 0 ? vatOptions[0] : null);
+    setSelectedVatOption(null);
+    setVatTouched(false);
     setItemDirty(false);
   };
+
+  // Sync editableItem.vatId with selectedVatOption
+  useEffect(() => {
+    if (selectedVatOption && editableItem && editableItem.vatId !== selectedVatOption.vatId) {
+      setEditableItem((prev) => prev ? { ...prev, vatId: selectedVatOption.vatId } : prev);
+    }
+    // eslint-disable-next-line
+  }, [selectedVatOption]);
 
   useEffect(() => {
     if (!editableItem || !selectedItem) return;
@@ -294,13 +290,13 @@ export default function MenuManagement() {
 
     try {
       if (editableItem.id === -1) {
-        console.log('we are here creating; ');
+        // Always use selectedVatOption for vatId
         const createData: MenuCreateDTO = {
           name: editableItem.name,
           businessId: businessId,
           price: editableItem.price,
           discount: editableItem.discount || null,
-          vatId: editableItem.vatId!,
+          vatId: selectedVatOption?.vatId!,
           discountTime: editableItem.discountExpiration || null,
         };
         const newItem = await menuApi.createMenuItem(createData);
@@ -379,7 +375,7 @@ export default function MenuManagement() {
           name: editableItem.name,
           price: editableItem.price,
           discount: editableItem.discount || null,
-          vatId: editableItem.vatId!,
+          vatId: selectedVatOption?.vatId!,
           discountTime: editableItem.discountExpiration || null,
         };
         await menuApi.updateMenuItem(editableItem.id, updateData);
@@ -566,11 +562,16 @@ export default function MenuManagement() {
         const itemWithAddons = { ...item, optionGroups };
         setSelectedItem(itemWithAddons);
         setEditableItem({ ...itemWithAddons });
+        // Sync VAT dropdown to match the selected dish
+        const vatMatch = vatOptions.find(v => v.vatId === item.vatId) || null;
+        setSelectedVatOption(vatMatch);
         setItemDirty(false);
       } catch (error) {
         console.error('Failed to load groups and addons:', error);
         setSelectedItem(item);
         setEditableItem({ ...item });
+        const vatMatch = vatOptions.find(v => v.vatId === item.vatId) || null;
+        setSelectedVatOption(vatMatch);
         setItemDirty(false);
       }
     }
@@ -635,6 +636,7 @@ export default function MenuManagement() {
       prev ? { ...prev, vatId: vatOption.vatId } : prev
     );
     setVatDropdownOpen(false);
+    setVatTouched(true);
     setItemDirty(true);
   };
 
@@ -757,52 +759,50 @@ export default function MenuManagement() {
 
               {/* VAT Dropdown */}
               <div className="info-box">
-                <label>VAT Rate</label>
+                <label>VAT Rate <span style={{color: 'red'}}>*</span></label>
                 <div className="vat-dropdown-container">
                   <div
                     className="vat-dropdown-toggle"
-                    onClick={() => setVatDropdownOpen(!vatDropdownOpen)}
+                    style={{
+                      border: (!selectedVatOption && vatTouched) ? '2px solid red' : undefined,
+                    }}
+                    onClick={() => {
+                      setVatDropdownOpen(!vatDropdownOpen);
+                      setVatTouched(true);
+                    }}
                   >
                     {selectedVatOption ? (
                       <span>
-                        {selectedVatOption.name} ({selectedVatOption.percentage}
-                        %)
+                        {selectedVatOption.name} ({selectedVatOption.percentage}%)
                       </span>
                     ) : (
-                      <span>Select VAT rate</span>
+                      <span style={{color: 'red'}}>Select VAT rate</span>
                     )}
                     <span className="vat-dropdown-arrow">▼</span>
                   </div>
-
                   {vatDropdownOpen && vatOptions.length > 0 && (
                     <div className="vat-dropdown-menu">
                       {vatOptions.map((vat) => (
                         <div
                           key={vat.vatId}
-                          className={`vat-dropdown-item ${
-                            selectedVatOption?.vatId === vat.vatId
-                              ? 'selected'
-                              : ''
-                          }`}
+                          className={`vat-dropdown-item ${selectedVatOption?.vatId === vat.vatId ? 'selected' : ''}`}
                           onClick={() => handleVatSelect(vat)}
                         >
                           <span className="vat-name">{vat.name}</span>
-                          <span className="vat-percentage">
-                            {vat.percentage}%
-                          </span>
+                          <span className="vat-percentage">{vat.percentage}%</span>
                         </div>
                       ))}
                     </div>
                   )}
-
                   {vatDropdownOpen && vatOptions.length === 0 && (
                     <div className="vat-dropdown-menu">
-                      <div className="vat-dropdown-item disabled">
-                        No VAT options available
-                      </div>
+                      <div className="vat-dropdown-item disabled">No VAT options available</div>
                     </div>
                   )}
                 </div>
+                {!selectedVatOption && vatTouched && (
+                  <div style={{color: 'red', fontSize: '0.9em', marginTop: 4}}>VAT rate is required</div>
+                )}
               </div>
             </div>
 
@@ -832,12 +832,7 @@ export default function MenuManagement() {
                   options: [],
                 };
                 setEditableItem((prev) =>
-                  prev
-                    ? {
-                        ...prev,
-                        optionGroups: [...prev.optionGroups, newGroup],
-                      }
-                    : prev
+                  prev ? { ...prev, optionGroups: [...prev.optionGroups, newGroup] } : prev
                 );
                 setOptionsDirty(true);
               }}
