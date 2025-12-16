@@ -215,6 +215,22 @@ Added `Receipt` entity:
 + string? DetailedContent
 ```
 
+### Removed Entities
+
+Removed unused entities.
+
+```diff
+- BusinessTypeName
+- GiftCard
+```
+
+Replaced these entities with enums for simplicity.
+
+```diff
+- Status
+- UserType
+```
+
 ## 3. Frontend Changes
 
 In Schedule-Management page added the year display next to the month, since whenever you go into the concrete days schedule management page full date year-month-day are displayed, while in the Schedule Management page the wireframe design did not contain that.
