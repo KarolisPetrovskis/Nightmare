@@ -133,12 +133,18 @@ public class ReceiptsController : ControllerBase
 ## 2. Database Changes
 
 ### Business
+
+Added work hours for easier shift creation.
+
 ```diff
 + DateTime WorkStart
 + DateTime WorkEnd
 ```
 
 ### Order
+
+Used and Enum instead of a separate entity for `Status`
+
 ```diff
 - long StatusId
 
@@ -156,12 +162,16 @@ public class ReceiptsController : ControllerBase
 ```
 
 ### Service
+
+Added description to services, since it was present in mockups.
+
 ```diff
 + string? Description
 ```
 
 ### User
 
+Changed `UserType` from separate entity to an Enum. Added `BusinessId` to specify which business the user belongs to.
 
 ```diff
 - long UserType
@@ -172,7 +182,7 @@ public class ReceiptsController : ControllerBase
 
 ### MenuItemIngredientGroup
 
-Added `MenuItemIngredientGroup` entity
+Added `MenuItemIngredientGroup` entity:
 
 ```diff
 + long Nid
@@ -182,7 +192,7 @@ Added `MenuItemIngredientGroup` entity
 
 ### Payment
 
-Added `Payment` entity
+Added `Payment` entity:
 
 ```diff
 + long Nid
