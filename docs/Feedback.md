@@ -42,6 +42,8 @@
 - It is unclear how the Delete Dish works. Like if I click does it delete the top one or you need to select a dish you want to delete and then press it?
 - “Figure 5. Add order to the dish wireframe” - What? No, it should be the other way around.
 - Ordering seems kinda not thought out. Every time I need to add a dish I get transported to other page. But the time it takes to add multiple is too long.
+- Worker apointment scheduling wireframe design is pretty convenient and simple, although for bigger businesses it wouldn't be very convenient.
+- 
 
 ## Package diagram
 
