@@ -507,15 +507,18 @@ export default function OrderManagement() {
               }
             );
 
-            const itemPriceWoVat =
-              (basePrice + addonsPriceWoVat) * item.quantity;
-            const itemPriceWtVat = itemPriceWoVat * vatRate;
-            total += itemPriceWtVat;
+            // Calculate per-item price (base + addons) without quantity
+            const unitPriceWoVat = basePrice + addonsPriceWoVat;
+            const unitPriceWtVat = unitPriceWoVat * vatRate;
+            
+            // Total for this line item (unit price * quantity)
+            const lineTotalWtVat = unitPriceWtVat * item.quantity;
+            total += lineTotalWtVat;
 
             return {
               itemId: item.menuItem.nid,
-              priceWoVat: itemPriceWoVat,
-              priceWtVat: itemPriceWtVat,
+              priceWoVat: unitPriceWoVat,
+              priceWtVat: unitPriceWtVat,
               quantity: item.quantity,
               addons: addons.length > 0 ? addons : undefined,
             };
@@ -675,13 +678,14 @@ export default function OrderManagement() {
             return [{ ingredientId: option.nid, priceWoVat: option.price }];
           });
 
-          const itemPriceWoVat = (basePrice + addonsPriceWoVat) * item.quantity;
-          const itemPriceWtVat = itemPriceWoVat * vatRate;
+          // Calculate per-item price (base + addons) without quantity
+          const unitPriceWoVat = basePrice + addonsPriceWoVat;
+          const unitPriceWtVat = unitPriceWoVat * vatRate;
 
           const itemRequest: OrderDetailRequest = {
             itemId: item.menuItem.nid,
-            priceWoVat: itemPriceWoVat,
-            priceWtVat: itemPriceWtVat,
+            priceWoVat: unitPriceWoVat,
+            priceWtVat: unitPriceWtVat,
             quantity: item.quantity,
             addons: addons.length > 0 ? addons : undefined,
           };
