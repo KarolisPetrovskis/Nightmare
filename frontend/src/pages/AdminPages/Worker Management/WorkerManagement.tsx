@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import SnackbarNotification from "../../../components/SnackBar/SnackNotification";
 import { useAuth } from "../../../context/AuthContext";
+import { authService } from "../../../services/authService";
 
 type Worker = {
   nid?: number;
@@ -122,7 +123,13 @@ export default function WorkerManagement() {
       if (!response.ok) throw new Error('Failed to fetch employees');
       const data = await response.json();
       console.log('Fetched employees:', data);
-      setWorkers(data);
+      
+      // Filter out SuperAdmin users if current user is not SuperAdmin
+      const filteredData = currentUserType === 4 
+        ? data 
+        : data.filter((worker: ApiWorker) => worker.userType !== 4);
+      
+      setWorkers(filteredData);
     } catch (error) {
       showSnackbar('Error fetching employees', 'error');
       console.error('Error:', error);
@@ -216,15 +223,24 @@ export default function WorkerManagement() {
     // For SuperAdmin, check if businessId is set manually
     const targetBusinessId = currentUserType === 4 && formData.businessId ? formData.businessId : businessId;
     
-    if (!targetBusinessId) {
+    if (!targetBusinessId && formData.userType !== 3) {
       showSnackbar('Business ID is required', 'error');
       return;
     }
     
-    // Validate userType is either staff (1) or manager (2)
-    if (formData.userType !== 1 && formData.userType !== 2) {
-      showSnackbar('User type must be either Staff or Manager', 'warning');
-      return;
+    // Validate userType based on user role
+    if (currentUserType === 4) {
+      // SuperAdmin can create Staff (1), Manager (2), or Owner (3)
+      if (formData.userType !== 1 && formData.userType !== 2 && formData.userType !== 3) {
+        showSnackbar('User type must be Staff, Manager, or Owner', 'warning');
+        return;
+      }
+    } else {
+      // Non-SuperAdmin can only create Staff (1) or Manager (2)
+      if (formData.userType !== 1 && formData.userType !== 2) {
+        showSnackbar('User type must be either Staff or Manager', 'warning');
+        return;
+      }
     }
 
     try {
@@ -266,30 +282,47 @@ export default function WorkerManagement() {
           return;
         }
         
-        const response = await fetch(`/api/employees`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
+        // Check if creating an Owner (userType 3) - SuperAdmin only
+        if (formData.userType === 3 && currentUserType === 4) {
+          // Use SuperAdmin endpoint for creating business owners
+          await authService.createBusinessOwner({
             name: formData.name,
             surname: formData.surname,
             email: formData.email,
             password: formData.password,
             telephone: formData.phone || undefined,
-            userType: formData.userType,
-            businessId: targetBusinessId,
             address: formData.address || undefined,
-            salary: formData.salary ? parseFloat(formData.salary) : undefined,
             bankAccount: formData.bankAccount || undefined,
-            bossId: userId,
-          }),
-        });
-        if (!response.ok) {
-          const errorData = await response.text();
-          console.error('Backend error response:', errorData);
-          throw new Error(`Failed to create employee: ${errorData}`);
+            planId: undefined,
+          });
+          showSnackbar('Business Owner created successfully', 'success');
+        } else {
+          // Regular employee creation
+          const response = await fetch(`/api/employees`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+              name: formData.name,
+              surname: formData.surname,
+              email: formData.email,
+              password: formData.password,
+              telephone: formData.phone || undefined,
+              userType: formData.userType,
+              businessId: targetBusinessId,
+              address: formData.address || undefined,
+              salary: formData.salary ? parseFloat(formData.salary) : undefined,
+              bankAccount: formData.bankAccount || undefined,
+              bossId: userId,
+            }),
+          });
+          if (!response.ok) {
+            const errorData = await response.text();
+            console.error('Backend error response:', errorData);
+            throw new Error(`Failed to create employee: ${errorData}`);
+          }
+          showSnackbar('Employee created successfully', 'success');
         }
-        showSnackbar('Employee created successfully', 'success');
       }
       
       // Refresh the employee list
@@ -304,6 +337,12 @@ export default function WorkerManagement() {
   };
 
   const handleDelete = async (worker: ApiWorker) => {
+    // Prevent users from deleting themselves
+    if (worker.nid === userId) {
+      showSnackbar('You cannot delete yourself', 'error');
+      return;
+    }
+    
     if (!confirm(`Are you sure you want to delete ${worker.name} ${worker.surname}?`)) return;
 
     try {
@@ -353,11 +392,13 @@ export default function WorkerManagement() {
                 <div className="col-business">{w.businessId || '-'}</div>
                 <div className="col-action">
                   <Button className="more-details-btn" onClick={() => handleMoreDetails(w)}>
-                    More details
+                    More Details
                   </Button>
-                  <Button className="delete-btn" onClick={() => handleDelete(w)}>
-                    Delete
-                  </Button>
+                  {w.nid !== userId && (
+                    <Button className="delete-btn" onClick={() => handleDelete(w)}>
+                      Delete
+                    </Button>
+                  )}
                 </div>
               </div>
             ))
@@ -374,8 +415,8 @@ export default function WorkerManagement() {
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content">
+        <div className="modal-overlay" onClick={handleCloseModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h3 className="modal-title">{currentWorker ? 'Edit Employee' : 'Create New Employee'}</h3>
 
             <div className="info-box">
@@ -457,6 +498,7 @@ export default function WorkerManagement() {
               >
                 <option value={1}>Staff</option>
                 <option value={2}>Manager</option>
+                {currentUserType === 4 && <option value={3}>Owner (Business Owner)</option>}
               </select>
             </div>
 

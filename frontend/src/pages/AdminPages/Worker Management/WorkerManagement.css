@@ -81,7 +81,8 @@
 
 .worker-table-row .col-action {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
+  gap: 8px;
 }
 
 /* More details button */
@@ -94,7 +95,6 @@
   text-transform: none !important;
   border-radius: 4px !important;
   transition: background-color 0.2s;
-  margin-right: 8px;
 }
 
 .more-details-btn:hover {

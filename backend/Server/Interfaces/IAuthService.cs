@@ -8,6 +8,7 @@ namespace backend.Server.Interfaces
         void RemoveCookie(HttpContext httpContext);
         long? GetRequesterNid(HttpContext httpContext);
         Task CreateUserAsync(RegisterDTO registerDetails);
+        Task CreateBusinessOwnerAsync(RegisterDTO registerDetails, long requesterId);
         public Task<User?> GetUserByEmail(string email);
         bool VerifyPassword(string password, string storedHash);
         public Task AddCookie(HttpContext httpContext, long userId, bool isPersistent);

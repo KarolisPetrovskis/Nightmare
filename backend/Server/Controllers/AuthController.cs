@@ -64,6 +64,18 @@ namespace backend.Server.Controllers
             var hasUsers = await _authService.HasUsers();
             return Ok(hasUsers);
         }
+
+        [HttpPost("create-business-owner")]
+        public async Task<IActionResult> CreateBusinessOwner([FromBody] RegisterDTO request)
+        {
+            var requesterId = _authService.GetRequesterNid(HttpContext);
+            
+            if (requesterId == null)
+                return Unauthorized("You must be logged in to perform this action.");
+
+            await _authService.CreateBusinessOwnerAsync(request, requesterId.Value);
+            return Created();
+        }
         
     }
 }
