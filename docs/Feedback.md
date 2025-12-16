@@ -26,29 +26,32 @@
 - The system handles any potential changes to vats incredibly poorly by design.
 - User type is a field in user class, however not mentioned anywhere in wireframes (is this related to permissions or role of the worker?)
 - What is the point of a business phone number? We already have owner id so why do we still need the individual phone field?
-- Gifts codes are reusable as there is nothing to check if they have already been used, meaning they are of infinite value (not good for business). Based on YAML it gets deleted but that wasnt mentioned anywhere (sadge probably delete this).
+- Gifts codes are reusable as there is nothing to check if they have already been used in the class.
 - Would it not be better to have enum for User_Type, Business_Type_Names, Statuses.
 - What is code: string in Orders.and Appointments.
-
+- In Service creation we have discount but we don't have a way to set DiscountTime, unlike in menu item class.
+- Discount system is very rigid and not scalable, it would have to be remade if any changes to it in terms of options or tracking were to be needed to be added.
+- Vats have no option for end date, no vat history.
 
 ## Workflows
 
 - In Worker management popup fig. the password is not hidden and anyone can see it.
-- These workflows do not give much insight into to the working of the system and seem to be more of UI requirements more than anything, the workflows: Schedule overview wireframe fig. Day scheduling wireframe fig., Worker management screen fig. 15, Worker management popup fig 16, 
+- These workflows do not give much insight into to the working of the system and seem to be more of UI requirements more than anything, the workflows: Schedule overview wireframe fig. Day scheduling wireframe fig., Worker management screen fig. 15, Worker management popup fig 16,
 - Fig 15 and 16 have the same caption, fig 16 is not even related to workers and their management.
 
 ## Mockups
+
 - “Order management is accessed window is accessed…”?
 - It is unclear how the Delete Dish works. Like if I click does it delete the top one or you need to select a dish you want to delete and then press it?
 - “Figure 5. Add order to the dish wireframe” - What? No, it should be the other way around.
 - Ordering seems kinda not thought out. Every time I need to add a dish I get transported to other page. But the time it takes to add multiple is too long.
 - Worker appointment scheduling wireframe design is pretty convenient and simple, although for bigger businesses it wouldn't be very convenient.
-- 
+-
 
 ## Package diagram
 
 - Discount system package appear in two different places.
-- Discount system package should not be part of the Payment System. 
+- Discount system package should not be part of the Payment System.
 
 ## Package diagram
 
@@ -57,6 +60,13 @@
 # YAML
 
 - /payments/refund uses payment id to refund but nowhere in class diagram its saved so such an operation is not possible unless we can get the payment id from the completed order.
-- The provided endpoints were well-implemented and covered the basic CRUD operations effectively. However, for more complex objects, it would have been beneficial to include endpoints that allow retrieving or updating parts of an object rather than always requiring full object manipulation. This would make working with nested or composite entities more flexible and reduce overhead when only partial updates or queries are needed. 
-- No endpoints provided for super admin functionality. 
-
+- The provided endpoints were well-implemented and covered the basic CRUD operations effectively. However, for more complex objects, it would have been beneficial to include endpoints that allow retrieving or updating parts of an object rather than always requiring full object manipulation. This would make working with nested or composite entities more flexible and reduce overhead when only partial updates or queries are needed.
+- No endpoints provided for super admin functionality.
+- Instead of having "user" in the yaml like class diagram we have "employee" - a mismatch
+- Yaml references menu when no such direct class exists in the class diagram
+- In /appointments post it is unclear what name is, the example values is "string" which is uninformative and the class diagram does not hava a field with the name of "name". The example given in yamls example value field is "string".
+- Some deletes include nid in their endpoint some use body to pass the nid - inconsitent methodologies.
+- In post /businesses 409 response say that a business already exists meaning that business names have to be unique which is unrealistic as there can be business with the same name in the real world.
+- In /empoyees post an employee can be created without a password as it is not required.
+- Order creation yaml has order_details but in class diagram order doesn't have order details
+- In vat put, id is not part of the endpoint nor the body, although it does show that it is required.
