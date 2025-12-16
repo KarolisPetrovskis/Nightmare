@@ -215,8 +215,6 @@ Added `Receipt` entity:
 + string? DetailedContent
 ```
 
-To learn more about receipt system go [here](./RECEIPT_SYSTEM.md)
-
 ## 3. Frontend Changes
 
 In Schedule-Management page added the year display next to the month, since whenever you go into the concrete days schedule management page full date year-month-day are displayed, while in the Schedule Management page the wireframe design did not contain that.
