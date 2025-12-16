@@ -484,5 +484,71 @@ namespace backend.Server.Services
             decimal roundedTotal = decimal.Round(total, 2, MidpointRounding.AwayFromZero);
             return roundedTotal;
         }
+
+        public async Task<OrderWithItemsDTO> GetOrderWithItemsAsync(long orderNid)
+        {
+            var order = await _context.Orders.FindAsync(orderNid);
+            if (order == null)
+            {
+                throw new ApiException(404, "Order not found");
+            }
+
+            var orderDetails = await _context.OrderDetails
+                .Where(od => od.OrderId == orderNid)
+                .ToListAsync();
+
+            var itemIds = orderDetails.Select(od => od.ItemId).ToList();
+            var menuItems = await _context.MenuItems
+                .Where(mi => itemIds.Contains(mi.Nid))
+                .ToDictionaryAsync(mi => mi.Nid, mi => mi);
+
+            var items = new List<OrderItemDetailDTO>();
+            foreach (var detail in orderDetails)
+            {
+                var menuItem = menuItems.ContainsKey(detail.ItemId) ? menuItems[detail.ItemId] : null;
+                
+                // The PriceWtVat in OrderDetail is already the discounted price
+                var pricePerItem = detail.PriceWtVat;
+                var subtotal = pricePerItem * detail.Quantity;
+                
+                decimal? discountPercent = null;
+                decimal? discountAmount = null;
+                
+                // Check if the menu item currently has a discount
+                // Note: This shows the current discount, not necessarily what was applied during order creation
+                if (menuItem?.Discount.HasValue == true && menuItem.Discount.Value > 0)
+                {
+                    discountPercent = menuItem.Discount.Value;
+                    // Calculate original price before discount: discountedPrice = originalPrice * (1 - discount/100)
+                    // So: originalPrice = discountedPrice / (1 - discount/100)
+                    var discountMultiplier = 1 - (menuItem.Discount.Value / 100);
+                    var originalPricePerItem = pricePerItem / discountMultiplier;
+                    var originalSubtotal = originalPricePerItem * detail.Quantity;
+                    discountAmount = originalSubtotal - subtotal;
+                }
+
+                items.Add(new OrderItemDetailDTO
+                {
+                    ItemId = detail.ItemId,
+                    ItemName = menuItem?.Name ?? $"Item #{detail.ItemId}",
+                    Quantity = detail.Quantity,
+                    PricePerItem = pricePerItem,
+                    Subtotal = subtotal,
+                    ItemDiscountPercent = discountPercent,
+                    ItemDiscountAmount = discountAmount
+                });
+            }
+
+            return new OrderWithItemsDTO
+            {
+                OrderId = order.Nid,
+                OrderCode = order.Code,
+                DateCreated = order.DateCreated,
+                Subtotal = order.Total,
+                OrderDiscount = order.Discount,
+                Total = order.Total - order.Discount,
+                Items = items
+            };
+        }
     }
 }

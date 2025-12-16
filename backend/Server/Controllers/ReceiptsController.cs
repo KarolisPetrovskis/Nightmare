@@ -15,25 +15,52 @@ namespace backend.Server.Controllers
             _receiptsService = receiptsService;
         }
 
-        [HttpGet]
-        public IActionResult GetReceipts([FromQuery] ReceiptGetAllDTO request)
+        [HttpGet("order/{orderId}")]
+        public async Task<IActionResult> GetReceiptByOrderId(long orderId)
         {
-            _receiptsService.placeholderMethod();
-            return Ok("Receipts fetched successfully.");
+            var receipt = await _receiptsService.GetReceiptByOrderIdAsync(orderId);
+            
+            if (receipt == null)
+            {
+                return NotFound(new { message = "Receipt not found for this order" });
+            }
+
+            return Ok(receipt);
         }
 
         [HttpPost]
-        public IActionResult CreateReceipt([FromBody] ReceiptGenerateDTO request)
+        public async Task<IActionResult> CreateReceipt([FromBody] ReceiptGenerateDTO request)
         {
-            _receiptsService.placeholderMethod();
-            return Ok("Receipt created successfully.");
+            // For now, we assume PaymentId is the same as OrderId's primary payment
+            // In production, you'd get the specific payment ID from the request or context
+            var payments = await _receiptsService.GetReceiptByOrderIdAsync(request.OrderId);
+            
+            if (payments != null)
+            {
+                return Ok(payments);
+            }
+
+            return BadRequest(new { message = "Cannot create receipt: Order or Payment not found" });
         }
 
         [HttpGet("{nid}")]
-        public IActionResult GetReceiptBynid(long nid)
+        public async Task<IActionResult> GetReceiptByNid(long nid)
         {
-            _receiptsService.placeholderMethod();
-            return Ok($"Receipt {nid} fetched successfully.");
+            var receipt = await _receiptsService.GetReceiptByNidAsync(nid);
+            
+            if (receipt == null)
+            {
+                return NotFound(new { message = "Receipt not found" });
+            }
+
+            return Ok(receipt);
+        }
+
+        [HttpGet("business/{businessId}")]
+        public async Task<IActionResult> GetReceiptsByBusinessId(long businessId)
+        {
+            var receipts = await _receiptsService.GetReceiptsByBusinessIdAsync(businessId);
+            return Ok(receipts);
         }
     }
 }

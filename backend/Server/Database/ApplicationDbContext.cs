@@ -22,6 +22,7 @@ namespace backend.Server.Database
         public DbSet<OrderDetailAddOn> OrderDetailAddOns { get; set; }
         public DbSet<Payment> Payments { get; set; }
         public DbSet<Plan> Plans { get; set; }
+        public DbSet<Receipt> Receipts { get; set; }
         public DbSet<Service> Services { get; set; }
         public DbSet<Status> Status { get; set; }
         public DbSet<User> Users { get; set; }

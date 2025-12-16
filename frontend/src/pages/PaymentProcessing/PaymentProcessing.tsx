@@ -1,5 +1,5 @@
 import './PaymentProcessing.css';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Button from '@mui/material/Button';
 import SnackbarNotification from '../../components/SnackBar/SnackNotification';
@@ -43,6 +43,26 @@ type PaymentHistoryItem = {
   errorMessage?: string;
 };
 
+type OrderItem = {
+  itemId: number;
+  itemName: string;
+  quantity: number;
+  pricePerItem: number;
+  subtotal: number;
+  itemDiscountPercent?: number;
+  itemDiscountAmount?: number;
+};
+
+type OrderWithItems = {
+  orderId: number;
+  orderCode: string;
+  dateCreated: string;
+  subtotal: number;
+  orderDiscount: number;
+  total: number;
+  items: OrderItem[];
+};
+
 type Order = {
   nid: number;
   code: string;
@@ -56,6 +76,7 @@ export default function PaymentProcessingWithTip() {
   const navigate = useNavigate();
 
   const [order, setOrder] = useState<Order | null>(null);
+  const [orderWithItems, setOrderWithItems] = useState<OrderWithItems | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>(
     PaymentMethod.Card
   );
@@ -118,6 +139,7 @@ export default function PaymentProcessingWithTip() {
   useEffect(() => {
     if (orderId) {
       fetchOrder();
+      fetchOrderWithItems();
       fetchPaymentHistory();
     }
   }, [orderId]);
@@ -196,6 +218,23 @@ export default function PaymentProcessingWithTip() {
       });
     } finally {
       setLoadingOrder(false);
+    }
+  };
+
+  const fetchOrderWithItems = async () => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/with-items`, {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch order items');
+      }
+
+      const data = await response.json();
+      setOrderWithItems(data);
+    } catch (error) {
+      console.error('Error fetching order items:', error);
     }
   };
 
@@ -400,12 +439,61 @@ export default function PaymentProcessingWithTip() {
             <span>Order Date:</span>
             <span>{new Date(order.dateCreated).toLocaleDateString()}</span>
           </div>
-          <div className="summary-row">
-            <span>Order Total:</span>
+          
+          {/* Order Items */}
+          {orderWithItems && orderWithItems.items.length > 0 && (
+            <div style={{ marginTop: '20px', borderTop: '1px solid #ddd', paddingTop: '15px' }}>
+              <h4 style={{ marginBottom: '10px', fontSize: '0.95rem', color: '#666' }}>Items:</h4>
+              {orderWithItems.items.map((item, index) => (
+                <div key={index} style={{ marginBottom: '12px', paddingLeft: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '0.9rem' }}>
+                      {item.quantity}x {item.itemName}
+                    </span>
+                    <span style={{ fontSize: '0.9rem', fontWeight: '500' }}>
+                      {currency} {item.subtotal.toFixed(2)}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: '#888', paddingLeft: '15px' }}>
+                    @ {currency} {item.pricePerItem.toFixed(2)} each
+                  </div>
+                  {item.itemDiscountPercent && item.itemDiscountAmount && (
+                    <div style={{ fontSize: '0.8rem', color: '#4caf50', paddingLeft: '15px', marginTop: '2px' }}>
+                      ✓ {item.itemDiscountPercent}% discount applied (saved {currency} {item.itemDiscountAmount.toFixed(2)})
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          
+          <div className="summary-row" style={{ marginTop: '15px', paddingTop: '10px', borderTop: '1px solid #ddd' }}>
+            <span>{orderWithItems && orderWithItems.orderDiscount > 0 ? 'Subtotal (before order discount):' : 'Order Total:'}</span>
             <span>
               {order.total.toFixed(2)} {currency}
             </span>
           </div>
+          {orderWithItems && orderWithItems.orderDiscount > 0 && (
+            <>
+              <div className="summary-row" style={{ color: '#4caf50' }}>
+                <span>Order Discount:</span>
+                <span>
+                  -{currency} {orderWithItems.orderDiscount.toFixed(2)}
+                </span>
+              </div>
+              <div className="summary-row" style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
+                <span>Order Total:</span>
+                <span>
+                  {currency} {(order.total - orderWithItems.orderDiscount).toFixed(2)}
+                </span>
+              </div>
+            </>
+          )}
+          {(!orderWithItems || orderWithItems.orderDiscount === 0) && (
+            <div style={{ fontSize: '0.85rem', color: '#888', textAlign: 'right', marginTop: '5px' }}>
+              (includes all item discounts)
+            </div>
+          )}
         </div>
 
         <div className="form-section">

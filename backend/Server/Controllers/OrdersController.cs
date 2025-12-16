@@ -140,5 +140,12 @@ namespace backend.Server.Controllers
             var cost = await _ordersService.CalculateCost(orderNid, tip);
             return Ok(cost);
         }
+
+        [HttpGet("{orderNid}/with-items")]
+        public async Task<ActionResult<OrderWithItemsDTO>> GetOrderWithItems(long orderNid)
+        {
+            var orderWithItems = await _ordersService.GetOrderWithItemsAsync(orderNid);
+            return Ok(orderWithItems);
+        }
     }
 }

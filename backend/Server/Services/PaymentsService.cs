@@ -15,11 +15,13 @@ namespace backend.Server.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly IOrdersService _ordersService;
+        private readonly IReceiptsService _receiptsService;
 
-        public PaymentsService(ApplicationDbContext context, IOrdersService ordersService)
+        public PaymentsService(ApplicationDbContext context, IOrdersService ordersService, IReceiptsService receiptsService)
         {
             _context = context;
             _ordersService = ordersService;
+            _receiptsService = receiptsService;
         }
 
         public async Task<PaymentResponseDTO> ProcessPaymentAsync(ProcessPaymentDTO request)
@@ -57,6 +59,23 @@ namespace backend.Server.Services
                             payment.TransactionId = paymentIntent.Id;
                             payment.Status = PaymentStatus.Completed;
                             payment.ProcessedAt = DateTime.UtcNow;
+                            
+                            // Update payment intent with receipt email if provided
+                            if (!string.IsNullOrEmpty(request.CustomerEmail))
+                            {
+                                try
+                                {
+                                    await paymentIntentService.UpdateAsync(paymentIntent.Id, new PaymentIntentUpdateOptions
+                                    {
+                                        ReceiptEmail = request.CustomerEmail
+                                    });
+                                }
+                                catch (Exception ex)
+                                {
+                                    // Log but don't fail the payment if receipt email update fails
+                                    Console.WriteLine($"Failed to set receipt email: {ex.Message}");
+                                }
+                            }
                         }
                         else
                         {
@@ -89,6 +108,17 @@ namespace backend.Server.Services
                 if (payment.Status == PaymentStatus.Completed)
                 {
                     await _ordersService.UpdateOrderStatusAsync(request.OrderId, OrderStatus.Paid);
+                    
+                    // Automatically generate receipt for completed payment
+                    try
+                    {
+                        await _receiptsService.CreateReceiptAsync(request.OrderId, payment.Nid);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log but don't fail the payment if receipt generation fails
+                        Console.WriteLine($"Failed to generate receipt: {ex.Message}");
+                    }
                 }
 
                 return MapToDTO(payment);
@@ -125,22 +155,92 @@ namespace backend.Server.Services
                 throw new ApiException(404, "Order not found");
             }
 
+            // Get order details with items
+            var orderDetails = await _context.OrderDetails
+                .Where(od => od.OrderId == orderId)
+                .ToListAsync();
+            
+            // Get menu items for the order details (with discount information)
+            var itemIds = orderDetails.Select(od => od.ItemId).ToList();
+            var menuItems = await _context.MenuItems
+                .Where(mi => itemIds.Contains(mi.Nid))
+                .ToDictionaryAsync(mi => mi.Nid, mi => mi);
+
             try
             {
+                // Build description with order items
+                var itemDescriptions = orderDetails
+                    .Select(od => {
+                        var item = menuItems.ContainsKey(od.ItemId) ? menuItems[od.ItemId] : null;
+                        var itemName = item?.Name ?? $"Item #{od.ItemId}";
+                        return $"{od.Quantity}x {itemName}";
+                    })
+                    .ToList();
+                
+                var description = itemDescriptions.Any() 
+                    ? string.Join(", ", itemDescriptions.Take(3)) + (itemDescriptions.Count > 3 ? "..." : "")
+                    : $"Order {order.Code ?? orderId.ToString()}";
+
                 var options = new PaymentIntentCreateOptions
                 {
                     Amount = (long)(amount * 100), // Stripe uses cents
                     Currency = currency.ToLower(),
+                    Description = description,
                     AutomaticPaymentMethods = new PaymentIntentAutomaticPaymentMethodsOptions
                     {
                         Enabled = true,
                     },
+                    ReceiptEmail = null, // Will be set when payment is processed
                     Metadata = new Dictionary<string, string>
                     {
                         { "orderId", orderId.ToString() },
-                        { "orderCode", order.Code ?? "" }
+                        { "orderCode", order.Code ?? orderId.ToString() },
+                        { "businessId", order.BusinessId.ToString() },
+                        { "orderDate", order.DateCreated.ToString("yyyy-MM-dd HH:mm:ss") },
+                        { "itemCount", orderDetails.Sum(od => od.Quantity).ToString() },
+                        { "orderSubtotal", order.Total.ToString("F2") },
+                        { "orderDiscount", order.Discount.ToString("F2") },
+                        { "finalTotal", amount.ToString("F2") },
+                        { "currency", currency }
                     }
                 };
+                
+                // Add detailed line items with prices and discounts
+                int metadataIndex = 1;
+                foreach (var detail in orderDetails.Take(20)) // Increased limit
+                {
+                    var item = menuItems.ContainsKey(detail.ItemId) ? menuItems[detail.ItemId] : null;
+                    var itemName = item?.Name ?? $"Item #{detail.ItemId}";
+                    
+                    // The PriceWtVat in OrderDetail is already the discounted price
+                    var pricePerItem = detail.PriceWtVat;
+                    var itemSubtotal = detail.Quantity * pricePerItem;
+                    
+                    // Line item with quantity and price (already discounted)
+                    var lineItem = $"{detail.Quantity}x {itemName} @ {currency} {pricePerItem:F2} ea";
+                    options.Metadata.Add($"item_{metadataIndex}", lineItem);
+                    
+                    // Add item subtotal
+                    options.Metadata.Add($"item_{metadataIndex}_subtotal", $"{currency} {itemSubtotal:F2}");
+                    
+                    // If item currently has a discount, show what was saved
+                    if (item?.Discount.HasValue == true && item.Discount.Value > 0)
+                    {
+                        var discountMultiplier = 1 - (item.Discount.Value / 100);
+                        var originalPricePerItem = pricePerItem / discountMultiplier;
+                        var originalSubtotal = originalPricePerItem * detail.Quantity;
+                        var savedAmount = originalSubtotal - itemSubtotal;
+                        options.Metadata.Add($"item_{metadataIndex}_saved", $"{item.Discount.Value}% discount - saved {currency} {savedAmount:F2}");
+                    }
+                    
+                    metadataIndex++;
+                }
+                
+                // Add order-level discount if present
+                if (order.Discount > 0)
+                {
+                    options.Metadata.Add("order_discount_total", $"-{currency} {order.Discount:F2}");
+                }
 
                 var service = new PaymentIntentService();
                 var paymentIntent = await service.CreateAsync(options);

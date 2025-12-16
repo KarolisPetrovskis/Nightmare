@@ -7,6 +7,7 @@ import { getOrderStatusLabel } from "../../../types/orderStatus";
 import { useAuth } from "../../../context/AuthContext";
 import RefundDialog from "../../../components/RefundDialog/RefundDialog";
 import { paymentService } from "../../../services/paymentService";
+import { receiptService, type Receipt } from "../../../services/receiptService";
 
 interface Payment {
   paymentId: number;
@@ -59,6 +60,7 @@ export default function OrderHistory() {
   // Payment details modal
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
   const [selectedOrderPayments, setSelectedOrderPayments] = useState<Payment[]>([]);
+  const [selectedOrderReceipt, setSelectedOrderReceipt] = useState<Receipt | null>(null);
 
   // Fetch orders from API on component mount
   useEffect(() => {
@@ -153,6 +155,16 @@ export default function OrderHistory() {
     try {
       const payments = await paymentService.getPaymentsByOrder(orderNid);
       setSelectedOrderPayments(payments);
+      
+      // Try to fetch receipt for this order
+      try {
+        const receipt = await receiptService.getReceiptByOrderId(orderNid);
+        setSelectedOrderReceipt(receipt);
+      } catch (error) {
+        console.log('No receipt found for order:', orderNid);
+        setSelectedOrderReceipt(null);
+      }
+      
       setShowPaymentDetails(true);
     } catch (error) {
       console.error('Error fetching payment details:', error);
@@ -420,6 +432,47 @@ export default function OrderHistory() {
         <div className="modal-overlay" onClick={() => setShowPaymentDetails(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '700px' }}>
             <h3 className="modal-title">Payment History</h3>
+            
+            {/* Receipt Section */}
+            {selectedOrderReceipt && (
+              <div style={{ 
+                marginBottom: '20px', 
+                padding: '16px', 
+                backgroundColor: 'rgba(62, 68, 179, 0.1)',
+                borderRadius: '8px',
+                border: '1px solid rgba(62, 68, 179, 0.3)'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '1rem', color: '#3e44b3' }}>Receipt Available</h4>
+                    <p style={{ margin: '4px 0', fontSize: '0.85rem', color: '#ccc' }}>
+                      Receipt #: {selectedOrderReceipt.receiptNumber}
+                    </p>
+                    <p style={{ margin: '4px 0', fontSize: '0.85rem', color: '#ccc' }}>
+                      Issued: {new Date(selectedOrderReceipt.issuedAt).toLocaleString()}
+                    </p>
+                    <p style={{ margin: '4px 0', fontSize: '0.85rem', color: '#ccc' }}>
+                      Total: {selectedOrderReceipt.currency} {selectedOrderReceipt.total.toFixed(2)}
+                    </p>
+                  </div>
+                  {selectedOrderReceipt.stripeReceiptUrl && (
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={() => window.open(selectedOrderReceipt.stripeReceiptUrl, '_blank')}
+                      sx={{
+                        backgroundColor: '#3e44b3',
+                        fontSize: '0.8rem',
+                        padding: '6px 16px',
+                        '&:hover': { backgroundColor: '#2e34a3' },
+                      }}
+                    >
+                      View Receipt
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
             
             <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
               {selectedOrderPayments.length === 0 ? (
