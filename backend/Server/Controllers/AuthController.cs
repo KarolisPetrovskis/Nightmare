@@ -3,21 +3,16 @@ using backend.Server.Database;
 using backend.Server.Interfaces;
 using backend.Server.Models.DTOs.Auth;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace backend.Server.Controllers
 {
 
     [ApiController]
     [Route("api/[controller]")]
-    public class AuthController : ControllerBase
+    public class AuthController(IAuthService authService) : ControllerBase
     {
-        private readonly IAuthService _authService;
-        private readonly ApplicationDbContext _context;
-        public AuthController(IAuthService authService, ApplicationDbContext context)
-        {
-            _authService = authService;
-            _context = context;
-        }
+        private readonly IAuthService _authService = authService;
 
         [HttpPost("login")]
         public async Task<ActionResult<LoginResponseDTO>> Login([FromBody] LoginRequestDTO request)
@@ -57,7 +52,17 @@ namespace backend.Server.Controllers
         {
             var nid = _authService.GetRequesterNid(HttpContext);
             var businessId = await _authService.GetUserBusinessId(nid);
+            
+            if (businessId == null) return Unauthorized();
+            
             return Ok(businessId);
+        }
+
+        [HttpGet("has-users")]
+        public async Task<ActionResult<bool>> HasUsers()
+        {
+            var hasUsers = await _authService.HasUsers();
+            return Ok(hasUsers);
         }
         
     }

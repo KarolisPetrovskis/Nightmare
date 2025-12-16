@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using backend.Server.Models.Enums;
 
 namespace backend.Server.Models.DatabaseObjects;
 public class User
@@ -9,7 +10,7 @@ public class User
     public required string Surname { get; set; }
     public required string Email { get; set; }
     public required string Password { get; set; }
-    public required long UserType { get; set; }
+    public required UserRole UserType { get; set; }
     public required long BusinessId { get; set; }
     public string? Address { get; set; }
     public string? Telephone { get; set; }

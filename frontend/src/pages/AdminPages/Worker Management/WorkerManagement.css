@@ -22,7 +22,7 @@
 /* Table-like header */
 .worker-table-header {
   display: grid;
-  grid-template-columns: 1fr 140px 220px 120px;
+  grid-template-columns: 1fr 140px 220px 100px 100px 200px;
   gap: 16px;
   padding-bottom: 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.15);
@@ -35,6 +35,8 @@
 .col-name { text-align: left }
 .col-phone { text-align: left }
 .col-email { text-align: left }
+.col-role { text-align: left }
+.col-business { text-align: left }
 .col-action { text-align: center }
 
 /* Worker rows container */
@@ -49,7 +51,7 @@
 /* Individual worker row */
 .worker-table-row {
   display: grid;
-  grid-template-columns: 1fr 140px 220px 120px;
+  grid-template-columns: 1fr 140px 220px 100px 100px 200px;
   gap: 16px;
   align-items: center;
   padding: 12px;
@@ -70,7 +72,9 @@
 }
 
 .worker-table-row .col-phone,
-.worker-table-row .col-email {
+.worker-table-row .col-email,
+.worker-table-row .col-role,
+.worker-table-row .col-business {
   color: #cfcfcf;
   font-size: 0.9rem;
 }

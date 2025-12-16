@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using backend.Server.Models.Enums;
 
 namespace backend.Server.Models.DTOs.User;
 public class UserUpdateDTO
@@ -15,8 +16,7 @@ public class UserUpdateDTO
     [StringLength(255, MinimumLength = 8, ErrorMessage = "Password must be at least 8 characters")]
     public string? Password { get; set; }
 
-    [Range(1, long.MaxValue, ErrorMessage = "UserType must be a positive number")]
-    public long? UserType { get; set; }
+    public UserRole? UserType { get; set; }
     [Range(1, long.MaxValue, ErrorMessage = "BusinessId must be a positive number")]
     public long? BusinessId { get; set; }
 

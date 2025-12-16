@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/NavBar/Navbar';
+import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home/Home';
 // import Forecast from './pages/Forecast'
 import MenuManagement from './pages/MenuManagement/MenuManagement';
@@ -17,6 +18,7 @@ import WorkerManagement from './pages/AdminPages/Worker Management/WorkerManagem
 import OrderHistory from './pages/AdminPages/OrderHistory/OrderHistory';
 import { OrderProvider } from './context/OrderContext';
 import { AuthProvider } from './context/AuthContext';
+import { UserRole } from './types/userRole';
 
 export default function App() {
   const location = useLocation();
@@ -40,7 +42,14 @@ export default function App() {
               <main className="page-container">
                 <Routes>
                   <Route path="/" element={<Home />} />
-                  <Route path="/menu-management" element={<MenuManagement />} />
+                  <Route 
+                    path="/menu-management" 
+                    element={
+                      <ProtectedRoute requiredRole={UserRole.Manager}>
+                        <MenuManagement />
+                      </ProtectedRoute>
+                    } 
+                  />
                   <Route
                     path="/order-management"
                     element={<OrderManagement />}
@@ -55,7 +64,11 @@ export default function App() {
                   />
                   <Route
                     path="/service-management"
-                    element={<ServiceManagement />}
+                    element={
+                      <ProtectedRoute requiredRole={UserRole.Manager}>
+                        <ServiceManagement />
+                      </ProtectedRoute>
+                    }
                   />
                   <Route
                     path="/schedule-management"
@@ -68,17 +81,36 @@ export default function App() {
                   <Route path="/login" element={<Login />} />
                   <Route
                     path="/admin/business-view"
-                    element={<BusinessView />}
+                    element={
+                      <ProtectedRoute allowedRoles={[UserRole.Owner, UserRole.SuperAdmin]}>
+                        <BusinessView />
+                      </ProtectedRoute>
+                    }
                   />
                   <Route
                     path="/admin/worker-management"
-                    element={<WorkerManagement />}
+                    element={
+                      <ProtectedRoute allowedRoles={[UserRole.Owner, UserRole.SuperAdmin]}>
+                        <WorkerManagement />
+                      </ProtectedRoute>
+                    }
                   />
                   <Route
                     path="/admin/order-history"
-                    element={<OrderHistory />}
+                    element={
+                      <ProtectedRoute requiredRole={UserRole.Manager}>
+                        <OrderHistory />
+                      </ProtectedRoute>
+                    }
                   />
-                  <Route path="/admin/vat" element={<VATManagement />} />
+                  <Route 
+                    path="/admin/vat" 
+                    element={
+                      <ProtectedRoute requiredRole={UserRole.Manager}>
+                        <VATManagement />
+                      </ProtectedRoute>
+                    } 
+                  />
                 </Routes>
               </main>
               <div className="side-container" />

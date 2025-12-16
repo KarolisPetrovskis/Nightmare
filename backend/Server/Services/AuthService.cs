@@ -6,6 +6,7 @@ using backend.Server.Exceptions;
 using backend.Server.Interfaces;
 using backend.Server.Models.DatabaseObjects;
 using backend.Server.Models.DTOs.Auth;
+using backend.Server.Models.Enums;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
@@ -88,11 +89,17 @@ namespace backend.Server.Services
             if (exists)
                 throw new ApiException(409, "User with this email already exists.");
 
+            // Check if this is the first user in the system
+            var isFirstUser = !await _context.Users.AnyAsync();
+            
+            // First user becomes SuperAdmin, others use the provided UserType (default to Employee)
+            var userType = isFirstUser ? UserRole.SuperAdmin : (registerDetails.UserType ?? UserRole.Employee);
+
             var user = new User
             {
                 Name = registerDetails.Name,
                 Surname = registerDetails.Surname,
-                UserType = registerDetails.UserType,
+                UserType = userType,
                 Address = registerDetails.Address,
                 Telephone = registerDetails.Telephone,
                 PlanId = registerDetails.PlanId,
@@ -117,17 +124,21 @@ namespace backend.Server.Services
         }
 
 
-        public async Task<long> GetUserBusinessId(long? nid)
+        public async Task<long?> GetUserBusinessId(long? nid)
         {            
             if (nid == null)
-                throw new ApiException(408, "Unauthorized");
+                return null;
 
             var user = await _context.Users.FindAsync(nid);
 
             if (user == null)
-                throw new ApiException(404, "User not found");
+                return null;
             return user.BusinessId;
         }
 
+        public async Task<bool> HasUsers()
+        {
+            return await _context.Users.AnyAsync();
+        }
     }
 }

@@ -1,26 +1,56 @@
 import { AppBar, Toolbar, Button, Box, Typography, colors } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { UserRole } from '../../types/userRole';
 import styles from './Navbar.module.css';
 import NightlightRoundIcon from '@mui/icons-material/NightlightRound';
 
-const links = [
-  { to: '/menu-management', label: 'Menu Management' },
+interface NavLink {
+  to: string;
+  label: string;
+  minRole?: number; // Minimum role required (Manager=2, Owner=3, SuperAdmin=4)
+}
+
+const links: NavLink[] = [
+  { to: '/menu-management', label: 'Menu Management', minRole: UserRole.Manager },
   { to: '/order-management', label: 'Order Management' },
-  { to: '/service-management', label: 'Service Management' },
+  { to: '/service-management', label: 'Service Management', minRole: UserRole.Manager },
   { to: '/schedule-management', label: 'Schedule Management' },
-  { to: '/admin/business-view', label: 'Business Management' },
-  { to: '/admin/worker-management', label: 'Worker Management' },
-  { to: '/admin/order-history', label: 'Order History' },
-  { to: '/admin/vat', label: 'VAT Management' },
+  { to: '/admin/business-view', label: 'Business Management' }, // Only SuperAdmin/Owner
+  { to: '/admin/worker-management', label: 'Worker Management' }, // Only SuperAdmin/Owner
+  { to: '/admin/order-history', label: 'Order History', minRole: UserRole.Manager },
+  { to: '/admin/vat', label: 'VAT Management', minRole: UserRole.Manager },
 ];
 
 export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { userType } = useAuth();
+
+  const canAccessLink = (link: NavLink): boolean => {
+    // SuperAdmin and Owner can access everything
+    if (userType === UserRole.SuperAdmin || userType === UserRole.Owner) {
+      return true;
+    }
+
+    // Business Management and Worker Management are only for SuperAdmin/Owner
+    if (link.to === '/admin/business-view' || link.to === '/admin/worker-management') {
+      return false;
+    }
+
+    // For other links, check minimum role requirement
+    if (link.minRole !== undefined && userType !== null) {
+      return userType >= link.minRole;
+    }
+
+    // No restriction
+    return true;
+  };
+
+  const visibleLinks = links.filter(canAccessLink);
 
   const getCurrentPageTitle = () => {
-
-    return links.find(link => link.to === location.pathname)?.label || 'Home';
+    return visibleLinks.find(link => link.to === location.pathname)?.label || 'Home';
   };
 
   const currentPage = getCurrentPageTitle();

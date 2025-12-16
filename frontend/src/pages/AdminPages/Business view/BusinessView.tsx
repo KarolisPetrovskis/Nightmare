@@ -67,40 +67,6 @@ export default function BusinessView() {
   });
 
   // Check if user is super admin
-  useEffect(() => {
-    const checkPermissions = async () => {
-      if (!userId) return;
-      
-      try {
-        const response = await fetch(`/api/employees/${userId}`, {
-          credentials: 'include',
-        });
-        if (!response.ok) throw new Error('Failed to fetch user info');
-        const userData = await response.json();
-        
-        // Only super admin (type 3) can access this page
-        if (userData.userType !== 3) {
-          setSnackbar({
-            open: true,
-            message: 'Access denied. Only super admins can access this page.',
-            type: 'error',
-          });
-          navigate('/');
-          return;
-        }
-      } catch (error) {
-        console.error('Error checking permissions:', error);
-        setSnackbar({
-          open: true,
-          message: 'Failed to verify permissions',
-          type: 'error',
-        });
-      }
-    };
-    
-    checkPermissions();
-  }, [userId, navigate]);
-
   // Fetch businesses from API on component mount
   useEffect(() => {
     const fetchBusinesses = async () => {
@@ -124,7 +90,7 @@ export default function BusinessView() {
         console.log('Fetched employees:', employees);
         
         // Get unique owner IDs (employee nids could be business owners)
-        const potentialOwnerIds = [...new Set(employees.map((emp: any) => emp.nid))];
+        const potentialOwnerIds: number[] = Array.from(new Set(employees.map((emp: any) => emp.nid as number)));
         console.log('Potential owner IDs:', potentialOwnerIds);
         
         // Fetch businesses for each potential owner

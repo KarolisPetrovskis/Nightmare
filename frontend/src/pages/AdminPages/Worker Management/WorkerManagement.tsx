@@ -34,6 +34,7 @@ type ApiWorker = {
   bankAccount?: string;
   bossId?: number;
   userType: number;
+  businessId?: number;
 };
 
 type SnackbarState = {
@@ -65,7 +66,7 @@ export default function WorkerManagement() {
   const [currentUserType, setCurrentUserType] = useState<number | null>(null);
   const [snackbar, setSnackbar] = useState<SnackbarState>({ open: false, message: '', type: 'info' });
 
-  // Fetch current user's type and validate permissions
+  // Fetch current user's type for business logic (e.g., SuperAdmin features)
   useEffect(() => {
     const fetchCurrentUser = async () => {
       if (!userId) return;
@@ -77,13 +78,6 @@ export default function WorkerManagement() {
         if (!response.ok) throw new Error('Failed to fetch user info');
         const userData = await response.json();
         setCurrentUserType(userData.userType);
-        
-        // Check if user has permission (manager=2 or super admin=3)
-        if (userData.userType !== 2 && userData.userType !== 3) {
-          showSnackbar('You do not have permission to access this page', 'error');
-          navigate('/');
-          return;
-        }
       } catch (error) {
         console.error('Error fetching user info:', error);
         showSnackbar('Failed to load user information', 'error');
@@ -96,15 +90,15 @@ export default function WorkerManagement() {
   // Fetch employees on component mount
   useEffect(() => {
     if (currentUserType !== null) {
-      // Super admin doesn't need businessId to fetch all employees
-      if (currentUserType === 3 || businessId) {
+      // SuperAdmin doesn't need businessId to fetch all employees
+      if (currentUserType === 4 || businessId) {
         fetchEmployees();
       }
     }
   }, [businessId, currentUserType]);
 
   const fetchEmployees = async () => {
-    if (!businessId && currentUserType !== 3) {
+    if (!businessId && currentUserType !== 4) {
       showSnackbar('Business ID not available', 'error');
       return;
     }
@@ -113,11 +107,11 @@ export default function WorkerManagement() {
       setLoading(true);
       
       let url: string;
-      if (currentUserType === 3) {
-        // Super admin: fetch all employees (BusinessId=1 is a dummy value to satisfy DTO validation, need to change the DTO to not require it for all user fethcing)
+      if (currentUserType === 4) {
+        // SuperAdmin: fetch all employees (BusinessId=1 is a dummy value to satisfy DTO validation, need to change the DTO to not require it for all user fethcing)
         url = `/api/employees?BusinessId=1&Page=0&PerPage=1000`;
       } else {
-        // Manager: fetch employees from their business only
+        // Owner: fetch employees from their business only
         url = `/api/employees/business?businessId=${businessId}&page=0&perPage=1000`;
       }
       
@@ -163,7 +157,7 @@ export default function WorkerManagement() {
       bankAccount: '',
       bossId: userId.toString(),
       userType: 1, // Default to staff
-      businessId: currentUserType === 3 ? undefined : businessId, // Super admin can set manually
+      businessId: currentUserType === 4 ? undefined : businessId, // SuperAdmin can set manually
     });
     setIsModalOpen(true);
   };
@@ -219,8 +213,8 @@ export default function WorkerManagement() {
       return;
     }
     
-    // For super admin, check if businessId is set manually
-    const targetBusinessId = currentUserType === 3 && formData.businessId ? formData.businessId : businessId;
+    // For SuperAdmin, check if businessId is set manually
+    const targetBusinessId = currentUserType === 4 && formData.businessId ? formData.businessId : businessId;
     
     if (!targetBusinessId) {
       showSnackbar('Business ID is required', 'error');
@@ -235,7 +229,7 @@ export default function WorkerManagement() {
 
     try {
       setLoading(true);
-      const targetBusinessId = currentUserType === 3 && formData.businessId ? formData.businessId : businessId;
+      const targetBusinessId = currentUserType === 4 && formData.businessId ? formData.businessId : businessId;
       
       if (currentWorker) {
         // Update existing worker
@@ -243,12 +237,12 @@ export default function WorkerManagement() {
           name: formData.name,
           surname: formData.surname,
           email: formData.email,
-          telephone: formData.phone,
+          telephone: formData.phone || undefined,
           userType: formData.userType,
           businessId: targetBusinessId,
-          address: formData.address,
+          address: formData.address || undefined,
           salary: formData.salary ? parseFloat(formData.salary) : undefined,
-          bankAccount: formData.bankAccount,
+          bankAccount: formData.bankAccount || undefined,
           bossId: userId,
         };
         
@@ -281,12 +275,12 @@ export default function WorkerManagement() {
             surname: formData.surname,
             email: formData.email,
             password: formData.password,
-            telephone: formData.phone,
+            telephone: formData.phone || undefined,
             userType: formData.userType,
             businessId: targetBusinessId,
-            address: formData.address,
+            address: formData.address || undefined,
             salary: formData.salary ? parseFloat(formData.salary) : undefined,
-            bankAccount: formData.bankAccount,
+            bankAccount: formData.bankAccount || undefined,
             bossId: userId,
           }),
         });
@@ -338,6 +332,8 @@ export default function WorkerManagement() {
           <div className="col-name">Name</div>
           <div className="col-phone">Phone</div>
           <div className="col-email">Email</div>
+          <div className="col-role">Role</div>
+          <div className="col-business">Business ID</div>
           <div className="col-action"></div>
         </div>
 
@@ -353,6 +349,8 @@ export default function WorkerManagement() {
                 <div className="col-name">{w.name} {w.surname}</div>
                 <div className="col-phone">{w.telephone || '-'}</div>
                 <div className="col-email">{w.email}</div>
+                <div className="col-role">{w.userType === 1 ? 'Staff' : w.userType === 2 ? 'Manager' : w.userType === 3 ? 'Owner' : 'SuperAdmin'}</div>
+                <div className="col-business">{w.businessId || '-'}</div>
                 <div className="col-action">
                   <Button className="more-details-btn" onClick={() => handleMoreDetails(w)}>
                     More details
@@ -462,7 +460,7 @@ export default function WorkerManagement() {
               </select>
             </div>
 
-            {currentUserType === 3 && (
+            {currentUserType === 4 && (
               <div className="info-box">
                 <label>Business ID *</label>
                 <input
