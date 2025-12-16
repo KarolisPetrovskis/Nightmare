@@ -162,7 +162,6 @@ Used for "Stripe" integration
 * \+ *string Currency*
 * \+ *string? StripeReceiptUrl*
 * \+ *long BusinessId*
-* \+ *iled receipt content*
 * \+ *string? DetailedContent*
 
 Used for storing receipt. Also dublicates "Stripe" receipt
