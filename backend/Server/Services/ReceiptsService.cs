@@ -19,7 +19,7 @@ namespace backend.Server.Services
             _paymentIntentService = new PaymentIntentService();
         }
 
-        public async Task<Receipt> CreateReceiptAsync(long orderId, long paymentId)
+        public async Task<Receipt> CreateReceiptAsync(long orderId, long paymentId, string? detailedContent = null)
         {
             // Check if receipt already exists
             var existingReceipt = await _context.Receipts
@@ -79,7 +79,8 @@ namespace backend.Server.Services
                 Total = payment.Amount,
                 Currency = payment.Currency,
                 StripeReceiptUrl = stripeReceiptUrl,
-                BusinessId = order.BusinessId
+                BusinessId = order.BusinessId,
+                DetailedContent = detailedContent
             };
 
             _context.Receipts.Add(receipt);

@@ -124,11 +124,10 @@ namespace backend.Server.Services
                 {
                     OrderId = orderNid,
                     ItemId = detailRequest.ItemId,
-                    PriceWoVat = detailRequest.PriceWoVat,
-                    PriceWtVat = detailRequest.PriceWtVat,
+                    BasePrice = detailRequest.BasePrice,
+                    VatRate = detailRequest.VatRate,
                     Quantity = detailRequest.Quantity,
-                    DiscountPercent = detailRequest.DiscountPercent,
-                    OriginalPriceWtVat = detailRequest.OriginalPriceWtVat
+                    DiscountPercent = detailRequest.DiscountPercent
                 };
                 orderDetails.Add(orderDetail);
             }
@@ -276,8 +275,9 @@ namespace backend.Server.Services
             {
                 OrderId = orderNid,
                 ItemId = request.ItemId,
-                PriceWoVat = request.PriceWoVat,
-                PriceWtVat = request.PriceWtVat,
+                BasePrice = request.BasePrice,
+                VatRate = request.VatRate,
+                DiscountPercent = request.DiscountPercent,
                 Quantity = request.Quantity
             };
 
@@ -299,7 +299,13 @@ namespace backend.Server.Services
 
             // Update order total
             var allDetails = await _context.OrderDetails.Where(d => d.OrderId == orderNid).ToListAsync();
-            order.Total = allDetails.Sum(d => d.PriceWtVat * d.Quantity);
+            order.Total = allDetails.Sum(d => 
+            {
+                var priceWithVat = d.BasePrice * (1 + d.VatRate);
+                if (d.DiscountPercent.HasValue && d.DiscountPercent.Value > 0)
+                    priceWithVat *= (1 - d.DiscountPercent.Value / 100);
+                return priceWithVat * d.Quantity;
+            });
             _context.Orders.Update(order);
             await Helper.SaveChangesOrThrowAsync(_context, $"Failed to update order total.", expectChanges: false);
 
@@ -344,7 +350,13 @@ namespace backend.Server.Services
 
             // Update order total
             var allDetails = await _context.OrderDetails.Where(d => d.OrderId == orderNid).ToListAsync();
-            order.Total = allDetails.Sum(d => d.PriceWtVat * d.Quantity);
+            order.Total = allDetails.Sum(d => 
+            {
+                var priceWithVat = d.BasePrice * (1 + d.VatRate);
+                if (d.DiscountPercent.HasValue && d.DiscountPercent.Value > 0)
+                    priceWithVat *= (1 - d.DiscountPercent.Value / 100);
+                return priceWithVat * d.Quantity;
+            });
             _context.Orders.Update(order);
             await Helper.SaveChangesOrThrowAsync(_context, $"Failed to update order total.", expectChanges: false);
         }
@@ -371,9 +383,10 @@ namespace backend.Server.Services
                 throw new ApiException(400, $"Order detail {detailNid} does not belong to order {orderNid}");
             }
 
-            // Update prices and quantity if provided
-            if (request.PriceWoVat.HasValue) orderDetail.PriceWoVat = request.PriceWoVat.Value;
-            if (request.PriceWtVat.HasValue) orderDetail.PriceWtVat = request.PriceWtVat.Value;
+            // Update fields if provided
+            if (request.BasePrice.HasValue) orderDetail.BasePrice = request.BasePrice.Value;
+            if (request.VatRate.HasValue) orderDetail.VatRate = request.VatRate.Value;
+            if (request.DiscountPercent.HasValue) orderDetail.DiscountPercent = request.DiscountPercent.Value;
             if (request.Quantity.HasValue) orderDetail.Quantity = request.Quantity.Value;
 
             _context.OrderDetails.Update(orderDetail);
@@ -381,7 +394,13 @@ namespace backend.Server.Services
 
             // Update order total
             var allDetails = await _context.OrderDetails.Where(d => d.OrderId == orderNid).ToListAsync();
-            order.Total = allDetails.Sum(d => d.PriceWtVat * d.Quantity);
+            order.Total = allDetails.Sum(d => 
+            {
+                var priceWithVat = d.BasePrice * (1 + d.VatRate);
+                if (d.DiscountPercent.HasValue && d.DiscountPercent.Value > 0)
+                    priceWithVat *= (1 - d.DiscountPercent.Value / 100);
+                return priceWithVat * d.Quantity;
+            });
             _context.Orders.Update(order);
             await Helper.SaveChangesOrThrowAsync(_context, $"Failed to update order total.", expectChanges: false);
         }
@@ -427,15 +446,13 @@ namespace backend.Server.Services
                 await Helper.SaveChangesOrThrowAsync(_context, $"Failed to add new addons for detail {detailNid}.");
             }
 
-            // Recalculate detail price with new addons
+            // Recalculate detail base price with new addons
             var addonTotal = addons?.Sum(a => a.PriceWoVat) ?? 0;
             var menuItem = await _context.MenuItems.FindAsync(orderDetail.ItemId);
             if (menuItem != null)
             {
-                var basePrice = menuItem.Price;
-                orderDetail.PriceWoVat = basePrice + addonTotal;
-                // Assuming VAT rate - you might want to fetch this from the VAT table
-                orderDetail.PriceWtVat = orderDetail.PriceWoVat * 1.24m; // TODO: Get actual VAT rate
+                orderDetail.BasePrice = menuItem.Price + addonTotal;
+                // VatRate and DiscountPercent remain unchanged
                 
                 _context.OrderDetails.Update(orderDetail);
                 await Helper.SaveChangesOrThrowAsync(_context, $"Failed to update detail prices.", expectChanges: false);
@@ -443,7 +460,13 @@ namespace backend.Server.Services
 
             // Update order total
             var allDetails = await _context.OrderDetails.Where(d => d.OrderId == orderNid).ToListAsync();
-            order.Total = allDetails.Sum(d => d.PriceWtVat * d.Quantity);
+            order.Total = allDetails.Sum(d => 
+            {
+                var priceWithVat = d.BasePrice * (1 + d.VatRate);
+                if (d.DiscountPercent.HasValue && d.DiscountPercent.Value > 0)
+                    priceWithVat *= (1 - d.DiscountPercent.Value / 100);
+                return priceWithVat * d.Quantity;
+            });
             _context.Orders.Update(order);
             await Helper.SaveChangesOrThrowAsync(_context, $"Failed to update order total.", expectChanges: false);
         }
@@ -479,7 +502,10 @@ namespace backend.Server.Services
             decimal total = 0m;
             foreach (var item in details)
             {
-                total += item.PriceWtVat * item.Quantity;
+                var priceWithVat = item.BasePrice * (1 + item.VatRate);
+                if (item.DiscountPercent.HasValue && item.DiscountPercent.Value > 0)
+                    priceWithVat *= (1 - item.DiscountPercent.Value / 100);
+                total += priceWithVat * item.Quantity;
             }
                 
             total += tip;
@@ -504,34 +530,67 @@ namespace backend.Server.Services
                 .Where(mi => itemIds.Contains(mi.Nid))
                 .ToDictionaryAsync(mi => mi.Nid, mi => mi);
 
+            // Fetch all addons for these order details
+            var detailIds = orderDetails.Select(od => od.Nid).ToList();
+            var allAddons = await _context.OrderDetailAddOns
+                .Where(oda => detailIds.Contains(oda.DetailId))
+                .ToListAsync();
+
+            // Fetch ingredient names
+            var ingredientIds = allAddons.Select(a => a.IngredientId).Distinct().ToList();
+            var ingredients = await _context.MenuItemIngredients
+                .Where(i => ingredientIds.Contains(i.Nid))
+                .ToDictionaryAsync(i => i.Nid, i => i);
+
             var items = new List<OrderItemDetailDTO>();
             foreach (var detail in orderDetails)
             {
                 var menuItem = menuItems.ContainsKey(detail.ItemId) ? menuItems[detail.ItemId] : null;
                 
-                // Use stored discount information from when order was created
-                var pricePerItem = detail.PriceWtVat;
-                var subtotal = pricePerItem * detail.Quantity;
+                // Get addons for this detail
+                var detailAddons = allAddons
+                    .Where(a => a.DetailId == detail.Nid)
+                    .Select(a => new OrderItemAddonDTO
+                    {
+                        IngredientId = a.IngredientId,
+                        IngredientName = ingredients.ContainsKey(a.IngredientId) ? ingredients[a.IngredientId].Name : $"Addon #{a.IngredientId}",
+                        Price = a.PriceWoVat
+                    })
+                    .ToList();
                 
+                // Calculate price with VAT from base price
+                var priceWithVat = detail.BasePrice * (1 + detail.VatRate);
+                var vatAmount = detail.BasePrice * detail.VatRate;
+                
+                // Store price before discount
+                decimal priceBeforeDiscount = priceWithVat;
+                
+                // Apply discount if exists
                 decimal? discountPercent = detail.DiscountPercent;
                 decimal? discountAmount = null;
                 
-                // Calculate discount amount from stored original price
-                if (detail.DiscountPercent.HasValue && detail.OriginalPriceWtVat.HasValue)
+                if (detail.DiscountPercent.HasValue && detail.DiscountPercent.Value > 0)
                 {
-                    var originalSubtotal = detail.OriginalPriceWtVat.Value * detail.Quantity;
-                    discountAmount = originalSubtotal - subtotal;
+                    discountAmount = priceWithVat * (detail.DiscountPercent.Value / 100);
+                    priceWithVat = priceWithVat * (1 - detail.DiscountPercent.Value / 100);
                 }
+                
+                var subtotal = priceWithVat * detail.Quantity;
 
                 items.Add(new OrderItemDetailDTO
                 {
                     ItemId = detail.ItemId,
                     ItemName = menuItem?.Name ?? $"Item #{detail.ItemId}",
                     Quantity = detail.Quantity,
-                    PricePerItem = pricePerItem,
-                    Subtotal = subtotal,
+                    BasePrice = detail.BasePrice,
+                    VatRate = detail.VatRate,
+                    VatAmount = vatAmount,
+                    PriceBeforeDiscount = priceBeforeDiscount,
                     ItemDiscountPercent = discountPercent,
-                    ItemDiscountAmount = discountAmount
+                    ItemDiscountAmount = discountAmount,
+                    PricePerItem = priceWithVat,
+                    Subtotal = subtotal,
+                    Addons = detailAddons
                 });
             }
 

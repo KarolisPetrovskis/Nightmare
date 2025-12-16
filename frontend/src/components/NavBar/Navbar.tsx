@@ -50,7 +50,10 @@ export default function Navbar() {
   const visibleLinks = links.filter(canAccessLink);
 
   const getCurrentPageTitle = () => {
-    return visibleLinks.find(link => link.to === location.pathname)?.label || 'Home';
+    const match = visibleLinks.find(link => link.to === location.pathname)?.label;
+    if (match) return match;
+    if (location.pathname.startsWith('/payment/')) return 'Payment';
+    return 'Home';
   };
 
   const currentPage = getCurrentPageTitle();

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using backend.Server.Database;
@@ -11,9 +12,11 @@ using backend.Server.Database;
 namespace Server.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251216054234_RefactorOrderDetailPricing")]
+    partial class RefactorOrderDetailPricing
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -402,9 +405,6 @@ namespace Server.Migrations
                         .IsRequired()
                         .HasMaxLength(3)
                         .HasColumnType("character varying(3)");
-
-                    b.Property<string>("DetailedContent")
-                        .HasColumnType("text");
 
                     b.Property<DateTime>("IssuedAt")
                         .HasColumnType("timestamp with time zone");

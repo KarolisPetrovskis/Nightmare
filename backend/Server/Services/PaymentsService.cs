@@ -109,10 +109,11 @@ namespace backend.Server.Services
                 {
                     await _ordersService.UpdateOrderStatusAsync(request.OrderId, OrderStatus.Paid);
                     
-                    // Automatically generate receipt for completed payment
+                    // Automatically generate receipt for completed payment with detailed content
                     try
                     {
-                        await _receiptsService.CreateReceiptAsync(request.OrderId, payment.Nid);
+                        var detailedContent = await GenerateReceiptContentAsync(request.OrderId, request.Amount, request.Currency);
+                        await _receiptsService.CreateReceiptAsync(request.OrderId, payment.Nid, detailedContent);
                     }
                     catch (Exception ex)
                     {
@@ -160,26 +161,81 @@ namespace backend.Server.Services
                 .Where(od => od.OrderId == orderId)
                 .ToListAsync();
             
-            // Get menu items for the order details (with discount information)
+            // Get menu items for the order details
             var itemIds = orderDetails.Select(od => od.ItemId).ToList();
             var menuItems = await _context.MenuItems
                 .Where(mi => itemIds.Contains(mi.Nid))
                 .ToDictionaryAsync(mi => mi.Nid, mi => mi);
 
+            // Get all addons for order details
+            var orderDetailIds = orderDetails.Select(od => od.Nid).ToList();
+            var orderDetailAddons = await _context.OrderDetailAddOns
+                .Where(oda => orderDetailIds.Contains(oda.DetailId))
+                .ToListAsync();
+            
+            // Get ingredient names for addons
+            var ingredientIds = orderDetailAddons.Select(oda => oda.IngredientId).Distinct().ToList();
+            var ingredients = await _context.MenuItemIngredients
+                .Where(mii => ingredientIds.Contains(mii.Nid))
+                .ToDictionaryAsync(mii => mii.Nid, mii => mii.Name);
+
             try
             {
-                // Build description with order items
-                var itemDescriptions = orderDetails
-                    .Select(od => {
-                        var item = menuItems.ContainsKey(od.ItemId) ? menuItems[od.ItemId] : null;
-                        var itemName = item?.Name ?? $"Item #{od.ItemId}";
-                        return $"{od.Quantity}x {itemName}";
-                    })
-                    .ToList();
+                // Build detailed description with pricing breakdown for receipt
+                var descriptionLines = new List<string>();
+                descriptionLines.Add($"Order {order.Code ?? orderId.ToString()}");
+                descriptionLines.Add("---");
                 
-                var description = itemDescriptions.Any() 
-                    ? string.Join(", ", itemDescriptions.Take(3)) + (itemDescriptions.Count > 3 ? "..." : "")
-                    : $"Order {order.Code ?? orderId.ToString()}";
+                foreach (var detail in orderDetails)
+                {
+                    var item = menuItems.ContainsKey(detail.ItemId) ? menuItems[detail.ItemId] : null;
+                    var itemName = item?.Name ?? $"Item #{detail.ItemId}";
+                    
+                    // Get addons for this item
+                    var itemAddons = orderDetailAddons.Where(oda => oda.DetailId == detail.Nid).ToList();
+                    
+                    // Item line
+                    descriptionLines.Add($"{detail.Quantity}x {itemName}");
+                    
+                    // Addons
+                    if (itemAddons.Any())
+                    {
+                        foreach (var addon in itemAddons)
+                        {
+                            var addonName = ingredients.ContainsKey(addon.IngredientId) ? ingredients[addon.IngredientId] : "Unknown";
+                            descriptionLines.Add($"  + {addonName} ({currency.ToUpper()} {addon.PriceWoVat:F2})");
+                        }
+                    }
+                    
+                    // Pricing breakdown
+                    descriptionLines.Add($"  Base: {currency.ToUpper()} {detail.BasePrice:F2}");
+                    
+                    var vatAmount = detail.BasePrice * detail.VatRate;
+                    var priceWithVat = detail.BasePrice * (1 + detail.VatRate);
+                    descriptionLines.Add($"  VAT ({(detail.VatRate * 100):F0}%): +{currency.ToUpper()} {vatAmount:F2}");
+                    
+                    decimal finalPricePerItem = priceWithVat;
+                    if (detail.DiscountPercent.HasValue && detail.DiscountPercent.Value > 0)
+                    {
+                        var discountAmount = priceWithVat * (detail.DiscountPercent.Value / 100);
+                        finalPricePerItem = priceWithVat - discountAmount;
+                        descriptionLines.Add($"  Discount ({detail.DiscountPercent.Value:F0}%): -{currency.ToUpper()} {discountAmount:F2}");
+                    }
+                    
+                    var itemSubtotal = detail.Quantity * finalPricePerItem;
+                    descriptionLines.Add($"  Subtotal: {currency.ToUpper()} {itemSubtotal:F2}");
+                    descriptionLines.Add(""); // Blank line between items
+                }
+                
+                // Order totals
+                if (order.Discount > 0)
+                {
+                    descriptionLines.Add($"Subtotal: {currency.ToUpper()} {order.Total:F2}");
+                    descriptionLines.Add($"Order Discount: -{currency.ToUpper()} {order.Discount:F2}");
+                }
+                descriptionLines.Add($"TOTAL: {currency.ToUpper()} {amount:F2}");
+                
+                var description = string.Join("\n", descriptionLines);
 
                 var options = new PaymentIntentCreateOptions
                 {
@@ -205,31 +261,57 @@ namespace backend.Server.Services
                     }
                 };
                 
-                // Add detailed line items with prices and discounts
+                // Add detailed line items with full breakdown
                 int metadataIndex = 1;
-                foreach (var detail in orderDetails.Take(20)) // Increased limit
+                foreach (var detail in orderDetails.Take(15)) // Limit for metadata constraints
                 {
                     var item = menuItems.ContainsKey(detail.ItemId) ? menuItems[detail.ItemId] : null;
                     var itemName = item?.Name ?? $"Item #{detail.ItemId}";
                     
-                    // The PriceWtVat in OrderDetail is the final price (after discount if applied)
-                    var pricePerItem = detail.PriceWtVat;
-                    var itemSubtotal = detail.Quantity * pricePerItem;
+                    // Get addons for this item
+                    var itemAddons = orderDetailAddons.Where(oda => oda.DetailId == detail.Nid).ToList();
                     
-                    // Line item with quantity and price
-                    var lineItem = $"{detail.Quantity}x {itemName} @ {currency} {pricePerItem:F2} ea";
-                    options.Metadata.Add($"item_{metadataIndex}", lineItem);
+                    // Item header
+                    options.Metadata.Add($"item_{metadataIndex}_name", $"{detail.Quantity}x {itemName}");
                     
-                    // Add item subtotal
-                    options.Metadata.Add($"item_{metadataIndex}_subtotal", $"{currency} {itemSubtotal:F2}");
-                    
-                    // If discount was applied at order creation (stored in database)
-                    if (detail.DiscountPercent.HasValue && detail.OriginalPriceWtVat.HasValue)
+                    // Addons (if any)
+                    if (itemAddons.Any())
                     {
-                        var originalSubtotal = detail.OriginalPriceWtVat.Value * detail.Quantity;
-                        var savedAmount = originalSubtotal - itemSubtotal;
-                        options.Metadata.Add($"item_{metadataIndex}_saved", $"{detail.DiscountPercent.Value}% discount - saved {currency} {savedAmount:F2}");
+                        var addonNames = itemAddons
+                            .Select(oda => {
+                                var name = ingredients.ContainsKey(oda.IngredientId) ? ingredients[oda.IngredientId] : "Unknown";
+                                return $"+ {name} ({currency} {oda.PriceWoVat:F2})";
+                            })
+                            .ToList();
+                        options.Metadata.Add($"item_{metadataIndex}_addons", string.Join(", ", addonNames));
                     }
+                    
+                    // Base price (includes item + addons at order creation time)
+                    options.Metadata.Add($"item_{metadataIndex}_base", $"Base: {currency} {detail.BasePrice:F2}");
+                    
+                    // VAT breakdown
+                    var vatAmount = detail.BasePrice * detail.VatRate;
+                    var priceWithVat = detail.BasePrice * (1 + detail.VatRate);
+                    options.Metadata.Add($"item_{metadataIndex}_vat", $"VAT ({(detail.VatRate * 100):F0}%): +{currency} {vatAmount:F2}");
+                    options.Metadata.Add($"item_{metadataIndex}_with_vat", $"With VAT: {currency} {priceWithVat:F2}");
+                    
+                    // Discount (if applicable)
+                    decimal finalPricePerItem = priceWithVat;
+                    if (detail.DiscountPercent.HasValue && detail.DiscountPercent.Value > 0)
+                    {
+                        var discountAmount = priceWithVat * (detail.DiscountPercent.Value / 100);
+                        finalPricePerItem = priceWithVat - discountAmount;
+                        options.Metadata.Add($"item_{metadataIndex}_discount", $"Discount ({detail.DiscountPercent.Value:F0}%): -{currency} {discountAmount:F2}");
+                        options.Metadata.Add($"item_{metadataIndex}_final", $"Final per item: {currency} {finalPricePerItem:F2}");
+                    }
+                    else
+                    {
+                        options.Metadata.Add($"item_{metadataIndex}_final", $"Price per item: {currency} {finalPricePerItem:F2}");
+                    }
+                    
+                    // Subtotal for this item
+                    var itemSubtotal = detail.Quantity * finalPricePerItem;
+                    options.Metadata.Add($"item_{metadataIndex}_subtotal", $"Subtotal: {currency} {itemSubtotal:F2}");
                     
                     metadataIndex++;
                 }
@@ -237,7 +319,7 @@ namespace backend.Server.Services
                 // Add order-level discount if present
                 if (order.Discount > 0)
                 {
-                    options.Metadata.Add("order_discount_total", $"-{currency} {order.Discount:F2}");
+                    options.Metadata.Add("order_discount_total", $"Order Discount: -{currency} {order.Discount:F2}");
                 }
 
                 var service = new PaymentIntentService();
@@ -391,6 +473,81 @@ namespace backend.Server.Services
                 TransactionId = payment.TransactionId,
                 ErrorMessage = payment.ErrorMessage
             };
+        }
+
+        private async Task<string> GenerateReceiptContentAsync(long orderId, decimal amount, string currency)
+        {
+            var order = await _context.Orders.FindAsync(orderId);
+            if (order == null) return string.Empty;
+
+            var orderDetails = await _context.OrderDetails
+                .Where(od => od.OrderId == orderId)
+                .ToListAsync();
+            
+            var itemIds = orderDetails.Select(od => od.ItemId).ToList();
+            var menuItems = await _context.MenuItems
+                .Where(mi => itemIds.Contains(mi.Nid))
+                .ToDictionaryAsync(mi => mi.Nid, mi => mi);
+
+            var orderDetailIds = orderDetails.Select(od => od.Nid).ToList();
+            var orderDetailAddons = await _context.OrderDetailAddOns
+                .Where(oda => orderDetailIds.Contains(oda.DetailId))
+                .ToListAsync();
+            
+            var ingredientIds = orderDetailAddons.Select(oda => oda.IngredientId).Distinct().ToList();
+            var ingredients = await _context.MenuItemIngredients
+                .Where(mii => ingredientIds.Contains(mii.Nid))
+                .ToDictionaryAsync(mii => mii.Nid, mii => mii.Name);
+
+            var descriptionLines = new List<string>();
+            descriptionLines.Add($"Order {order.Code ?? orderId.ToString()}");
+            descriptionLines.Add("---");
+            
+            foreach (var detail in orderDetails)
+            {
+                var item = menuItems.ContainsKey(detail.ItemId) ? menuItems[detail.ItemId] : null;
+                var itemName = item?.Name ?? $"Item #{detail.ItemId}";
+                
+                var itemAddons = orderDetailAddons.Where(oda => oda.DetailId == detail.Nid).ToList();
+                
+                descriptionLines.Add($"{detail.Quantity}x {itemName}");
+                
+                if (itemAddons.Any())
+                {
+                    foreach (var addon in itemAddons)
+                    {
+                        var addonName = ingredients.ContainsKey(addon.IngredientId) ? ingredients[addon.IngredientId] : "Unknown";
+                        descriptionLines.Add($"  + {addonName} ({currency.ToUpper()} {addon.PriceWoVat:F2})");
+                    }
+                }
+                
+                descriptionLines.Add($"  Base: {currency.ToUpper()} {detail.BasePrice:F2}");
+                
+                var vatAmount = detail.BasePrice * detail.VatRate;
+                var priceWithVat = detail.BasePrice * (1 + detail.VatRate);
+                descriptionLines.Add($"  VAT ({(detail.VatRate * 100):F0}%): +{currency.ToUpper()} {vatAmount:F2}");
+                
+                decimal finalPricePerItem = priceWithVat;
+                if (detail.DiscountPercent.HasValue && detail.DiscountPercent.Value > 0)
+                {
+                    var discountAmount = priceWithVat * (detail.DiscountPercent.Value / 100);
+                    finalPricePerItem = priceWithVat - discountAmount;
+                    descriptionLines.Add($"  Discount ({detail.DiscountPercent.Value:F0}%): -{currency.ToUpper()} {discountAmount:F2}");
+                }
+                
+                var itemSubtotal = detail.Quantity * finalPricePerItem;
+                descriptionLines.Add($"  Subtotal: {currency.ToUpper()} {itemSubtotal:F2}");
+                descriptionLines.Add("");
+            }
+            
+            if (order.Discount > 0)
+            {
+                descriptionLines.Add($"Subtotal: {currency.ToUpper()} {order.Total:F2}");
+                descriptionLines.Add($"Order Discount: -{currency.ToUpper()} {order.Discount:F2}");
+            }
+            descriptionLines.Add($"TOTAL: {currency.ToUpper()} {amount:F2}");
+            
+            return string.Join("\n", descriptionLines);
         }
     }
 }

@@ -43,14 +43,25 @@ type PaymentHistoryItem = {
   errorMessage?: string;
 };
 
+type OrderItemAddon = {
+  ingredientId: number;
+  ingredientName: string;
+  price: number;
+};
+
 type OrderItem = {
   itemId: number;
   itemName: string;
   quantity: number;
-  pricePerItem: number;
-  subtotal: number;
+  basePrice: number;
+  vatRate: number;
+  vatAmount: number;
+  priceBeforeDiscount: number;
   itemDiscountPercent?: number;
   itemDiscountAmount?: number;
+  pricePerItem: number;
+  subtotal: number;
+  addons: OrderItemAddon[];
 };
 
 type OrderWithItems = {
@@ -89,6 +100,7 @@ export default function PaymentProcessingWithTip() {
     []
   );
   const [stripePromise, setStripePromise] = useState<any>(null);
+  const [stripeReceiptUrl, setStripeReceiptUrl] = useState<string | null>(null);
 
   // Tip related states
   const [tip, setTip] = useState<string>('0');
@@ -323,6 +335,23 @@ export default function PaymentProcessingWithTip() {
     // Refresh payment history
     await fetchPaymentHistory();
 
+    // Fetch Stripe receipt URL
+    if (orderId) {
+      try {
+        const response = await fetch(`/api/receipts/order/${orderId}`, {
+          credentials: 'include',
+        });
+        if (response.ok) {
+          const receipt = await response.json();
+          if (receipt.stripeReceiptUrl) {
+            setStripeReceiptUrl(receipt.stripeReceiptUrl);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch receipt:', error);
+      }
+    }
+
     // Reset form
     setCustomerEmail('');
     setTip('0');
@@ -417,7 +446,7 @@ export default function PaymentProcessingWithTip() {
 
   return (
     <div className="payment-container">
-      <div className="payment-header">
+      <div className="payment-header" style={{ justifyContent: 'flex-start' }}>
         <Button
           variant="contained"
           className="back-button"
@@ -425,12 +454,11 @@ export default function PaymentProcessingWithTip() {
         >
           Back to Orders
         </Button>
-        <h1>Payment Processing</h1>
       </div>
 
       <div className="payment-form">
-        <div className="order-summary">
-          <h3>Order Summary</h3>
+        <div className="form-section order-summary">
+          <h2>Order Summary</h2>
           <div className="summary-row">
             <span>Order Number:</span>
             <span>{order.code}</span>
@@ -442,32 +470,67 @@ export default function PaymentProcessingWithTip() {
           
           {/* Order Items */}
           {orderWithItems && orderWithItems.items.length > 0 && (
-            <div style={{ marginTop: '20px', borderTop: '1px solid #ddd', paddingTop: '15px' }}>
-              <h4 style={{ marginBottom: '10px', fontSize: '0.95rem', color: '#666' }}>Items:</h4>
+            <div style={{ marginTop: '20px', borderTop: '1px solid #3a3a3a', paddingTop: '15px' }}>
+              <h4 style={{ marginBottom: '15px', fontSize: '1rem', color: 'rgba(255, 255, 255, 0.7)' }}>Items:</h4>
               {orderWithItems.items.map((item, index) => (
-                <div key={index} style={{ marginBottom: '12px', paddingLeft: '10px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '0.9rem' }}>
+                <div key={index} style={{ marginBottom: '18px', backgroundColor: '#252525', padding: '15px', borderRadius: '6px', border: '1px solid #3a3a3a' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontWeight: '600' }}>
+                    <span style={{ fontSize: '0.95rem', color: 'rgba(255, 255, 255, 0.87)' }}>
                       {item.quantity}x {item.itemName}
                     </span>
-                    <span style={{ fontSize: '0.9rem', fontWeight: '500' }}>
+                    <span style={{ fontSize: '0.95rem', color: '#5e92f3' }}>
                       {currency} {item.subtotal.toFixed(2)}
                     </span>
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: '#888', paddingLeft: '15px' }}>
-                    @ {currency} {item.pricePerItem.toFixed(2)} each
-                  </div>
-                  {item.itemDiscountPercent && item.itemDiscountAmount && (
-                    <div style={{ fontSize: '0.8rem', color: '#4caf50', paddingLeft: '15px', marginTop: '2px' }}>
-                      ✓ {item.itemDiscountPercent}% discount applied (saved {currency} {item.itemDiscountAmount.toFixed(2)})
+                  
+                  {item.addons && item.addons.length > 0 && (
+                    <div style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.6)', paddingLeft: '15px', lineHeight: '1.7' }}>
+                      {item.addons.map((addon, addonIdx) => (
+                        <div key={addonIdx} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px', fontStyle: 'italic', color: 'rgba(255, 255, 255, 0.5)' }}>
+                          <span> + {addon.ingredientName}</span>
+                          <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>+{currency} {addon.price.toFixed(2)}</span>
+                        </div>
+                      ))}
                     </div>
                   )}
+                  
+                  <div style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.6)', paddingLeft: '15px', lineHeight: '1.7' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                      <span>Base price:</span>
+                      <span>{currency} {item.basePrice.toFixed(2)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                      <span>VAT ({(item.vatRate * 100).toFixed(0)}%):</span>
+                      <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>+{currency} {item.vatAmount.toFixed(2)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', paddingBottom: '6px', borderBottom: '1px solid #3a3a3a' }}>
+                      <span>Price with VAT:</span>
+                      <span>{currency} {item.priceBeforeDiscount.toFixed(2)}</span>
+                    </div>
+                    {item.itemDiscountPercent && item.itemDiscountAmount ? (
+                      <>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px', color: '#4caf50' }}>
+                          <span>Discount ({item.itemDiscountPercent}%):</span>
+                          <span>-{currency} {item.itemDiscountAmount.toFixed(2)}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '500', paddingTop: '6px', borderTop: '1px solid #3a3a3a', color: 'rgba(255, 255, 255, 0.87)' }}>
+                          <span>Final price per item:</span>
+                          <span>{currency} {item.pricePerItem.toFixed(2)}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '500', paddingTop: '6px', borderTop: '1px solid #3a3a3a', color: 'rgba(255, 255, 255, 0.87)' }}>
+                        <span>Price per item:</span>
+                        <span>{currency} {item.pricePerItem.toFixed(2)}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
           )}
           
-          <div className="summary-row" style={{ marginTop: '15px', paddingTop: '10px', borderTop: '1px solid #ddd' }}>
+          <div className="summary-row" style={{ marginTop: '20px', paddingTop: '15px', borderTop: '2px solid #3a3a3a', fontWeight: '600' }}>
             <span>{orderWithItems && orderWithItems.orderDiscount > 0 ? 'Subtotal (before order discount):' : 'Order Total:'}</span>
             <span>
               {order.total.toFixed(2)} {currency}
@@ -490,7 +553,7 @@ export default function PaymentProcessingWithTip() {
             </>
           )}
           {(!orderWithItems || orderWithItems.orderDiscount === 0) && (
-            <div style={{ fontSize: '0.85rem', color: '#888', textAlign: 'right', marginTop: '5px' }}>
+            <div style={{ fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.5)', textAlign: 'right', marginTop: '8px' }}>
               (includes all item discounts)
             </div>
           )}
@@ -627,6 +690,26 @@ export default function PaymentProcessingWithTip() {
               onClick={() => navigate('/order-management')}
             >
               Cancel
+            </button>
+          </div>
+        )}
+
+        {/* Stripe Receipt Button */}
+        {stripeReceiptUrl && (
+          <div className="payment-actions" style={{ marginTop: '10px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <button
+              className="btn-pay"
+              onClick={() => window.open(stripeReceiptUrl, '_blank')}
+              style={{ backgroundColor: '#635bff' }}
+            >
+              View Stripe Receipt
+            </button>
+            <button
+              className="btn-pay"
+              onClick={() => window.open(`/api/receipts/local/${orderId}`, '_blank')}
+              style={{ backgroundColor: '#4caf50' }}
+            >
+              View Local Receipt
             </button>
           </div>
         )}

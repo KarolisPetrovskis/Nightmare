@@ -34,12 +34,11 @@ export interface OrderAddOnsDTO {
 
 export interface OrderDetailRequest {
   itemId: number;
-  priceWoVat: number;
-  priceWtVat: number;
+  basePrice: number;
+  vatRate: number;
   quantity?: number;
   addons?: OrderAddOnsDTO[];
   discountPercent?: number | null;
-  originalPriceWtVat?: number | null;
 }
 
 export interface OrderCreateDTO {
@@ -57,8 +56,9 @@ export interface OrderUpdateDTO {
 }
 
 export interface OrderDetailUpdateDTO {
-  priceWoVat?: number;
-  priceWtVat?: number;
+  basePrice?: number;
+  vatRate?: number;
+  discountPercent?: number;
   quantity?: number;
 }
 

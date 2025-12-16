@@ -21,12 +21,11 @@ type OrderCreateDTO = {
 
 type OrderDetailRequest = {
   itemId: number;
-  priceWoVat: number;
-  priceWtVat: number;
+  basePrice: number;
+  vatRate: number;
   quantity: number;
   addons?: Array<{ ingredientId: number; priceWoVat: number }>;
   discountPercent?: number | null;
-  originalPriceWtVat?: number | null;
 };
 
 // TODO: Get from auth context
@@ -477,8 +476,25 @@ export default function OrderManagement() {
     if (!selectedOrder) return;
 
     try {
-      // Calculate total with VAT (assuming 24% VAT rate)
-      const vatRate = 1.24; // TODO: Get from VAT service
+      // Fetch VAT rates for all items
+      const vatRates: { [key: number]: number } = {};
+      const uniqueVatIds = [...new Set(selectedOrder.items.map(item => item.menuItem.vatId))];
+      
+      await Promise.all(uniqueVatIds.map(async (vatId) => {
+        try {
+          const response = await fetch(`/api/vat/${vatId}`);
+          if (response.ok) {
+            const vatData = await response.json();
+            // Store as decimal (e.g., 24% = 0.24)
+            vatRates[vatId] = (vatData.percentage || 0) / 100;
+          } else {
+            vatRates[vatId] = 0.24; // Default 24%
+          }
+        } catch (error) {
+          console.error(`Failed to fetch VAT rate for ID ${vatId}:`, error);
+          vatRates[vatId] = 0.24; // Default 24%
+        }
+      }));
 
       // If order doesn't exist in backend yet, create it
       if (!selectedOrder.backendNid) {
@@ -512,36 +528,32 @@ export default function OrderManagement() {
               }
             );
 
-            // Calculate original price (base + addons) without discount
-            const originalUnitPriceWoVat = basePrice + addonsPriceWoVat;
-            const originalUnitPriceWtVat = originalUnitPriceWoVat * vatRate;
+            // Calculate base price with addons
+            const totalBasePrice = basePrice + addonsPriceWoVat;
             
-            // Apply discount if present
-            let finalUnitPriceWoVat = originalUnitPriceWoVat;
-            let finalUnitPriceWtVat = originalUnitPriceWtVat;
+            // Get VAT rate for this specific item
+            const vatRateDecimal = vatRates[menuItem.vatId] || 0.24;
+            
+            // Calculate final price with VAT and discount
+            let priceWithVat = totalBasePrice * (1 + vatRateDecimal);
             let discountPercent = null;
-            let originalPriceForDb = null;
             
             if (menuItem.discount && menuItem.discount > 0) {
               discountPercent = menuItem.discount;
-              originalPriceForDb = originalUnitPriceWtVat;
-              // Apply discount
-              finalUnitPriceWoVat = originalUnitPriceWoVat * (1 - menuItem.discount / 100);
-              finalUnitPriceWtVat = originalUnitPriceWtVat * (1 - menuItem.discount / 100);
+              priceWithVat = priceWithVat * (1 - menuItem.discount / 100);
             }
             
-            // Total for this line item (unit price * quantity)
-            const lineTotalWtVat = finalUnitPriceWtVat * item.quantity;
+            // Total for this line item
+            const lineTotalWtVat = priceWithVat * item.quantity;
             total += lineTotalWtVat;
 
             return {
               itemId: item.menuItem.nid,
-              priceWoVat: finalUnitPriceWoVat,
-              priceWtVat: finalUnitPriceWtVat,
+              basePrice: totalBasePrice,
+              vatRate: vatRateDecimal,
               quantity: item.quantity,
               addons: addons.length > 0 ? addons : undefined,
               discountPercent: discountPercent,
-              originalPriceWtVat: originalPriceForDb,
             };
           }
         );
@@ -699,31 +711,25 @@ export default function OrderManagement() {
             return [{ ingredientId: option.nid, priceWoVat: option.price }];
           });
 
-          // Calculate per-item price (base + addons) without quantity
-          const originalUnitPriceWoVat = basePrice + addonsPriceWoVat;
-          const originalUnitPriceWtVat = originalUnitPriceWoVat * vatRate;
-
-          // Apply discount if exists
-          let unitPriceWoVat = originalUnitPriceWoVat;
-          let unitPriceWtVat = originalUnitPriceWtVat;
+          // Calculate base price with addons
+          const totalBasePrice = basePrice + addonsPriceWoVat;
+          
+          // Get VAT rate for this specific item
+          const vatRateDecimal = vatRates[item.menuItem.vatId] || 0.24;
+          
+          // Get discount percent if exists
           let discountPercent = null;
-          let originalPriceForDb = null;
-
           if (item.menuItem.discount && item.menuItem.discount > 0) {
             discountPercent = item.menuItem.discount;
-            originalPriceForDb = originalUnitPriceWtVat;
-            unitPriceWtVat = originalUnitPriceWtVat * (1 - item.menuItem.discount / 100);
-            unitPriceWoVat = unitPriceWtVat / vatRate;
           }
 
           const itemRequest: OrderDetailRequest = {
             itemId: item.menuItem.nid,
-            priceWoVat: unitPriceWoVat,
-            priceWtVat: unitPriceWtVat,
+            basePrice: totalBasePrice,
+            vatRate: vatRateDecimal,
             quantity: item.quantity,
             addons: addons.length > 0 ? addons : undefined,
             discountPercent: discountPercent,
-            originalPriceWtVat: originalPriceForDb,
           };
 
           const addRes = await fetch(`/api/orders/${selectedOrder.backendNid}/details`, {

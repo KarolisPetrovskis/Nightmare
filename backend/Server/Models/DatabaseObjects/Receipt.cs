@@ -25,4 +25,7 @@ public class Receipt
     public string? StripeReceiptUrl { get; set; }
     
     public long BusinessId { get; set; }
+    
+    // Detailed receipt content (same as Stripe description)
+    public string? DetailedContent { get; set; }
 }
