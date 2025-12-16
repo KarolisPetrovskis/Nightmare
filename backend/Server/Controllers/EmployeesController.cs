@@ -30,7 +30,7 @@ namespace backend.Server.Controllers
         [HttpPost]
         public async Task<ActionResult<User>> CreateEmployee([FromBody] UserCreateDTO request)
         {
-            var employee = await _employeesService.CreateEmployeeAsync(request);
+            var employee = await _employeesService.CreateEmployeeAsync(request, HttpContext);
 
             return CreatedAtAction(nameof(GetEmployeeBynid), new { nid = employee.Nid }, employee);
         }
@@ -54,7 +54,7 @@ namespace backend.Server.Controllers
         [HttpPut("{nid}")]
         public async Task<IActionResult> UpdateEmployee([FromBody] UserUpdateDTO request, long nid)
         {
-            await _employeesService.UpdateEmployeeAsync(request, nid);
+            await _employeesService.UpdateEmployeeAsync(request, nid, HttpContext);
             
             return NoContent();
         }

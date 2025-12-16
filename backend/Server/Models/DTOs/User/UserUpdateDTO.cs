@@ -15,7 +15,7 @@ public class UserUpdateDTO
     public string? Email { get; set; }
     [StringLength(255, MinimumLength = 8, ErrorMessage = "Password must be at least 8 characters")]
     public string? Password { get; set; }
-
+    [EnumDataType(typeof(UserRole), ErrorMessage = "Invalid user role")]
     public UserRole? UserType { get; set; }
     [Range(1, long.MaxValue, ErrorMessage = "BusinessId must be a positive number")]
     public long? BusinessId { get; set; }

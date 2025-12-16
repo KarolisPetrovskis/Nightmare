@@ -69,13 +69,25 @@ namespace backend.Server.Services
                 .ToListAsync();
         }
 
-        public async Task<User> CreateEmployeeAsync(UserCreateDTO request)
+        public async Task<User> CreateEmployeeAsync(UserCreateDTO request, HttpContext httpContext)
         {
             if (await _context.Users.AnyAsync(u => u.Email == request.Email))
-            {
                 throw new ApiException(409, $"Employee with Email {request.Email} already exists.");
-            }
+            
+            var userId = _authService.GetRequesterNid(httpContext) ?? throw new ApiException(401, $"Unautorized, log in to do this action");
 
+            var userType = await _context.Users
+                .Where(u => u.Nid == userId)
+                .Select(u => u.UserType)
+                .FirstOrDefaultAsync();
+
+            if ((int) request.UserType == 4)
+                throw new ApiException(403, $"Admin cannot be created");
+            if ((int) userType < 4 && (int) request.UserType == 3)
+                throw new ApiException(403, $"You cannot create other owners");
+            if ((int) userType < 3)
+                throw new ApiException(403, $"You do not have creation permissions");
+            
             var employee = new User
             {
                 Name = request.Name,
@@ -123,12 +135,30 @@ namespace backend.Server.Services
             return employee;
         }
 
-        public async Task UpdateEmployeeAsync(UserUpdateDTO request, long nid)
+        public async Task UpdateEmployeeAsync(UserUpdateDTO request, long nid, HttpContext httpContext)
         {
             if (nid <= 0)
             {
                 throw new ApiException(400, "Nid must be a positive number");
             }
+
+
+            var userId = _authService.GetRequesterNid(httpContext) ?? throw new ApiException(401, $"Unautorized, log in to do this action");
+
+            var userType = await _context.Users
+                .Where(u => u.Nid == userId)
+                .Select(u => u.UserType)
+                .FirstOrDefaultAsync();
+            if (request.UserType == null)
+                throw new ApiException(400, $"User type cannot be empty");
+            if ((int) request.UserType == 4)
+                throw new ApiException(403, $"Admin cannot be created");
+            if ((int) userType < 4 && (int) request.UserType == 3)
+                throw new ApiException(403, $"You cannot create other owners");
+            if ((int) userType < 3)
+                throw new ApiException(403, $"You do not have creation permissions");
+            
+
             var employee = await _context.Users.FindAsync(nid) ?? throw new ApiException(404, $"Employee with Nid {nid} not found.");
 
             if (request.Email != null) employee.Email = request.Email;

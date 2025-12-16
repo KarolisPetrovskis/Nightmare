@@ -133,12 +133,18 @@ public class ReceiptsController : ControllerBase
 ## 2. Database Changes
 
 ### Business
+
+Added work hours for easier shift creation.
+
 ```diff
 + DateTime WorkStart
 + DateTime WorkEnd
 ```
 
 ### Order
+
+Used and Enum instead of a separate entity for `Status`
+
 ```diff
 - long StatusId
 
@@ -156,12 +162,16 @@ public class ReceiptsController : ControllerBase
 ```
 
 ### Service
+
+Added description to services, since it was present in mockups.
+
 ```diff
 + string? Description
 ```
 
 ### User
 
+Changed `UserType` from separate entity to an Enum. Added `BusinessId` to specify which business the user belongs to.
 
 ```diff
 - long UserType
@@ -172,7 +182,7 @@ public class ReceiptsController : ControllerBase
 
 ### MenuItemIngredientGroup
 
-Added `MenuItemIngredientGroup` entity
+Added `MenuItemIngredientGroup` entity:
 
 ```diff
 + long Nid
@@ -182,7 +192,7 @@ Added `MenuItemIngredientGroup` entity
 
 ### Payment
 
-Added `Payment` entity
+Added `Payment` entity:
 
 ```diff
 + long Nid
@@ -246,3 +256,10 @@ In OrderHistory expanded filtering options: Added filtering by Worker ID and by 
 Added VAT Management, there was no Mockup for creation of VATs, only that already existing VAT are used as options in Menu Management.
 </br>
 Removed the Options button in Navbar because not only there was no documentation on what it should do, but also we didn’t see any point in using it.
+</br>
+Added Delete buttons in bussiness view (They werent there in the wireframe, but it makes sence to have it)
+</br>
+Added UserType (Manager, Staff, Owner) form in Worker creator page. In the wireframe there was no such field, therefore it was not possible to set user role when creating a worker.
+</br>
+Super admin users also have ability to assign the buisiness ID manually to created workers in the worker create modal.
+</br>
