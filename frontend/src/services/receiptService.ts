@@ -1,5 +1,3 @@
-const API_BASE_URL = "/api/receipts";
-
 export interface Receipt {
   nid: number;
   orderId: number;
@@ -15,7 +13,7 @@ export interface Receipt {
 export const receiptService = {
   getReceiptByOrderId: async (orderId: number): Promise<Receipt | null> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/order/${orderId}`, {
+      const response = await fetch(`/api/receipts/order/${orderId}`, {
         credentials: 'include',
       });
       
@@ -38,7 +36,7 @@ export const receiptService = {
 
   getReceiptByNid: async (nid: number): Promise<Receipt | null> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/${nid}`, {
+      const response = await fetch(`/api/receipts/${nid}`, {
         credentials: 'include',
       });
       
@@ -60,7 +58,7 @@ export const receiptService = {
   },
 
   getReceiptsByBusinessId: async (businessId: number): Promise<Receipt[]> => {
-    const response = await fetch(`${API_BASE_URL}/business/${businessId}`, {
+    const response = await fetch(`/api/receipts/business/${businessId}`, {
       credentials: 'include',
     });
     

@@ -863,12 +863,16 @@ export default function OrderManagement() {
 
       const targetOrderId = anyState.orderId;
 
+
       // Auto-save the new dish to the database
       const autoSaveDish = async () => {
         try {
-          // Find the order
+          // Always get the latest order state (after possible backend creation)
           let orderToUpdate = orders.find((o) => o.nid === targetOrderId);
-          
+          // If not found by nid, try by backendNid (in case state was replaced)
+          if (!orderToUpdate && orders.length > 0 && orders[orders.length-1].backendNid === targetOrderId) {
+            orderToUpdate = orders[orders.length-1];
+          }
           if (!orderToUpdate) {
             console.warn('Order not found:', targetOrderId);
             return;
@@ -894,31 +898,19 @@ export default function OrderManagement() {
           const addons = (menuItem.addonGroups || []).flatMap((group) => {
             const selectedOptionId = payload.selectedOptions?.[group.nid];
             if (!selectedOptionId) return [];
-
-            const option = group.options.find(
-              (opt) => opt.nid === selectedOptionId
-            );
+            const option = group.options.find((opt) => opt.nid === selectedOptionId);
             if (!option) return [];
-
             addonsPriceWoVat += option.price;
-
-            return [
-              {
-                ingredientId: option.nid,
-                priceWoVat: option.price,
-              },
-            ];
+            return [{ ingredientId: option.nid, priceWoVat: option.price }];
           });
 
           const totalBasePrice = basePrice + addonsPriceWoVat;
           let priceWithVat = totalBasePrice * (1 + vatRate);
           let discountPercent = null;
-
           if (menuItem.discount && menuItem.discount > 0) {
             discountPercent = menuItem.discount;
             priceWithVat = priceWithVat * (1 - menuItem.discount / 100);
           }
-
           const lineTotalWithVat = priceWithVat * payload.quantity;
 
           // If order hasn't been saved to backend yet, create it with this first dish
@@ -974,7 +966,7 @@ export default function OrderManagement() {
 
             // Fetch menu items and addon groups for each detail
             const items: OrderDish[] = await Promise.all(
-              details.map(async (detail: any) => {
+              details.map(async (detail: any, idx: number) => {
                 try {
                   const itemRes = await fetch(`/api/menu/${detail.itemId}`);
                   if (!itemRes.ok) throw new Error('Failed to fetch menu item');
@@ -1012,11 +1004,17 @@ export default function OrderManagement() {
                     addonGroups,
                   };
 
+                  // Set selectedOptions from payload for the first dish
+                  let selectedOptions: Record<number, number> = {};
+                  if (idx === 0 && payload.selectedOptions) {
+                    selectedOptions = { ...payload.selectedOptions };
+                  }
+
                   return {
                     nid: detail.nid,
                     menuItem: menuItemWithGroups,
                     quantity: detail.quantity,
-                    selectedOptions: {},
+                    selectedOptions,
                     backendDetailNid: detail.nid,
                   };
                 } catch (error) {
@@ -1084,14 +1082,14 @@ export default function OrderManagement() {
 
             setOrders((prevOrders) =>
               prevOrders.map((o) =>
-                o.nid === targetOrderId
+                o.nid === orderToUpdate!.nid
                   ? { ...o, items: [...o.items, newItem] }
                   : o
               )
             );
 
             // Always select the order that just had a dish added
-            const updatedOrder = orders.find((o) => o.nid === targetOrderId);
+            const updatedOrder = orders.find((o) => o.nid === orderToUpdate!.nid);
             if (updatedOrder) {
               const orderWithNewItem = {
                 ...updatedOrder,

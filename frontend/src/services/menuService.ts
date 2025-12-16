@@ -1,5 +1,3 @@
-const API_BASE_URL = 'http://localhost:5087/api';
-
 export interface MenuItem {
   nid: number;
   name: string;
