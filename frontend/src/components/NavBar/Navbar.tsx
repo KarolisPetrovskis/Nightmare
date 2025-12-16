@@ -37,7 +37,7 @@ export default function Navbar() {
         </Typography>
 
         <Box className={styles.rightButtons}>
-          <Button className={styles.navButton} onClick={() => {}}>Options</Button>
+          {/* <Button className={styles.navButton} onClick={() => {}}>Options</Button> */}
           <Button className={styles.navButton} onClick={() => navigate('/login')}>Log out</Button>
         </Box>
       </Toolbar>
