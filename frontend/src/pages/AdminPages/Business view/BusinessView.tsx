@@ -276,6 +276,8 @@ export default function BusinessView() {
               <th>Owner ID</th>
               <th>Email</th>
               <th>Phone</th>
+              <th>Work Start</th>
+              <th>Work End</th>
               <th style={{ minWidth: 180 }}>Actions</th>
             </tr>
           </thead>
@@ -292,6 +294,8 @@ export default function BusinessView() {
                   <td>{business.ownerId ?? ''}</td>
                   <td>{business.email}</td>
                   <td>{business.phone ?? ''}</td>
+                  <td>{business.workStart ? (business.workStart.length > 5 ? business.workStart.slice(11, 16) : business.workStart) : ''}</td>
+                  <td>{business.workEnd ? (business.workEnd.length > 5 ? business.workEnd.slice(11, 16) : business.workEnd) : ''}</td>
                   <td className="actions-cell">
                     <div style={{ display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center', padding: 0 }}>
                       <Button
