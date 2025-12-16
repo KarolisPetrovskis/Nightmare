@@ -105,11 +105,10 @@ export default function OrderManagement() {
   const dishesPerPage = 4;
 
   const processedStateRef = useRef<string | null>(null);
-  const pendingOrderRef = useRef<Order | null>(null);
 
-  // Filter to show only active orders (In Progress) and unsaved orders
+  // Filter to show only active orders (not cancelled) and unsaved orders
   const activeOrders = orders.filter((order) => 
-    !order.backendNid || order.status === OrderStatus.InProgress
+    !order.backendNid || order.status !== OrderStatus.Cancelled
   );
 
   const start = (page - 1) * itemsPerPage;
@@ -828,6 +827,7 @@ export default function OrderManagement() {
     closeModal();
   };
 
+  // Auto-save new dishes to database when added
   useEffect(() => {
     const anyState = (location as any).state;
     if (anyState && anyState.addedDish) {
@@ -861,61 +861,268 @@ export default function OrderManagement() {
         selectedOptions?: Record<number, number>;
       };
 
-      const newItem: OrderDish = {
-        nid: payload.nid, // Use the nid from payload, not Date.now()
-        menuItem: payload.menuItem,
-        quantity: payload.quantity,
-        selectedOptions: payload.selectedOptions || {},
-      };
-
       const targetOrderId = anyState.orderId;
 
-      if (targetOrderId) {
-        setOrders((prevOrders) => {
-          const orderExists = prevOrders.some((o) => o.nid === targetOrderId);
-
-          if (!orderExists) {
-            // Order doesn't exist (stale navigation state), ignore silently
-            console.warn(
-              'Ignoring stale navigation state for non-existent order:',
-              targetOrderId
-            );
-            return prevOrders;
+      // Auto-save the new dish to the database
+      const autoSaveDish = async () => {
+        try {
+          // Find the order
+          let orderToUpdate = orders.find((o) => o.nid === targetOrderId);
+          
+          if (!orderToUpdate) {
+            console.warn('Order not found:', targetOrderId);
+            return;
           }
 
-          const updatedOrders = prevOrders.map((order) => {
-            if (order.nid === targetOrderId) {
-              const updatedOrder = {
-                ...order,
-                items: [...order.items, newItem],
-              };
-              pendingOrderRef.current = updatedOrder; // Store in ref
-              return updatedOrder;
+          const menuItem = payload.menuItem;
+          const basePrice = menuItem.price;
+          let addonsPriceWoVat = 0;
+
+          // Fetch VAT rate
+          let vatRate = 0.24;
+          try {
+            const vatResponse = await fetch(`/api/vat/${menuItem.vatId}`);
+            if (vatResponse.ok) {
+              const vatData = await vatResponse.json();
+              vatRate = vatData.rate || 0.24;
             }
-            return order;
+          } catch (error) {
+            console.error('Failed to fetch VAT rate:', error);
+          }
+
+          // Calculate addons price
+          const addons = (menuItem.addonGroups || []).flatMap((group) => {
+            const selectedOptionId = payload.selectedOptions?.[group.nid];
+            if (!selectedOptionId) return [];
+
+            const option = group.options.find(
+              (opt) => opt.nid === selectedOptionId
+            );
+            if (!option) return [];
+
+            addonsPriceWoVat += option.price;
+
+            return [
+              {
+                ingredientId: option.nid,
+                priceWoVat: option.price,
+              },
+            ];
           });
 
-          return updatedOrders;
-        });
+          const totalBasePrice = basePrice + addonsPriceWoVat;
+          let priceWithVat = totalBasePrice * (1 + vatRate);
+          let discountPercent = null;
 
-        // Use the ref to set selected order
-        const orderToSelect = pendingOrderRef.current;
-        if (orderToSelect) {
-          setSelectedOrder(orderToSelect);
-          setOrderDirty(true);
+          if (menuItem.discount && menuItem.discount > 0) {
+            discountPercent = menuItem.discount;
+            priceWithVat = priceWithVat * (1 - menuItem.discount / 100);
+          }
+
+          const lineTotalWithVat = priceWithVat * payload.quantity;
+
+          // If order hasn't been saved to backend yet, create it with this first dish
+          if (!orderToUpdate.backendNid) {
+            const orderData: OrderCreateDTO = {
+              code: `ORD-${Date.now()}`,
+              vatId: VAT_ID_STANDARD,
+              total: lineTotalWithVat,
+              businessId: businessIdRef.current || 1,
+              orderDetails: [
+                {
+                  itemId: menuItem.nid,
+                  basePrice: totalBasePrice,
+                  vatRate: vatRate,
+                  quantity: payload.quantity,
+                  addons: addons.length > 0 ? addons : undefined,
+                  discountPercent: discountPercent,
+                },
+              ],
+            };
+
+            const createdOrderRes = await fetch('/api/orders', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(orderData),
+            });
+
+            if (!createdOrderRes.ok) {
+              const errorText = await createdOrderRes.text();
+              console.error('Create order error:', errorText);
+              throw new Error('Failed to create order');
+            }
+
+            const createdOrder = await createdOrderRes.json();
+
+            // Fetch the complete order with all details from backend
+            const fullOrderRes = await fetch(
+              `/api/orders/${createdOrder.nid}`
+            );
+            if (!fullOrderRes.ok) {
+              throw new Error('Failed to fetch created order');
+            }
+
+            // Fetch order details
+            const detailsRes = await fetch(
+              `/api/orders/${createdOrder.nid}/details`
+            );
+            if (!detailsRes.ok) {
+              throw new Error('Failed to fetch order details');
+            }
+
+            const details = await detailsRes.json();
+
+            // Fetch menu items and addon groups for each detail
+            const items: OrderDish[] = await Promise.all(
+              details.map(async (detail: any) => {
+                try {
+                  const itemRes = await fetch(`/api/menu/${detail.itemId}`);
+                  if (!itemRes.ok) throw new Error('Failed to fetch menu item');
+                  const menuItem = await itemRes.json();
+
+                  const groupsRes = await fetch(
+                    `/api/menu/addon-groups/by-menu-item/${menuItem.nid}`
+                  );
+                  let addonGroups: OptionGroup[] = [];
+                  if (groupsRes.ok) {
+                    const groups = await groupsRes.json();
+                    addonGroups = await Promise.all(
+                      groups.map(async (group: any) => {
+                        const addonsRes = await fetch(
+                          `/api/menu/addons/by-group/${group.nid}`
+                        );
+                        const addons = addonsRes.ok
+                          ? await addonsRes.json()
+                          : [];
+                        return {
+                          nid: group.nid,
+                          name: group.name,
+                          options: addons.map((a: any) => ({
+                            nid: a.nid,
+                            name: a.name,
+                            price: a.price || 0,
+                          })),
+                        };
+                      })
+                    );
+                  }
+
+                  const menuItemWithGroups = {
+                    ...menuItem,
+                    addonGroups,
+                  };
+
+                  return {
+                    nid: detail.nid,
+                    menuItem: menuItemWithGroups,
+                    quantity: detail.quantity,
+                    selectedOptions: {},
+                    backendDetailNid: detail.nid,
+                  };
+                } catch (error) {
+                  console.error(`Failed to process detail ${detail.nid}:`, error);
+                  return null;
+                }
+              })
+            );
+
+            const validItems = items.filter((item): item is OrderDish => item !== null);
+
+            // Create complete order object
+            const fullOrder: Order = {
+              nid: createdOrder.nid,
+              backendNid: createdOrder.nid,
+              status: 4,
+              items: validItems,
+              staff: '',
+            };
+
+            // Update orders state with the complete order
+            setOrders((prevOrders) =>
+              prevOrders.map((o) =>
+                o.nid === targetOrderId ? fullOrder : o
+              )
+            );
+
+            // Select the order
+            setSelectedOrder(fullOrder);
+            setOriginalOrder(JSON.parse(JSON.stringify(fullOrder)));
+          } else {
+            // Order already exists, just add the detail
+            const orderDetailRequest: OrderDetailRequest = {
+              itemId: menuItem.nid,
+              basePrice: totalBasePrice,
+              vatRate: vatRate,
+              quantity: payload.quantity,
+              addons: addons.length > 0 ? addons : undefined,
+              discountPercent: discountPercent,
+            };
+
+            const detailRes = await fetch(
+              `/api/orders/${orderToUpdate.backendNid}/details`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(orderDetailRequest),
+              }
+            );
+
+            if (!detailRes.ok) {
+              throw new Error('Failed to add dish to order');
+            }
+
+            const createdDetail = await detailRes.json();
+
+            // Update order in state with new item and backend detail ID
+            const newItem: OrderDish = {
+              nid: payload.nid,
+              menuItem: payload.menuItem,
+              quantity: payload.quantity,
+              selectedOptions: payload.selectedOptions || {},
+              backendDetailNid: createdDetail.nid,
+            };
+
+            setOrders((prevOrders) =>
+              prevOrders.map((o) =>
+                o.nid === targetOrderId
+                  ? { ...o, items: [...o.items, newItem] }
+                  : o
+              )
+            );
+
+            // Always select the order that just had a dish added
+            const updatedOrder = orders.find((o) => o.nid === targetOrderId);
+            if (updatedOrder) {
+              const orderWithNewItem = {
+                ...updatedOrder,
+                items: [...updatedOrder.items, newItem],
+              };
+              setSelectedOrder(orderWithNewItem);
+              setOriginalOrder(JSON.parse(JSON.stringify(orderWithNewItem)));
+            }
+          }
+
           setSnackbar({
             open: true,
-            message: 'Dish added to order. Click Save to save changes.',
+            message: 'Dish added to order successfully!',
             type: 'success',
           });
-          pendingOrderRef.current = null; // Clear the ref
+        } catch (error) {
+          console.error('Failed to add dish to order:', error);
+          setSnackbar({
+            open: true,
+            message: 'Failed to add dish to order.',
+            type: 'error',
+          });
         }
-      }
+      };
+
+      autoSaveDish();
 
       // Don't clear navigation state - it causes context to reset
       // The processedStateRef + sessionStorage prevents duplicate processing
     }
-  }, [location.state, navigate, location.pathname, setOrders]);
+  }, [location.state, navigate, location.pathname, setOrders, orders, businessId]);
 
   const totalPrice = selectedOrder
     ? selectedOrder.items.reduce((sum, it) => {
