@@ -38,6 +38,8 @@ export interface OrderDetailRequest {
   priceWtVat: number;
   quantity?: number;
   addons?: OrderAddOnsDTO[];
+  discountPercent?: number | null;
+  originalPriceWtVat?: number | null;
 }
 
 export interface OrderCreateDTO {

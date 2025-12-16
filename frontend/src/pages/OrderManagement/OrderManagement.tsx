@@ -25,6 +25,8 @@ type OrderDetailRequest = {
   priceWtVat: number;
   quantity: number;
   addons?: Array<{ ingredientId: number; priceWoVat: number }>;
+  discountPercent?: number | null;
+  originalPriceWtVat?: number | null;
 };
 
 // TODO: Get from auth context
@@ -47,6 +49,7 @@ type MenuItem = {
   name: string;
   price: number;
   vatId: number;
+  discount?: number;
   addonGroups?: OptionGroup[];
 };
 
@@ -262,6 +265,7 @@ export default function OrderManagement() {
                         name: menuItem.name,
                         price: menuItem.price,
                         vatId: menuItem.vatId,
+                        discount: menuItem.discount,
                         addonGroups,
                       },
                       quantity: detail.quantity,
@@ -482,7 +486,8 @@ export default function OrderManagement() {
 
         const orderDetails: OrderDetailRequest[] = selectedOrder.items.map(
           (item) => {
-            const basePrice = item.menuItem.price;
+            const menuItem = item.menuItem;
+            const basePrice = menuItem.price;
             let addonsPriceWoVat = 0;
 
             // Calculate addons price
@@ -507,20 +512,36 @@ export default function OrderManagement() {
               }
             );
 
-            // Calculate per-item price (base + addons) without quantity
-            const unitPriceWoVat = basePrice + addonsPriceWoVat;
-            const unitPriceWtVat = unitPriceWoVat * vatRate;
+            // Calculate original price (base + addons) without discount
+            const originalUnitPriceWoVat = basePrice + addonsPriceWoVat;
+            const originalUnitPriceWtVat = originalUnitPriceWoVat * vatRate;
+            
+            // Apply discount if present
+            let finalUnitPriceWoVat = originalUnitPriceWoVat;
+            let finalUnitPriceWtVat = originalUnitPriceWtVat;
+            let discountPercent = null;
+            let originalPriceForDb = null;
+            
+            if (menuItem.discount && menuItem.discount > 0) {
+              discountPercent = menuItem.discount;
+              originalPriceForDb = originalUnitPriceWtVat;
+              // Apply discount
+              finalUnitPriceWoVat = originalUnitPriceWoVat * (1 - menuItem.discount / 100);
+              finalUnitPriceWtVat = originalUnitPriceWtVat * (1 - menuItem.discount / 100);
+            }
             
             // Total for this line item (unit price * quantity)
-            const lineTotalWtVat = unitPriceWtVat * item.quantity;
+            const lineTotalWtVat = finalUnitPriceWtVat * item.quantity;
             total += lineTotalWtVat;
 
             return {
               itemId: item.menuItem.nid,
-              priceWoVat: unitPriceWoVat,
-              priceWtVat: unitPriceWtVat,
+              priceWoVat: finalUnitPriceWoVat,
+              priceWtVat: finalUnitPriceWtVat,
               quantity: item.quantity,
               addons: addons.length > 0 ? addons : undefined,
+              discountPercent: discountPercent,
+              originalPriceWtVat: originalPriceForDb,
             };
           }
         );
@@ -679,8 +700,21 @@ export default function OrderManagement() {
           });
 
           // Calculate per-item price (base + addons) without quantity
-          const unitPriceWoVat = basePrice + addonsPriceWoVat;
-          const unitPriceWtVat = unitPriceWoVat * vatRate;
+          const originalUnitPriceWoVat = basePrice + addonsPriceWoVat;
+          const originalUnitPriceWtVat = originalUnitPriceWoVat * vatRate;
+
+          // Apply discount if exists
+          let unitPriceWoVat = originalUnitPriceWoVat;
+          let unitPriceWtVat = originalUnitPriceWtVat;
+          let discountPercent = null;
+          let originalPriceForDb = null;
+
+          if (item.menuItem.discount && item.menuItem.discount > 0) {
+            discountPercent = item.menuItem.discount;
+            originalPriceForDb = originalUnitPriceWtVat;
+            unitPriceWtVat = originalUnitPriceWtVat * (1 - item.menuItem.discount / 100);
+            unitPriceWoVat = unitPriceWtVat / vatRate;
+          }
 
           const itemRequest: OrderDetailRequest = {
             itemId: item.menuItem.nid,
@@ -688,6 +722,8 @@ export default function OrderManagement() {
             priceWtVat: unitPriceWtVat,
             quantity: item.quantity,
             addons: addons.length > 0 ? addons : undefined,
+            discountPercent: discountPercent,
+            originalPriceWtVat: originalPriceForDb,
           };
 
           const addRes = await fetch(`/api/orders/${selectedOrder.backendNid}/details`, {

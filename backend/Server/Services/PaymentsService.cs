@@ -212,25 +212,23 @@ namespace backend.Server.Services
                     var item = menuItems.ContainsKey(detail.ItemId) ? menuItems[detail.ItemId] : null;
                     var itemName = item?.Name ?? $"Item #{detail.ItemId}";
                     
-                    // The PriceWtVat in OrderDetail is already the discounted price
+                    // The PriceWtVat in OrderDetail is the final price (after discount if applied)
                     var pricePerItem = detail.PriceWtVat;
                     var itemSubtotal = detail.Quantity * pricePerItem;
                     
-                    // Line item with quantity and price (already discounted)
+                    // Line item with quantity and price
                     var lineItem = $"{detail.Quantity}x {itemName} @ {currency} {pricePerItem:F2} ea";
                     options.Metadata.Add($"item_{metadataIndex}", lineItem);
                     
                     // Add item subtotal
                     options.Metadata.Add($"item_{metadataIndex}_subtotal", $"{currency} {itemSubtotal:F2}");
                     
-                    // If item currently has a discount, show what was saved
-                    if (item?.Discount.HasValue == true && item.Discount.Value > 0)
+                    // If discount was applied at order creation (stored in database)
+                    if (detail.DiscountPercent.HasValue && detail.OriginalPriceWtVat.HasValue)
                     {
-                        var discountMultiplier = 1 - (item.Discount.Value / 100);
-                        var originalPricePerItem = pricePerItem / discountMultiplier;
-                        var originalSubtotal = originalPricePerItem * detail.Quantity;
+                        var originalSubtotal = detail.OriginalPriceWtVat.Value * detail.Quantity;
                         var savedAmount = originalSubtotal - itemSubtotal;
-                        options.Metadata.Add($"item_{metadataIndex}_saved", $"{item.Discount.Value}% discount - saved {currency} {savedAmount:F2}");
+                        options.Metadata.Add($"item_{metadataIndex}_saved", $"{detail.DiscountPercent.Value}% discount - saved {currency} {savedAmount:F2}");
                     }
                     
                     metadataIndex++;

@@ -126,7 +126,9 @@ namespace backend.Server.Services
                     ItemId = detailRequest.ItemId,
                     PriceWoVat = detailRequest.PriceWoVat,
                     PriceWtVat = detailRequest.PriceWtVat,
-                    Quantity = detailRequest.Quantity
+                    Quantity = detailRequest.Quantity,
+                    DiscountPercent = detailRequest.DiscountPercent,
+                    OriginalPriceWtVat = detailRequest.OriginalPriceWtVat
                 };
                 orderDetails.Add(orderDetail);
             }
@@ -507,23 +509,17 @@ namespace backend.Server.Services
             {
                 var menuItem = menuItems.ContainsKey(detail.ItemId) ? menuItems[detail.ItemId] : null;
                 
-                // The PriceWtVat in OrderDetail is already the discounted price
+                // Use stored discount information from when order was created
                 var pricePerItem = detail.PriceWtVat;
                 var subtotal = pricePerItem * detail.Quantity;
                 
-                decimal? discountPercent = null;
+                decimal? discountPercent = detail.DiscountPercent;
                 decimal? discountAmount = null;
                 
-                // Check if the menu item currently has a discount
-                // Note: This shows the current discount, not necessarily what was applied during order creation
-                if (menuItem?.Discount.HasValue == true && menuItem.Discount.Value > 0)
+                // Calculate discount amount from stored original price
+                if (detail.DiscountPercent.HasValue && detail.OriginalPriceWtVat.HasValue)
                 {
-                    discountPercent = menuItem.Discount.Value;
-                    // Calculate original price before discount: discountedPrice = originalPrice * (1 - discount/100)
-                    // So: originalPrice = discountedPrice / (1 - discount/100)
-                    var discountMultiplier = 1 - (menuItem.Discount.Value / 100);
-                    var originalPricePerItem = pricePerItem / discountMultiplier;
-                    var originalSubtotal = originalPricePerItem * detail.Quantity;
+                    var originalSubtotal = detail.OriginalPriceWtVat.Value * detail.Quantity;
                     discountAmount = originalSubtotal - subtotal;
                 }
 

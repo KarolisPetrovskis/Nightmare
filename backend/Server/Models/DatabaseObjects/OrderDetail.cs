@@ -10,4 +10,8 @@ public class OrderDetail
     public decimal PriceWoVat { get; set; }
     public decimal PriceWtVat { get; set; }
     public int Quantity { get; set; } = 1;
+    
+    // Discount information captured at order creation time
+    public decimal? DiscountPercent { get; set; }
+    public decimal? OriginalPriceWtVat { get; set; }
 }
