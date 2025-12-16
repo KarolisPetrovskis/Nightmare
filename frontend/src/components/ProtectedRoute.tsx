@@ -24,8 +24,8 @@ export default function ProtectedRoute({
     return <Navigate to="/login" replace />;
   }
 
-  // SuperAdmin and Owner have access to everything
-  if (userType === UserRole.SuperAdmin || userType === UserRole.Owner) {
+  // SuperAdmin has access to everything
+  if (userType === UserRole.SuperAdmin) {
     return <>{children}</>;
   }
 

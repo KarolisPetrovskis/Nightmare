@@ -66,7 +66,7 @@ export default function Home() {
       label: 'Business View',
       color: '#8de0cb',
       path: '/admin/business-view',
-      allowedRoles: [UserRole.Owner, UserRole.SuperAdmin],
+      allowedRoles: [UserRole.SuperAdmin],
     },
     {
       icon: <EngineeringIcon />,
@@ -92,8 +92,8 @@ export default function Home() {
   ];
 
   const canAccessItem = (item: DashboardItem): boolean => {
-    // SuperAdmin and Owner can access everything
-    if (userType === UserRole.SuperAdmin || userType === UserRole.Owner) {
+    // SuperAdmin can access everything
+    if (userType === UserRole.SuperAdmin) {
       return true;
     }
 

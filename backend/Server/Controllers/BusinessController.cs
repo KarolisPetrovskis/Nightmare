@@ -17,6 +17,13 @@ namespace backend.Server.Controllers
             _businessService = businessService;
         }
 
+        [HttpGet("all")]
+        public async Task<ActionResult<List<Business>>> GetAllBusinesses()
+        {
+            var list = await _businessService.GetAllBusinesses();
+            return Ok(list);
+        }
+
         [HttpGet]
         public async Task<ActionResult<List<Business>>> GetBusinessesByOwnerNid([FromQuery] BusinessGetAllByOwnerNidDTO request)
         {

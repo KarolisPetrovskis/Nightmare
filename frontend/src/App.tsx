@@ -82,7 +82,7 @@ export default function App() {
                   <Route
                     path="/admin/business-view"
                     element={
-                      <ProtectedRoute allowedRoles={[UserRole.Owner, UserRole.SuperAdmin]}>
+                      <ProtectedRoute requiredRole={UserRole.SuperAdmin}>
                         <BusinessView />
                       </ProtectedRoute>
                     }

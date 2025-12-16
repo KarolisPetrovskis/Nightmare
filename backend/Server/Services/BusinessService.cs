@@ -18,6 +18,11 @@ namespace backend.Server.Services
             _context = context;
         }
 
+        public async Task<List<Business>> GetAllBusinesses()
+        {
+            return await _context.Businesses.ToListAsync();
+        }
+
         public async Task<List<Business>> RetrieveAllBusinessbyOwnerNid(BusinessGetAllByOwnerNidDTO request)
         {
             return await _context.Businesses.Where(b => b.OwnerId == request.OwnerId).ToListAsync() ?? throw new ApiException(404, "No businesses found for this owner.");
