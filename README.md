@@ -17,9 +17,10 @@ Nightmare is designed to be operated entirely by **business employees** and **ma
 
 All project documentation is located in the [`/docs`](docs/) directory:
 
-- [**Software_System_Design.pdf**](docs/Software_System_Design.pdf) — the original system design specification created by another team.
-- [**API.yaml**](docs/API.yaml) — the API definition describing available endpoints and data structures, also provided by that team.
-- [**CHANGELOG.md**](docs/CHANGELOG.md) — a log of architectural decisions, deviations, and clarifications made during implementation.
+- [**Software_System_Design.pdf**](docs/Software_System_Design.pdf) - the original system design specification created by another team.
+- [**API.yaml**](docs/API.yaml) - the API definition describing available endpoints and data structures, also provided by that team.
+- [**CHANGELOG.md**](docs/CHANGELOG.md) - a log of architectural decisions, deviations, and clarifications made during implementation.
+- [**Feedback.md**](docs/Feedback.md) - feedback on the original design.
 
 ---
 

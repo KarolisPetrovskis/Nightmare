@@ -1,5 +1,3 @@
-const API_BASE_URL = 'http://localhost:5087/api';
-
 export interface Order {
   nid: number;
   code: string | null;
@@ -83,14 +81,14 @@ export const ordersApi = {
     if (workerId) params.append('workerId', workerId.toString());
     if (dateCreated) params.append('dateCreated', dateCreated);
 
-    const response = await fetch(`${API_BASE_URL}/orders?${params}`);
+    const response = await fetch(`/api/orders?${params}`);
     if (!response.ok) throw new Error('Failed to fetch orders');
     return await response.json();
   },
 
   // POST /api/orders
   createOrder: async (data: OrderCreateDTO): Promise<Order> => {
-    const response = await fetch(`${API_BASE_URL}/orders`, {
+    const response = await fetch(`/api/orders`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -101,35 +99,35 @@ export const ordersApi = {
 
   // GET /api/orders/{nid}
   getOrderByNid: async (nid: number): Promise<Order> => {
-    const response = await fetch(`${API_BASE_URL}/orders/${nid}`);
+    const response = await fetch(`/api/orders/${nid}`);
     if (!response.ok) throw new Error('Failed to fetch order');
     return await response.json();
   },
 
   // GET /api/orders/item/{orderNid}
   getOrderDetails: async (orderNid: number): Promise<OrderDetail[]> => {
-    const response = await fetch(`${API_BASE_URL}/orders/item/${orderNid}`);
+    const response = await fetch(`/api/orders/item/${orderNid}`);
     if (!response.ok) throw new Error('Failed to fetch order details');
     return await response.json();
   },
 
   // GET /api/orders/item/addons/{orderNid}
   getOrderDetailAddOns: async (orderNid: number): Promise<OrderDetailAddOn[]> => {
-    const response = await fetch(`${API_BASE_URL}/orders/item/addons/${orderNid}`);
+    const response = await fetch(`/api/orders/item/addons/${orderNid}`);
     if (!response.ok) throw new Error('Failed to fetch order detail addons');
     return await response.json();
   },
 
   // GET /api/orders/business/{businessnid}
   getOrdersByBusinessId: async (businessId: number): Promise<Order[]> => {
-    const response = await fetch(`${API_BASE_URL}/orders/business/${businessId}`);
+    const response = await fetch(`/api/orders/business/${businessId}`);
     if (!response.ok) throw new Error('Failed to fetch orders by business');
     return await response.json();
   },
 
   // PUT /api/orders/{nid}
   updateOrder: async (nid: number, data: OrderUpdateDTO): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/orders/${nid}`, {
+    const response = await fetch(`/api/orders/${nid}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -139,7 +137,7 @@ export const ordersApi = {
 
   // DELETE /api/orders/{nid}
   deleteOrder: async (nid: number): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/orders/${nid}`, {
+    const response = await fetch(`/api/orders/${nid}`, {
       method: 'DELETE',
     });
     if (!response.ok) throw new Error('Failed to delete order');
@@ -147,7 +145,7 @@ export const ordersApi = {
 
   // POST /api/orders/{orderNid}/items
   addItemToOrder: async (orderNid: number, item: OrderDetailRequest): Promise<OrderDetail> => {
-    const response = await fetch(`${API_BASE_URL}/orders/${orderNid}/items`, {
+    const response = await fetch(`/api/orders/${orderNid}/items`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(item),
@@ -158,7 +156,7 @@ export const ordersApi = {
 
   // DELETE /api/orders/{orderNid}/items/{detailNid}
   removeItemFromOrder: async (orderNid: number, detailNid: number): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/orders/${orderNid}/items/${detailNid}`, {
+    const response = await fetch(`/api/orders/${orderNid}/items/${detailNid}`, {
       method: 'DELETE',
     });
     if (!response.ok) throw new Error('Failed to remove item from order');
@@ -166,7 +164,7 @@ export const ordersApi = {
 
   // PUT /api/orders/{orderNid}/items/{detailNid}
   updateOrderItem: async (orderNid: number, detailNid: number, updates: OrderDetailUpdateDTO): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/orders/${orderNid}/items/${detailNid}`, {
+    const response = await fetch(`/api/orders/${orderNid}/items/${detailNid}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates),
@@ -176,7 +174,7 @@ export const ordersApi = {
 
   // PUT /api/orders/{orderNid}/items/{detailNid}/addons
   updateOrderItemAddons: async (orderNid: number, detailNid: number, addons: OrderAddOnsDTO[]): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/orders/${orderNid}/items/${detailNid}/addons`, {
+    const response = await fetch(`/api/orders/${orderNid}/items/${detailNid}/addons`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(addons),

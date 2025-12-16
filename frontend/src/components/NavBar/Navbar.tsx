@@ -4,6 +4,8 @@ import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types/userRole';
 import styles from './Navbar.module.css';
 import NightlightRoundIcon from '@mui/icons-material/NightlightRound';
+import { useEffect, useState } from 'react';
+import { fetchBusinessName } from '../../services/businessService';
 
 interface NavLink {
   to: string;
@@ -25,7 +27,18 @@ const links: NavLink[] = [
 export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { userType } = useAuth();
+  const { userType, businessId } = useAuth();
+  const [businessName, setBusinessName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (userType === UserRole.SuperAdmin) {
+      setBusinessName('Admin');
+    } else if (businessId) {
+      fetchBusinessName(businessId).then(setBusinessName);
+    } else {
+      setBusinessName(null);
+    }
+  }, [businessId, userType]);
 
   const canAccessLink = (link: NavLink): boolean => {
     // SuperAdmin and Owner can access everything
@@ -62,7 +75,12 @@ export default function Navbar() {
     <AppBar position="sticky" className={styles.appBar}>
       <Toolbar className={styles.toolbar}>
         <Typography variant="h6" className={styles.businessName} sx={{ display: 'flex', alignItems: 'center', gap: '0.5rem'}} onClick={() => navigate('/')}>
-          <NightlightRoundIcon fontSize="large"/> Nightmare 
+          <NightlightRoundIcon fontSize="large"/> Nightmare
+          {businessName && (
+            <span style={{ fontSize: '1rem', color: '#bbb', marginLeft: 12, fontWeight: 400 }}>
+              | {businessName}
+            </span>
+          )}
         </Typography>
 
         <Typography variant="h6" className={styles.pageTitle}>
