@@ -23,6 +23,7 @@ interface Employee {
   nid: number;
   name: string;
   surname?: string;
+  userType: number;
 }
 
 interface Service {
@@ -43,7 +44,7 @@ interface Business {
   workEnd?: string;   // UTC ISO datetime from API
 }
 
-const MOCK_BUSINESS_ID = 12;
+// const MOCK_BUSINESS_ID = 12;
 const DEFAULT_EARLIEST_TIME = "09:00";
 const DEFAULT_LATEST_TIME = "18:00";
 
@@ -75,9 +76,10 @@ function getSlotIndex(time: string, businessStartTime: string = DEFAULT_EARLIEST
 
 export default function CurrentScheduleManagement() {
   const { date } = useParams<{ date: string }>();
-  const { businessId } = useAuth();
+  const { businessId, userId, userType } = useAuth();
   const [business, setBusiness] = useState<Business | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [timeSlots, setTimeSlots] = useState<string[]>([]);
@@ -141,6 +143,26 @@ export default function CurrentScheduleManagement() {
         setBusiness(businessData);
         setEmployees(employeesData);
         setServices(servicesData);
+        
+        // Filter employees based on current user's role
+        let filtered = employeesData;
+        if (userType === 2) {
+          // Manager: can schedule for staff (userType 1) and himself
+          filtered = employeesData.filter((emp: Employee) => 
+            emp.userType === 1 || emp.nid === userId
+          );
+        } else if (userType === 3) {
+          // Owner: can schedule for managers (2), staff (1), and himself
+          filtered = employeesData.filter((emp: Employee) => 
+            emp.userType === 1 || emp.userType === 2 || emp.nid === userId
+          );
+        } else if (userType === 4) {
+          // SuperAdmin: same as owner but exclude himself
+          filtered = employeesData.filter((emp: Employee) => 
+            (emp.userType === 1 || emp.userType === 2 || emp.userType === 3) && emp.nid !== userId
+          );
+        }
+        setFilteredEmployees(filtered);
         
         // Extract business hours AS-IS (don't convert timezone)
         // Business owner set these hours and they should display exactly as entered
@@ -390,7 +412,7 @@ export default function CurrentScheduleManagement() {
               <LoadingSpinner size="large" />
             </div>
           ) : (
-            employees.map((employee) => (
+            filteredEmployees.map((employee) => (
               <div key={employee.nid} className="worker-column-header">
                 <div className="worker-avatar">
                   <svg viewBox="0 0 100 100" className="avatar-placeholder">
@@ -406,7 +428,7 @@ export default function CurrentScheduleManagement() {
         </div>
 
         <div className="schedule-grid">
-          {employees.map((employee) => (
+          {filteredEmployees.map((employee) => (
             <div key={employee.nid} className="worker-column">
               {/* Time grid lines - one row per slot */}
               {timeSlots.map((slot, index) => (
@@ -452,7 +474,7 @@ export default function CurrentScheduleManagement() {
                 onChange={(e) => handleInputChange("employeeId", e.target.value)}
               >
                 <option value="">Select employee</option>
-                {employees.map((employee) => (
+                {filteredEmployees.map((employee) => (
                   <option key={employee.nid} value={employee.nid}>
                     {employee.name}
                   </option>
