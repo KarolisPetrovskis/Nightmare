@@ -197,6 +197,10 @@ namespace backend.Server.Services
                     // Item line
                     descriptionLines.Add($"{detail.Quantity}x {itemName}");
                     
+                    descriptionLines.Add($"  Base: {currency.ToUpper()} {detail.BasePrice:F2}");
+                    
+                    var totalBasePriceWithAddons = detail.BasePrice;
+
                     // Addons
                     if (itemAddons.Any())
                     {
@@ -205,14 +209,14 @@ namespace backend.Server.Services
                             var addonName = ingredients.ContainsKey(addon.IngredientId) ? ingredients[addon.IngredientId] : "Unknown";
                             descriptionLines.Add($"  + {addonName} ({currency.ToUpper()} {addon.PriceWoVat:F2})");
                         }
+                        totalBasePriceWithAddons += itemAddons.Sum(a => a.PriceWoVat);
+                        descriptionLines.Add($"  Total Base with Add-ons: {currency.ToUpper()} {totalBasePriceWithAddons:F2}");
                     }
                     
                     // Pricing breakdown
-                    descriptionLines.Add($"  Base: {currency.ToUpper()} {detail.BasePrice:F2}");
-                    
-                    var vatAmount = detail.BasePrice * detail.VatRate;
-                    var priceWithVat = detail.BasePrice * (1 + detail.VatRate);
-                    descriptionLines.Add($"  VAT ({(detail.VatRate * 100):F0}%): +{currency.ToUpper()} {vatAmount:F2}");
+                    var vatAmount = totalBasePriceWithAddons * detail.VatRate;
+                    var priceWithVat = totalBasePriceWithAddons * (1 + detail.VatRate);
+                    descriptionLines.Add($"  VAT ({detail.VatRate * 100:F0}%): +{currency.ToUpper()} {vatAmount:F2}");
                     
                     decimal finalPricePerItem = priceWithVat;
                     if (detail.DiscountPercent.HasValue && detail.DiscountPercent.Value > 0)
@@ -274,6 +278,10 @@ namespace backend.Server.Services
                     // Item header
                     options.Metadata.Add($"item_{metadataIndex}_name", $"{detail.Quantity}x {itemName}");
                     
+                    // Base price (includes item at order creation time)
+                    options.Metadata.Add($"item_{metadataIndex}_base", $"Base: {currency} {detail.BasePrice:F2}");
+                    
+                    var totalBasePriceWithAddons = detail.BasePrice;
                     // Addons (if any)
                     if (itemAddons.Any())
                     {
@@ -284,15 +292,15 @@ namespace backend.Server.Services
                             })
                             .ToList();
                         options.Metadata.Add($"item_{metadataIndex}_addons", string.Join(", ", addonNames));
+                        totalBasePriceWithAddons += itemAddons.Sum(a => a.PriceWoVat);
+                        options.Metadata.Add($"item_{metadataIndex}_total_base_with_addons", $"Total Base with Add-ons: {currency} {totalBasePriceWithAddons:F2}");
+                    
                     }
                     
-                    // Base price (includes item + addons at order creation time)
-                    options.Metadata.Add($"item_{metadataIndex}_base", $"Base: {currency} {detail.BasePrice:F2}");
-                    
                     // VAT breakdown
-                    var vatAmount = detail.BasePrice * detail.VatRate;
-                    var priceWithVat = detail.BasePrice * (1 + detail.VatRate);
-                    options.Metadata.Add($"item_{metadataIndex}_vat", $"VAT ({(detail.VatRate * 100):F0}%): +{currency} {vatAmount:F2}");
+                    var vatAmount = totalBasePriceWithAddons * detail.VatRate;
+                    var priceWithVat = totalBasePriceWithAddons * (1 + detail.VatRate);
+                    options.Metadata.Add($"item_{metadataIndex}_vat", $"VAT ({detail.VatRate * 100:F0}%): +{currency} {vatAmount:F2}");
                     options.Metadata.Add($"item_{metadataIndex}_with_vat", $"With VAT: {currency} {priceWithVat:F2}");
                     
                     // Discount (if applicable)
@@ -512,6 +520,9 @@ namespace backend.Server.Services
                 
                 descriptionLines.Add($"{detail.Quantity}x {itemName}");
                 
+                descriptionLines.Add($"  Base: {currency.ToUpper()} {detail.BasePrice:F2}");
+                
+                var totalBasePriceWithAddons = detail.BasePrice;
                 if (itemAddons.Any())
                 {
                     foreach (var addon in itemAddons)
@@ -519,12 +530,12 @@ namespace backend.Server.Services
                         var addonName = ingredients.ContainsKey(addon.IngredientId) ? ingredients[addon.IngredientId] : "Unknown";
                         descriptionLines.Add($"  + {addonName} ({currency.ToUpper()} {addon.PriceWoVat:F2})");
                     }
+                    totalBasePriceWithAddons += itemAddons.Sum(a => a.PriceWoVat);
+                    descriptionLines.Add($"  Total Base with Add-ons: {currency.ToUpper()} {totalBasePriceWithAddons:F2}");
                 }
                 
-                descriptionLines.Add($"  Base: {currency.ToUpper()} {detail.BasePrice:F2}");
-                
-                var vatAmount = detail.BasePrice * detail.VatRate;
-                var priceWithVat = detail.BasePrice * (1 + detail.VatRate);
+                var vatAmount = totalBasePriceWithAddons * detail.VatRate;
+                var priceWithVat = totalBasePriceWithAddons * (1 + detail.VatRate);
                 descriptionLines.Add($"  VAT ({(detail.VatRate * 100):F0}%): +{currency.ToUpper()} {vatAmount:F2}");
                 
                 decimal finalPricePerItem = priceWithVat;

@@ -883,12 +883,12 @@ export default function OrderManagement() {
           let addonsPriceWoVat = 0;
 
           // Fetch VAT rate
-          let vatRate = 0.24;
+          let vatRate = 0;
           try {
             const vatResponse = await fetch(`/api/vat/${menuItem.vatId}`);
             if (vatResponse.ok) {
               const vatData = await vatResponse.json();
-              vatRate = vatData.rate || 0.24;
+              vatRate = vatData.percentage / 100 || 0;
             }
           } catch (error) {
             console.error('Failed to fetch VAT rate:', error);
@@ -904,8 +904,8 @@ export default function OrderManagement() {
             return [{ ingredientId: option.nid, priceWoVat: option.price }];
           });
 
-          const totalBasePrice = basePrice + addonsPriceWoVat;
-          let priceWithVat = totalBasePrice * (1 + vatRate);
+          const totalBaseWithAddonsPrice = basePrice + addonsPriceWoVat;
+          let priceWithVat = totalBaseWithAddonsPrice * (1 + vatRate);
           let discountPercent = null;
           if (menuItem.discount && menuItem.discount > 0) {
             discountPercent = menuItem.discount;
@@ -923,7 +923,7 @@ export default function OrderManagement() {
               orderDetails: [
                 {
                   itemId: menuItem.nid,
-                  basePrice: totalBasePrice,
+                  basePrice: basePrice,
                   vatRate: vatRate,
                   quantity: payload.quantity,
                   addons: addons.length > 0 ? addons : undefined,
@@ -1049,7 +1049,7 @@ export default function OrderManagement() {
             // Order already exists, just add the detail
             const orderDetailRequest: OrderDetailRequest = {
               itemId: menuItem.nid,
-              basePrice: totalBasePrice,
+              basePrice: totalBaseWithAddonsPrice,
               vatRate: vatRate,
               quantity: payload.quantity,
               addons: addons.length > 0 ? addons : undefined,

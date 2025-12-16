@@ -13,6 +13,7 @@ public class OrderItemDetailDTO
     public string ItemName { get; set; } = string.Empty;
     public int Quantity { get; set; }
     public decimal BasePrice { get; set; }
+    public decimal BasePriceWithAddons { get; set; }
     public decimal VatRate { get; set; }
     public decimal VatAmount { get; set; }
     public decimal PriceBeforeDiscount { get; set; }
