@@ -32,12 +32,24 @@
   margin-bottom: 8px;
 }
 
-.col-name { text-align: left }
-.col-phone { text-align: left }
-.col-email { text-align: left }
-.col-role { text-align: left }
-.col-business { text-align: left }
-.col-action { text-align: center }
+.col-name {
+  text-align: left;
+}
+.col-phone {
+  text-align: left;
+}
+.col-email {
+  text-align: left;
+}
+.col-role {
+  text-align: left;
+}
+.col-business {
+  text-align: left;
+}
+.col-action {
+  text-align: center;
+}
 
 /* Worker rows container */
 .worker-table-rows {

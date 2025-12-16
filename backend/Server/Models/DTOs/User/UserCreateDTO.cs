@@ -22,6 +22,7 @@ public class UserCreateDTO
     public required string Password { get; set; }
 
     [Required]
+    [EnumDataType(typeof(UserRole), ErrorMessage = "Invalid user role")]
     public required UserRole UserType { get; set; }
     [Required]
     [Range(1, long.MaxValue, ErrorMessage = "BusinessId must be a positive number")]

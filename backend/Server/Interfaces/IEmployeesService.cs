@@ -7,10 +7,10 @@ namespace backend.Server.Interfaces
     {
         Task<List<User>> GetAllEmployeesAsync(int page, int perPage);
         Task<List<User>> GetAllEmployeesByBusinessIdAsync(UserGetAllDTO request);
-        Task<User> CreateEmployeeAsync(UserCreateDTO request);
+        Task<User> CreateEmployeeAsync(UserCreateDTO request, HttpContext httpContext);
         Task<User> GetEmployeeByNidAsync(long nid);
         Task<User> GetEmployeeByEmailAsync(string email);
-        Task UpdateEmployeeAsync(UserUpdateDTO request, long nid);
+        Task UpdateEmployeeAsync(UserUpdateDTO request, long nid, HttpContext httpContext);
         Task DeleteEmployeeAsync(long nid);
     }
 }
