@@ -273,8 +273,10 @@ export default function BusinessView() {
             <tr>
               <th>Business ID</th>
               <th>Business Name</th>
+              <th>Owner ID</th>
               <th>Email</th>
-              <th>Actions</th>
+              <th>Phone</th>
+              <th style={{ minWidth: 180 }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -287,20 +289,26 @@ export default function BusinessView() {
                 <tr key={business.nid}>
                   <td>{business.nid}</td>
                   <td>{business.name}</td>
+                  <td>{business.ownerId ?? ''}</td>
                   <td>{business.email}</td>
+                  <td>{business.phone ?? ''}</td>
                   <td className="actions-cell">
-                    <Button
-                      className="item-action-button new-item"
-                      onClick={() => handleOpenEditModal(business)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      className="item-action-button delete-item"
-                      onClick={() => handleDelete(business.nid)}
-                    >
-                      Delete
-                    </Button>
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center', padding: 0 }}>
+                      <Button
+                        className="item-action-button new-item"
+                        style={{ minWidth: 80, padding: '6px 18px', fontWeight: 500 }}
+                        onClick={() => handleOpenEditModal(business)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        className="item-action-button delete-item"
+                        style={{ minWidth: 80, padding: '6px 18px', fontWeight: 500 }}
+                        onClick={() => handleDelete(business.nid)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))
