@@ -4,6 +4,7 @@ using backend.Server.Exceptions;
 using backend.Server.Interfaces;
 using backend.Server.Models.DatabaseObjects;
 using backend.Server.Models.DTOs.User;
+using backend.Server.Models.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace backend.Server.Services
@@ -81,11 +82,11 @@ namespace backend.Server.Services
                 .Select(u => u.UserType)
                 .FirstOrDefaultAsync();
 
-            if ((int) request.UserType == 4)
+            if (request.UserType == UserRole.SuperAdmin)
                 throw new ApiException(403, $"Admin cannot be created");
-            if ((int) userType < 4 && (int) request.UserType == 3)
+            if (userType < UserRole.SuperAdmin && request.UserType == UserRole.Owner)
                 throw new ApiException(403, $"You cannot create other owners");
-            if ((int) userType < 3)
+            if (userType < UserRole.Owner)
                 throw new ApiException(403, $"You do not have creation permissions");
             
             var employee = new User
