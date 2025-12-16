@@ -12,7 +12,7 @@
 - Since ids are numbers it can be hard to track when they are a simple number and when they are an id, for clarity there should have been something to mark such ids as foreign keys or primary keys.
 - Why are we storing bank_account in user class (maybe for paying)?
 - It is unclear what nid means? Is it number id or what? That is not explained as other things are like vat_id, status_id…
-- What exactly is price_w_vat and how does it differ from prive_wo_vat?
+- What exactly is price_w_vat and how does it differ from price_wo_vat?
 - Do we add discounts by hand after creation of service or during edit (reference mock ups to be sure)?
 - No discount class.
 - So gift cards can be valid infinitely? (They don’t have end date)
@@ -42,7 +42,7 @@
 - It is unclear how the Delete Dish works. Like if I click does it delete the top one or you need to select a dish you want to delete and then press it?
 - “Figure 5. Add order to the dish wireframe” - What? No, it should be the other way around.
 - Ordering seems kinda not thought out. Every time I need to add a dish I get transported to other page. But the time it takes to add multiple is too long.
-- Worker apointment scheduling wireframe design is pretty convenient and simple, although for bigger businesses it wouldn't be very convenient.
+- Worker appointment scheduling wireframe design is pretty convenient and simple, although for bigger businesses it wouldn't be very convenient.
 - 
 
 ## Package diagram
@@ -57,5 +57,6 @@
 # YAML
 
 - /payments/refund uses payment id to refund but nowhere in class diagram its saved so such an operation is not possible unless we can get the payment id from the completed order.
+- The provided endpoints were well-implemented and covered the basic CRUD operations effectively. However, for more complex objects, it would have been beneficial to include endpoints that allow retrieving or updating parts of an object rather than always requiring full object manipulation. This would make working with nested or composite entities more flexible and reduce overhead when only partial updates or queries are needed. 
+- No endpoints provided for super admin functionality. 
 
-	
