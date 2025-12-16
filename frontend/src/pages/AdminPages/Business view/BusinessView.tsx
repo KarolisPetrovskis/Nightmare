@@ -49,6 +49,7 @@ const emptyBusiness: FormData = {
 export default function BusinessView() {
   const navigate = useNavigate();
   const { userId } = useAuth();
+  const [currentUserType, setCurrentUserType] = useState<number | null>(null);
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -56,6 +57,7 @@ export default function BusinessView() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState<FormData>(emptyBusiness);
+  
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
@@ -66,11 +68,46 @@ export default function BusinessView() {
     type: 'success',
   });
 
+  const showSnackbar = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
+    setSnackbar({ open: true, message, type });
+  };
+
   // Check if user is super admin
   // Fetch businesses from API on component mount
   useEffect(() => {
+
     const fetchBusinesses = async () => {
       setLoading(true);
+
+      if (!userId){
+        navigate('/login');
+        return;
+      } 
+
+      try {
+        const response = await fetch(`/api/employees/${userId}`, {
+          credentials: 'include',
+        });
+        if (!response.ok) throw new Error('Failed to fetch user info');
+        const userData = await response.json();
+        setCurrentUserType(userData.userType);
+      } catch (error) {
+        console.error('Error fetching user info:', error);
+        showSnackbar('Failed to load user information', 'error');
+      }
+
+      // if current user is not super admin return early
+      if(currentUserType === null){
+        navigate('/login')
+        return;
+      }
+      
+      if(currentUserType !== 4)
+      {
+        showSnackbar('Only super admins can view this page', 'error');
+        return;
+      }
+
       try {
         console.log('Fetching all businesses for super admin...');
         
