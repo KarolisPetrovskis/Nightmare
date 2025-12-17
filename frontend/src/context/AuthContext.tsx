@@ -1,0 +1,100 @@
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+
+interface AuthContextType {
+  userId: number | null;
+  businessId: number | null;
+  userType: number | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  login: (userId: number, businessId: number, userType: number) => void;
+  logout: () => void;
+  validateSession: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [userId, setUserId] = useState<number | null>(null);
+  const [businessId, setBusinessId] = useState<number | null>(null);
+  const [userType, setUserType] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Validate session on app startup
+  useEffect(() => {
+    validateSession();
+  }, []);
+
+  const validateSession = async () => {
+    try {
+      setIsLoading(true);
+      // Try to fetch business ID to check if user is authenticated
+      const response = await fetch('/api/auth/businessId', {
+        credentials: 'include', // Ensure cookies are sent
+      });
+      if (response.ok) {
+        const id = await response.json();
+        setBusinessId(id);
+        // Also set userId and userType from localStorage if available
+        const storedUserId = localStorage.getItem('userId');
+        const storedUserType = localStorage.getItem('userType');
+        if (storedUserId) {
+          setUserId(parseInt(storedUserId));
+        }
+        if (storedUserType) {
+          setUserType(parseInt(storedUserType));
+        }
+      } else {
+        // User is not authenticated
+        setUserId(null);
+        setBusinessId(null);
+        setUserType(null);
+      }
+    } catch (error) {
+      console.error('Error validating session:', error);
+      setUserId(null);
+      setBusinessId(null);
+      setUserType(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const login = (userId: number, businessId: number, userType: number) => {
+    setUserId(userId);
+    setBusinessId(businessId);
+    setUserType(userType);
+  };
+
+  const logout = () => {
+    setUserId(null);
+    setBusinessId(null);
+    setUserType(null);
+  };
+
+  const isAuthenticated = businessId !== null;
+
+  return (
+    <AuthContext.Provider
+      value={{
+        userId,
+        businessId,
+        userType,
+        isAuthenticated,
+        isLoading,
+        login,
+        logout,
+        validateSession,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+}

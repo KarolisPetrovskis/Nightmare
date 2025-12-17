@@ -1,3 +1,100 @@
+/* Add to ServiceManagement.css */
+
+/* VAT Dropdown Styles */
+.vat-dropdown-container {
+  position: relative;
+  width: 100%;
+}
+
+.vat-dropdown-toggle {
+  background-color: #1f1f1f;
+  color: white;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid transparent;
+  min-height: 40px;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.vat-dropdown-toggle:hover {
+  background-color: #262626;
+}
+
+.vat-dropdown-toggle:focus {
+  outline: none;
+  border-color: #646cff;
+}
+
+.vat-dropdown-arrow {
+  font-size: 0.8rem;
+  opacity: 0.7;
+  transition: transform 0.2s;
+}
+
+.vat-dropdown-toggle[aria-expanded='true'] .vat-dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+.vat-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: #2b2b2b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  margin-top: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.vat-dropdown-item {
+  padding: 10px 12px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background-color 0.2s;
+}
+
+.vat-dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.vat-dropdown-item:hover {
+  background-color: #3a3a3a;
+}
+
+.vat-dropdown-item.selected {
+  background-color: #1a365d;
+  color: #fff;
+}
+
+.vat-dropdown-item.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.vat-name {
+  font-weight: 500;
+}
+
+.vat-percentage {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+/* Update grid layout for VAT dropdown */
 .service-top-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -5,32 +102,36 @@
   margin-bottom: 16px;
 }
 
-.service-management .item-list-container {
-  flex: 0 0 300px; 
-  max-width: 320px;
-  min-width: 240px;
+/* Position VAT dropdown in the grid */
+.service-top-grid .info-box:nth-child(5) {
+  /* VAT dropdown */
+  grid-column: 2; /* Middle column */
 }
 
-.service-management .info-container {
-  flex: 1 1 calc(100% - 340px);
-  min-width: 420px;
+.service-top-grid .info-box:nth-child(6) {
+  /* Discount expiration */
+  grid-column: 3; /* Right column */
 }
 
+@media (max-width: 1000px) {
+  .service-top-grid {
+    grid-template-columns: 1fr;
+  }
 
-.service-management .item-card {
-  padding: 0.9rem;
-  font-size: 1rem;
+  .service-top-grid .info-box:nth-child(5),
+  .service-top-grid .info-box:nth-child(6) {
+    grid-column: 1;
+  }
 }
 
-
-.service-management .item-actions .item-action-button {
-  padding: 0.5rem 0 !important;
-  font-size: 0.95rem !important;
-}
-
-
-.service-management .item-list-pagination {
-  padding: 8px 0 14px;
+/* Close dropdown when clicking outside */
+.vat-dropdown-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
 }
 
 .service-description {
@@ -41,25 +142,31 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  margin-top: 16px; /* Add margin to separate from grid */
+  max-height: 180px; /* Limit height */
+  overflow: hidden; /* Prevent overflow */
 }
 
 .service-description label {
   font-size: 0.9rem;
   color: #bdbdbd;
+  margin-bottom: 4px;
 }
 
 .service-description textarea {
   width: 100%;
   box-sizing: border-box;
-  min-height: 140px;
+  min-height: 80px; /* Reduced from 140px */
+  max-height: 120px; /* Add max height */
   background-color: #1f1f1f;
   color: white;
   border: none;
   padding: 8px;
   border-radius: 6px;
-  resize: vertical;
+  resize: vertical; /* Allow vertical resize but limited */
   font-size: 1rem;
   font-family: inherit;
+  overflow-y: auto; /* Add scroll if content exceeds */
 }
 
 .service-description textarea:focus {
@@ -71,30 +178,4 @@
   border: 1px solid #646cff;
   background-color: #333333;
   transition: border-color 0.2s, background-color 0.2s;
-}
-
-@media (max-width: 1000px) {
-  .service-top-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* reuse existing Management.css .info-box styles for smaller boxes */
-.info-box input[type="number"], .info-box input[type="date"], .info-box input[type="text"] {
-  padding: 8px;
-  border-radius: 6px;
-  border: none;
-  background-color: #1f1f1f;
-  color: white;
-}
-
-/* To ensure the layout of divs like in the wireframe */
-/* 4th item: service time */
-.service-top-grid .info-box:nth-child(4) {
-  grid-column: 1; /* left side */
-}
-
-/* 5th item: discount expiration */
-.service-top-grid .info-box:nth-child(5) {
-  grid-column: 3; /* right side */
 }

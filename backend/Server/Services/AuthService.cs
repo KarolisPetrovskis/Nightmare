@@ -1,14 +1,15 @@
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 using backend.Server.Database;
 using backend.Server.Exceptions;
 using backend.Server.Interfaces;
 using backend.Server.Models.DatabaseObjects;
 using backend.Server.Models.DTOs.Auth;
+using backend.Server.Models.Enums;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace backend.Server.Services
 {
@@ -21,7 +22,7 @@ namespace backend.Server.Services
             _context = context;
         }
 
-        private string HashPassword(string password)
+        public string HashPassword(string password)
         {
             using (var sha256 = SHA256.Create())
             {
@@ -55,10 +56,10 @@ namespace backend.Server.Services
             httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         }
 
-        public Guid? GetRequesterNid(HttpContext httpContext)
+        public long? GetRequesterNid(HttpContext httpContext)
         {
             var claim = httpContext.User.Claims.FirstOrDefault(x => x.Type == ClaimTypes.NameIdentifier)?.Value;
-            if (Guid.TryParse(claim, out Guid requesterId))
+            if (long.TryParse(claim, out long requesterId))
             {
                 return requesterId;
             }
@@ -88,18 +89,30 @@ namespace backend.Server.Services
             if (exists)
                 throw new ApiException(409, "User with this email already exists.");
 
+            // Check if this is the first user in the system
+            var isFirstUser = !await _context.Users.AnyAsync();
+            
+            // First user becomes SuperAdmin, others use the provided UserType (default to Employee)
+            // Prevent Owner role from being created through regular registration
+            var userType = isFirstUser ? UserRole.SuperAdmin : (registerDetails.UserType ?? UserRole.Employee);
+            
+            if (userType == UserRole.Owner && !isFirstUser)
+            {
+                throw new ApiException(403, "Owner role can only be created by SuperAdmin.");
+            }
+
             var user = new User
             {
                 Name = registerDetails.Name,
                 Surname = registerDetails.Surname,
-                UserType = registerDetails.UserType,
+                UserType = userType,
                 Address = registerDetails.Address,
                 Telephone = registerDetails.Telephone,
                 PlanId = registerDetails.PlanId,
                 BankAccount = registerDetails.BankAccount,
                 Email = registerDetails.Email,
                 Password = HashPassword(registerDetails.Password),
-                BusinessId = 0  // Default value for registration
+                BusinessId = 1  // Default value for registration
             };
 
             _context.Users.Add(user);
@@ -117,6 +130,73 @@ namespace backend.Server.Services
         }
 
 
+        public async Task<long?> GetUserBusinessId(long? nid)
+        {            
+            if (nid == null)
+                return null;
 
+            var user = await _context.Users.FindAsync(nid);
+
+            if (user == null)
+                return null;
+            return user.BusinessId;
+        }
+
+        public async Task<bool> HasUsers()
+        {
+            return await _context.Users.AnyAsync();
+        }
+
+        public async Task CreateBusinessOwnerAsync(RegisterDTO registerDetails, long requesterId)
+        {
+            // Verify that the requester is a SuperAdmin
+            var requester = await _context.Users.FindAsync(requesterId);
+            if (requester == null || requester.UserType != UserRole.SuperAdmin)
+            {
+                throw new ApiException(403, "Only SuperAdmin can create business owners.");
+            }
+
+            if (registerDetails is null)
+                throw new ApiException(400, "Register details are required.");
+
+            var missingFields = new List<string>();
+
+            if (string.IsNullOrWhiteSpace(registerDetails.Name)) missingFields.Add(nameof(registerDetails.Name));
+            if (string.IsNullOrWhiteSpace(registerDetails.Surname)) missingFields.Add(nameof(registerDetails.Surname));
+            if (string.IsNullOrWhiteSpace(registerDetails.Email)) missingFields.Add(nameof(registerDetails.Email));
+            if (string.IsNullOrWhiteSpace(registerDetails.Password)) missingFields.Add(nameof(registerDetails.Password));
+
+            if (missingFields.Count > 0)
+            {
+                throw new ApiException(400, $"Missing or invalid required fields: {string.Join(", ", missingFields)}");
+            }
+
+            var exists = await _context.Users.AnyAsync(u => u.Email == registerDetails.Email);
+            if (exists)
+                throw new ApiException(409, "User with this email already exists.");
+
+            // Force UserType to Owner for business owner creation
+            var user = new User
+            {
+                Name = registerDetails.Name,
+                Surname = registerDetails.Surname,
+                UserType = UserRole.Owner,
+                Address = registerDetails.Address,
+                Telephone = registerDetails.Telephone,
+                PlanId = registerDetails.PlanId,
+                BankAccount = registerDetails.BankAccount,
+                Email = registerDetails.Email,
+                Password = HashPassword(registerDetails.Password),
+                BusinessId = 1  // Default value for registration
+            };
+
+            _context.Users.Add(user);
+            var result = await _context.SaveChangesAsync();
+
+            if (result == 0)
+                throw new ApiException(500, "Something went wrong when creating the business owner");
+
+            return;
+        }
     }
 }

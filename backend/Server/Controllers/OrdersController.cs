@@ -1,7 +1,9 @@
 using System.Threading.Tasks;
 using backend.Server.Interfaces;
+using backend.Server.Models;
 using backend.Server.Models.DatabaseObjects;
 using backend.Server.Models.DTOs.Order;
+using backend.Server.Models.Enums;
 using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Server.Controllers
@@ -44,7 +46,7 @@ namespace backend.Server.Controllers
             return Ok(order);
         }
 
-        [HttpGet("item/{orderNid}")]
+        [HttpGet("{orderNid}/details")]
         public async Task<ActionResult<List<OrderDetail>>> GetOrderDetailsByOrderNid(long orderNid)
         {
             var order = await _ordersService.GetOrderByNidAsync(orderNid);
@@ -52,6 +54,13 @@ namespace backend.Server.Controllers
             var orderDetails = await _ordersService.GetOrderDetailsByOrderId(order.Nid);
 
             return Ok(orderDetails);
+        }
+
+        [HttpGet("details/{detailNid}/addons")]
+        public async Task<ActionResult<List<OrderDetailAddOn>>> GetAddonsByDetailNid(long detailNid)
+        {
+            var addOns = await _ordersService.GetOrderDetailAddOnsByDetailId(detailNid);
+            return Ok(addOns);
         }
 
         [HttpGet("item/addons/{orderNid}")]
@@ -88,6 +97,55 @@ namespace backend.Server.Controllers
         {
             await _ordersService.DeleteOrderAsync(nid);
             return NoContent();
+        }
+
+        [HttpPost("{orderNid}/details")]
+        public async Task<ActionResult<OrderDetail>> AddItemToOrder(long orderNid, [FromBody] OrderDetailRequest request)
+        {
+            var orderDetail = await _ordersService.AddOrderDetailAsync(orderNid, request);
+            return CreatedAtAction(nameof(GetOrderDetailsByOrderNid), new { orderNid }, orderDetail);
+        }
+
+        [HttpDelete("{orderNid}/details/{detailNid}")]
+        public async Task<IActionResult> RemoveItemFromOrder(long orderNid, long detailNid)
+        {
+            await _ordersService.DeleteOrderDetailAsync(orderNid, detailNid);
+            return NoContent();
+        }
+
+        [HttpPut("{orderNid}/details/{detailNid}")]
+        public async Task<IActionResult> UpdateOrderItem(long orderNid, long detailNid, [FromBody] OrderDetailUpdateDTO request)
+        {
+            await _ordersService.UpdateOrderDetailAsync(orderNid, detailNid, request);
+            return NoContent();
+        }
+
+        [HttpPut("{orderNid}/details/{detailNid}/addons")]
+        public async Task<IActionResult> UpdateOrderItemAddons(long orderNid, long detailNid, [FromBody] List<OrderAddOnsDTO> addons)
+        {
+            await _ordersService.UpdateOrderDetailAddOnsAsync(orderNid, detailNid, addons);
+            return NoContent();
+        }
+
+        [HttpPut("{orderNid}/status/{status}")]
+        public async Task<IActionResult> UpdateOrderStatus(long orderNid, OrderStatus status)
+        {
+            await _ordersService.UpdateOrderStatusAsync(orderNid, status);
+            return NoContent();
+        }
+
+        [HttpGet("getFinalCost/{orderNid}/{tip}")]
+        public async Task<ActionResult<decimal>> CalculateCost(long orderNid, decimal tip)
+        {
+            var cost = await _ordersService.CalculateCost(orderNid, tip);
+            return Ok(cost);
+        }
+
+        [HttpGet("{orderNid}/with-items")]
+        public async Task<ActionResult<OrderWithItemsDTO>> GetOrderWithItems(long orderNid)
+        {
+            var orderWithItems = await _ordersService.GetOrderWithItemsAsync(orderNid);
+            return Ok(orderWithItems);
         }
     }
 }

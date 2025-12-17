@@ -1,6 +1,7 @@
 using backend.Server.Models;
 using backend.Server.Models.DatabaseObjects;
 using backend.Server.Models.DTOs.Order;
+using backend.Server.Models.Enums;
 
 namespace backend.Server.Interfaces
 {
@@ -18,5 +19,12 @@ namespace backend.Server.Interfaces
         Task<List<Order>> GetOrderByBusinessIdAsync(long businessId);
         Task UpdateOrderAsync(OrderUpdateDTO request, long nid);
         Task DeleteOrderAsync(long nid);
+        Task<OrderDetail> AddOrderDetailAsync(long orderNid, OrderDetailRequest request);
+        Task DeleteOrderDetailAsync(long orderNid, long detailNid);
+        Task UpdateOrderDetailAsync(long orderNid, long detailNid, OrderDetailUpdateDTO request);
+        Task UpdateOrderDetailAddOnsAsync(long orderNid, long detailNid, List<OrderAddOnsDTO> addons);
+        Task UpdateOrderStatusAsync(long orderNid, OrderStatus status);
+        Task<decimal> CalculateCost(long orderNid, decimal tip);
+        Task<OrderWithItemsDTO> GetOrderWithItemsAsync(long orderNid);
     }
 }

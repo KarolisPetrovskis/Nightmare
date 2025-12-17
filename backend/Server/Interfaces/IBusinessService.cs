@@ -5,7 +5,8 @@ namespace backend.Server.Interfaces
 {
     public interface IBusinessService
     {
-        public Task<List<Business>> RetrieveAllBusinessbyOwnerNid(BusinessGetAllByOwnerNidDTO request);
+        Task<List<Business>> GetAllBusinesses();
+        Task<List<Business>> RetrieveAllBusinessbyOwnerNid(BusinessGetAllByOwnerNidDTO request);
         public Task<Business> GetBusinessByNid(long nid);
         public Task<Business> CreateBusiness(BusinessCreateDTO request);
         public Task UpdateBussiness(BusinessUpdateDTO request, long nid);

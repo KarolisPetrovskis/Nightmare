@@ -419,3 +419,254 @@ Accept: application/json
 DELETE {{backend_HostAddress}}/api/giftcards/1
 
 ###
+
+####################
+# BUSINESS TESTS
+####################
+
+# Create Business - Restaurant
+POST {{backend_HostAddress}}/api/business
+Content-Type: application/json
+
+{
+  "name": "The Golden Fork Restaurant",
+  "type": 1,
+  "ownerId": 1,
+  "address": "123 Main Street, Downtown",
+  "phone": "+1234567890",
+  "email": "contact@goldenfork.com",
+  "workStart": "2025-12-15T09:00:00Z",
+  "workEnd": "2025-12-15T21:00:00Z"
+}
+
+###
+
+# Create Business - Cafe (minimal required fields)
+POST {{backend_HostAddress}}/api/business
+Content-Type: application/json
+
+{
+  "name": "Sunrise Cafe",
+  "type": 1,
+  "ownerId": 1
+}
+
+###
+
+# Create Business - Beauty Salon
+POST {{backend_HostAddress}}/api/business
+Content-Type: application/json
+
+{
+  "name": "Elegant Beauty Salon",
+  "type": 2,
+  "ownerId": 2,
+  "address": "456 Oak Avenue, Suite 200",
+  "phone": "+9876543210",
+  "email": "info@elegantbeauty.com",
+  "workStart": "2025-12-15T09:00:00Z",
+  "workEnd": "2025-12-15T21:00:00Z"
+}
+
+###
+
+# Create Business - Spa & Wellness
+POST {{backend_HostAddress}}/api/business
+Content-Type: application/json
+
+{
+  "name": "Tranquility Spa",
+  "type": 2,
+  "ownerId": 1,
+  "address": "789 Pine Road",
+  "phone": "+1122334455",
+  "email": "bookings@tranquilityspa.com",
+  "workStart": "2025-12-15T10:00:00Z",
+  "workEnd": "2025-12-15T20:00:00Z"
+}
+
+###
+
+# Get Business by Nid
+GET {{backend_HostAddress}}/api/business/14
+Accept: application/json
+
+###
+
+# Get All Businesses by Owner ID
+GET {{backend_HostAddress}}/api/business?ownerId=1
+Accept: application/json
+
+###
+
+# Get All Businesses by Owner ID - Different owner
+GET {{backend_HostAddress}}/api/business?ownerId=2
+Accept: application/json
+
+###
+
+# Get All Businesses by Owner ID with pagination
+GET {{backend_HostAddress}}/api/business?ownerId=1&page=0&perPage=10
+Accept: application/json
+
+###
+
+# Update Business - Change name and contact info
+PUT {{backend_HostAddress}}/api/business/1
+Content-Type: application/json
+
+{
+  "name": "The Golden Fork Restaurant & Bar",
+  "address": "123 Main Street, Downtown District",
+  "phone": "+1234567899",
+  "email": "reservations@goldenfork.com"
+}
+
+###
+
+# Update Business - Change only name
+PUT {{backend_HostAddress}}/api/business/1
+Content-Type: application/json
+
+{
+  "name": "Golden Fork Bistro"
+}
+
+###
+
+# Update Business - Change only type
+PUT {{backend_HostAddress}}/api/business/1
+Content-Type: application/json
+
+{
+  "type": 2
+}
+
+###
+
+# Update Business - Change owner
+PUT {{backend_HostAddress}}/api/business/1
+Content-Type: application/json
+
+{
+  "ownerId": 3
+}
+
+###
+
+# Update Business - Update contact details only
+PUT {{backend_HostAddress}}/api/business/1
+Content-Type: application/json
+
+{
+  "address": "999 New Street, City Center",
+  "phone": "+1111222333",
+  "email": "newemail@goldenfork.com"
+}
+
+###
+
+# Delete Business
+DELETE {{backend_HostAddress}}/api/business/1
+
+###
+
+####################
+# ORDER ITEM MANAGEMENT TESTS
+####################
+
+# Test Add Item to Existing Order - Simple item without addons
+POST {{backend_HostAddress}}/api/orders/1/items
+Content-Type: application/json
+
+{
+  "itemId": 3,
+  "priceWoVat": 8.50,
+  "priceWtVat": 10.50
+}
+
+###
+
+# Test Add Item to Existing Order - Item with addons
+POST {{backend_HostAddress}}/api/orders/1/items
+Content-Type: application/json
+
+{
+  "itemId": 4,
+  "priceWoVat": 12.00,
+  "priceWtVat": 15.00,
+  "addons": [
+    {
+      "ingredientId": 1,
+      "priceWoVat": 1.50
+    },
+    {
+      "ingredientId": 2,
+      "priceWoVat": 2.00
+    }
+  ]
+}
+
+###
+
+# Test Update Order Item - Update both prices
+PUT {{backend_HostAddress}}/api/orders/1/items/1
+Content-Type: application/json
+
+{
+  "priceWoVat": 15.00,
+  "priceWtVat": 18.50
+}
+
+###
+
+# Test Update Order Item - Update only price with VAT
+PUT {{backend_HostAddress}}/api/orders/1/items/1
+Content-Type: application/json
+
+{
+  "priceWtVat": 20.00
+}
+
+###
+
+# Test Update Order Item - Update only price without VAT
+PUT {{backend_HostAddress}}/api/orders/1/items/1
+Content-Type: application/json
+
+{
+  "priceWoVat": 16.50
+}
+
+###
+
+# Test Update Order Item Addons - Replace all addons for an item
+PUT {{backend_HostAddress}}/api/orders/1/items/1/addons
+Content-Type: application/json
+
+[
+  {
+    "ingredientId": 5,
+    "priceWoVat": 2.50
+  },
+  {
+    "ingredientId": 7,
+    "priceWoVat": 1.00
+  }
+]
+
+###
+
+# Test Update Order Item Addons - Remove all addons (empty array)
+PUT {{backend_HostAddress}}/api/orders/1/items/1/addons
+Content-Type: application/json
+
+[]
+
+###
+
+# Test Remove Item from Order
+DELETE {{backend_HostAddress}}/api/orders/1/items/1
+
+###
+

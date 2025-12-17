@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using backend.Server.Models.Enums;
 
 namespace backend.Server.Models.DTOs.User;
 public class UserCreateDTO
@@ -21,8 +22,8 @@ public class UserCreateDTO
     public required string Password { get; set; }
 
     [Required]
-    [Range(1, long.MaxValue, ErrorMessage = "UserType must be a positive number")]
-    public required long UserType { get; set; }
+    [EnumDataType(typeof(UserRole), ErrorMessage = "Invalid user role")]
+    public required UserRole UserType { get; set; }
     [Required]
     [Range(1, long.MaxValue, ErrorMessage = "BusinessId must be a positive number")]
     public required long BusinessId { get; set; }

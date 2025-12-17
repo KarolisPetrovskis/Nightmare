@@ -1,35 +1,38 @@
-import React, { createContext, useState, useContext, type ReactNode } from "react";
+import React, { createContext, useState, useContext, useEffect, type ReactNode } from "react";
 
 type Option = {
-    id: number;
+    nid: number;
     name: string;
     price: number;
 };
 
 type OptionGroup = {
-    id: number;
+    nid: number;
     name: string;
     options: Option[];
 };
 
 type MenuItem = {
-    id: number;
+    nid: number;
     name: string;
     price: number;
-    optionGroups?: OptionGroup[];
+    vatId: number;
+    addonGroups?: OptionGroup[];
 };
 
 type OrderDish = {
-    id: number;
+    nid: number;
     menuItem: MenuItem;
     quantity: number;
     selectedOptions?: Record<number, number>;
 };
 
 type Order = {
-    id: number;
+    nid: number;
     items: OrderDish[];
     staff: string;
+    status?: number; // Order status from backend
+    backendNid?: number; // Track backend order ID
 };
 
 type OrderContextType = {
@@ -38,50 +41,53 @@ type OrderContextType = {
 };
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
-
+/*
 // Sample dishes for initial orders
 const sampleDishes = {
     carbonara: {
-        id: 1,
+        nid: 1,
         name: "Spaghetti Carbonara",
         price: 12.50,
-        optionGroups: [
+        vatId: 1,
+        addonGroups: [
             {
-                id: 101,
+                nid: 101,
                 name: "Choose Pasta Size",
                 options: [
-                    { id: 1001, name: "Regular", price: 0 },
-                    { id: 1002, name: "Large", price: 2.00 }
+                    { nid: 1001, name: "Regular", price: 0 },
+                    { nid: 1002, name: "Large", price: 2.00 }
                 ]
             }
         ]
     },
     caesar: {
-        id: 2,
+        nid: 2,
         name: "Caesar Salad",
         price: 8.90,
-        optionGroups: [
+        vatId: 1,
+        addonGroups: [
             {
-                id: 201,
+                nid: 201,
                 name: "Add Protein",
                 options: [
-                    { id: 2001, name: "Chicken", price: 2.00 },
-                    { id: 2002, name: "Shrimp", price: 3.50 }
+                    { nid: 2001, name: "Chicken", price: 2.00 },
+                    { nid: 2002, name: "Shrimp", price: 3.50 }
                 ]
             }
         ]
     },
     pizza: {
-        id: 3,
+        nid: 3,
         name: "Margherita Pizza",
         price: 10.00,
-        optionGroups: [
+        vatId: 1,
+        addonGroups: [
             {
-                id: 301,
+                nid: 301,
                 name: "Choose Crust",
                 options: [
-                    { id: 3001, name: "Thin Crust", price: 0 },
-                    { id: 3002, name: "Thick Crust", price: 1.00 }
+                    { nid: 3001, name: "Thin Crust", price: 0 },
+                    { nid: 3002, name: "Thick Crust", price: 1.00 }
                 ]
             }
         ]
@@ -91,17 +97,17 @@ const sampleDishes = {
 // Initial sample orders
 const initialOrders: Order[] = [
     {
-        id: 1000,
+        nid: 1000,
         staff: "Alice",
         items: [
             {
-                id: 1,
+                nid: 1,
                 menuItem: sampleDishes.carbonara,
                 quantity: 2,
                 selectedOptions: { 101: 1001 }
             },
             {
-                id: 2,
+                nid: 2,
                 menuItem: sampleDishes.caesar,
                 quantity: 1,
                 selectedOptions: { 201: 2001 }
@@ -109,17 +115,17 @@ const initialOrders: Order[] = [
         ]
     },
     {
-        id: 1001,
+        nid: 1001,
         staff: "Bob",
         items: [
             {
-                id: 3,
+                nid: 3,
                 menuItem: sampleDishes.pizza,
                 quantity: 3,
                 selectedOptions: { 301: 3002 }
             },
             {
-                id: 4,
+                nid: 4,
                 menuItem: sampleDishes.caesar,
                 quantity: 2,
                 selectedOptions: {}
@@ -127,21 +133,43 @@ const initialOrders: Order[] = [
         ]
     },
     {
-        id: 1002,
+        nid: 1002,
         staff: "",
         items: [
             {
-                id: 5,
+                nid: 5,
                 menuItem: sampleDishes.carbonara,
                 quantity: 1,
                 selectedOptions: { 101: 1002 }
             }
         ]
     }
-];
+];*/
 
 export function OrderProvider({ children }: { children: ReactNode }) {
-    const [orders, setOrders] = useState<Order[]>(initialOrders);
+    // Initialize from sessionStorage if available (only unsaved orders)
+    const [orders, setOrdersState] = useState<Order[]>(() => {
+        const saved = sessionStorage.getItem('unsavedOrders');
+        return saved ? JSON.parse(saved) : [];
+    });
+
+    // Wrap setOrders to also save ONLY unsaved orders to sessionStorage
+    const setOrders = (value: Order[] | ((prev: Order[]) => Order[])) => {
+        setOrdersState(prev => {
+            const newOrders = typeof value === 'function' ? value(prev) : value;
+            
+            // Only persist orders that don't have a backendNid (unsaved orders)
+            const unsavedOrders = newOrders.filter(order => !order.backendNid);
+            
+            if (unsavedOrders.length > 0) {
+                sessionStorage.setItem('unsavedOrders', JSON.stringify(unsavedOrders));
+            } else {
+                sessionStorage.removeItem('unsavedOrders');
+            }
+            
+            return newOrders;
+        });
+    };
 
     return (
         <OrderContext.Provider value={{ orders, setOrders }}>

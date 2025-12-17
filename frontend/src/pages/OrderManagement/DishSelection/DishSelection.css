@@ -35,3 +35,30 @@
   outline: none;
   box-shadow: none;
 }
+
+/* Modal action buttons - make them more visible */
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.modal-actions .cancel-button {
+  background-color: #4a4a4a !important;
+  border: 1px solid #666 !important;
+}
+
+.modal-actions .cancel-button:hover {
+  background-color: #b33e3e !important;
+  border-color: #b33e3e !important;
+}
+
+.modal-actions .new-item {
+  background-color: #3e44b3 !important;
+  border: 1px solid #5560d9 !important;
+}
+
+.modal-actions .new-item:hover {
+  background-color: #5560d9 !important;
+  border-color: #6b76e6 !important;
+}

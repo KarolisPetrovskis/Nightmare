@@ -4,13 +4,16 @@ using backend.Server.Exceptions;
 using backend.Server.Interfaces;
 using backend.Server.Models.DatabaseObjects;
 using backend.Server.Models.DTOs.User;
+using backend.Server.Models.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace backend.Server.Services
 {
-    public class EmployeesService (ApplicationDbContext context) : IEmployeesService 
+    public class EmployeesService(ApplicationDbContext context, IAuthService authService) : IEmployeesService
     {
         private readonly ApplicationDbContext _context = context;
+        private readonly IAuthService _authService = authService;
+
         public async Task<List<User>> GetAllEmployeesAsync(int page, int perPage)
         {
             if (page < 0)
@@ -67,19 +70,31 @@ namespace backend.Server.Services
                 .ToListAsync();
         }
 
-        public async Task<User> CreateEmployeeAsync(UserCreateDTO request)
+        public async Task<User> CreateEmployeeAsync(UserCreateDTO request, HttpContext httpContext)
         {
             if (await _context.Users.AnyAsync(u => u.Email == request.Email))
-            {
                 throw new ApiException(409, $"Employee with Email {request.Email} already exists.");
-            }
+            
+            var userId = _authService.GetRequesterNid(httpContext) ?? throw new ApiException(401, $"Unautorized, log in to do this action");
 
+            var userType = await _context.Users
+                .Where(u => u.Nid == userId)
+                .Select(u => u.UserType)
+                .FirstOrDefaultAsync();
+
+            if (request.UserType == UserRole.SuperAdmin)
+                throw new ApiException(403, $"Admin cannot be created");
+            if (userType < UserRole.SuperAdmin && request.UserType == UserRole.Owner)
+                throw new ApiException(403, $"You cannot create other owners");
+            if (userType < UserRole.Owner)
+                throw new ApiException(403, $"You do not have creation permissions");
+            
             var employee = new User
             {
                 Name = request.Name,
                 Surname = request.Surname,
                 Email = request.Email,
-                Password = request.Password,
+                Password = _authService.HashPassword(request.Password),
                 UserType = request.UserType,
                 Address = request.Address,
                 Telephone = request.Telephone,
@@ -121,16 +136,34 @@ namespace backend.Server.Services
             return employee;
         }
 
-        public async Task UpdateEmployeeAsync(UserUpdateDTO request, long nid)
+        public async Task UpdateEmployeeAsync(UserUpdateDTO request, long nid, HttpContext httpContext)
         {
             if (nid <= 0)
             {
                 throw new ApiException(400, "Nid must be a positive number");
             }
+
+
+            var userId = _authService.GetRequesterNid(httpContext) ?? throw new ApiException(401, $"Unautorized, log in to do this action");
+
+            var userType = await _context.Users
+                .Where(u => u.Nid == userId)
+                .Select(u => u.UserType)
+                .FirstOrDefaultAsync();
+            if (request.UserType == null)
+                throw new ApiException(400, $"User type cannot be empty");
+            if ((int) request.UserType == 4)
+                throw new ApiException(403, $"Admin cannot be created");
+            if ((int) userType < 4 && (int) request.UserType == 3)
+                throw new ApiException(403, $"You cannot create other owners");
+            if ((int) userType < 3)
+                throw new ApiException(403, $"You do not have creation permissions");
+            
+
             var employee = await _context.Users.FindAsync(nid) ?? throw new ApiException(404, $"Employee with Nid {nid} not found.");
 
             if (request.Email != null) employee.Email = request.Email;
-            if (request.Password != null) employee.Password = request.Password;
+            if (request.Password != null) employee.Password = _authService.HashPassword(request.Password);
             if (request.UserType.HasValue) employee.UserType = request.UserType.Value;
             if (request.BusinessId.HasValue) employee.BusinessId = request.BusinessId.Value;
 

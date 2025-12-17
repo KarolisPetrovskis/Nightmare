@@ -39,15 +39,22 @@ namespace backend.Server.Services
 
         public async Task<MenuItemIngredient> CreateMenuAddonAsync(MenuAddonCreateDTO request)
         {
-            if (await _context.MenuItemIngredients.AnyAsync(m => m.Name == request.Name))
+            if (await _context.MenuItemIngredients.AnyAsync(m => m.Name == request.Name && m.GroupId == request.GroupId))
             {
-                throw new ApiException(409, "Menu addon with the same name already exists");
+                throw new ApiException(409, $"Menu addon with the same name {request.Name} already exists in this group {request.GroupId}.");
+            }
+
+            // Check if the ingredient group exists
+            var group = await _context.MenuItemIngredientGroups.FindAsync(request.GroupId);
+            if (group == null)
+            {
+                throw new ApiException(404, $"Ingredient group {request.GroupId} not found");
             }
 
             var menuAddon = new MenuItemIngredient
             {
                 Name = request.Name,
-                ItemId = request.ItemId,
+                GroupId = request.GroupId,
                 Price = request.Price
             };
 
@@ -77,8 +84,29 @@ namespace backend.Server.Services
                 throw new ApiException(400, "Invalid menu item ID");
             }
 
+            // Get all groups for this menu item, then get all addons from those groups
+            var groups = await _context.MenuItemIngredientGroups
+                .Where(g => g.MenuItemId == menuItemNid)
+                .Select(g => g.Nid)
+                .ToListAsync();
+
             var addons = await _context.MenuItemIngredients
-                .Where(m => m.ItemId == menuItemNid)
+                .Where(m => m.GroupId != null && groups.Contains(m.GroupId.Value))
+                .AsNoTracking()
+                .ToListAsync();
+
+            return addons;
+        }
+
+        public async Task<List<MenuItemIngredient>> GetMenuAddonsByGroupNidAsync(long groupNid)
+        {
+            if (groupNid <= 0)
+            {
+                throw new ApiException(400, "Invalid group ID");
+            }
+
+            var addons = await _context.MenuItemIngredients
+                .Where(m => m.GroupId == groupNid)
                 .AsNoTracking()
                 .ToListAsync();
 
@@ -94,7 +122,16 @@ namespace backend.Server.Services
             var menuAddon = await _context.MenuItemIngredients.FindAsync(nid) ?? throw new ApiException(404, $"Menu addon {nid} not found");
 
             if (request.Name != null) menuAddon.Name = request.Name;
-            if (request.ItemId.HasValue) menuAddon.ItemId = request.ItemId.Value;
+            if (request.GroupId.HasValue)
+            {
+                // Verify the group exists
+                var group = await _context.MenuItemIngredientGroups.FindAsync(request.GroupId.Value);
+                if (group == null)
+                {
+                    throw new ApiException(404, $"Ingredient group {request.GroupId.Value} not found");
+                }
+                menuAddon.GroupId = request.GroupId.Value;
+            }
             if (request.Price.HasValue) menuAddon.Price = request.Price.Value;
 
             _context.MenuItemIngredients.Update(menuAddon);

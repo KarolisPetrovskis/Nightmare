@@ -14,7 +14,10 @@ public class BusinessCreateDTO
     [Required]
     [Range(1, long.MaxValue, ErrorMessage = "OwnerId must be a positive number")]
     public required long OwnerId { get; set; }
-
+    [Required]
+    public required DateTime WorkStart { get; set; }
+    [Required]
+    public required DateTime WorkEnd { get; set; }
     [StringLength(500)]
     public string? Address { get; set; }
 

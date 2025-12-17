@@ -3,6 +3,9 @@
 ##
 ## Get latest from `dotnet new gitignore`
 
+# User-specific files
+*.pem
+
 # dotenv files
 .env
 

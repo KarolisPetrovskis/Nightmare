@@ -81,11 +81,9 @@ namespace Server.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Nid"));
 
                     b.Property<string>("Address")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Email")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Name")
@@ -96,11 +94,16 @@ namespace Server.Migrations
                         .HasColumnType("bigint");
 
                     b.Property<string>("Phone")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<long>("Type")
                         .HasColumnType("bigint");
+
+                    b.Property<DateTime>("WorkEnd")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("WorkStart")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Nid");
 
@@ -190,7 +193,7 @@ namespace Server.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Nid"));
 
-                    b.Property<long?>("ItemId")
+                    b.Property<long?>("GroupId")
                         .HasColumnType("bigint");
 
                     b.Property<string>("Name")
@@ -205,6 +208,27 @@ namespace Server.Migrations
                     b.ToTable("MenuItemIngredients");
                 });
 
+            modelBuilder.Entity("backend.Server.Models.DatabaseObjects.MenuItemIngredientGroup", b =>
+                {
+                    b.Property<long>("Nid")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Nid"));
+
+                    b.Property<long>("MenuItemId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Nid");
+
+                    b.ToTable("MenuItemIngredientGroups");
+                });
+
             modelBuilder.Entity("backend.Server.Models.DatabaseObjects.Order", b =>
                 {
                     b.Property<long>("Nid")
@@ -217,7 +241,6 @@ namespace Server.Migrations
                         .HasColumnType("bigint");
 
                     b.Property<string>("Code")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("DateCreated")
@@ -226,8 +249,8 @@ namespace Server.Migrations
                     b.Property<decimal>("Discount")
                         .HasColumnType("numeric");
 
-                    b.Property<long>("StatusId")
-                        .HasColumnType("bigint");
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
 
                     b.Property<decimal>("Total")
                         .HasColumnType("numeric");
@@ -251,16 +274,22 @@ namespace Server.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Nid"));
 
+                    b.Property<decimal>("BasePrice")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("DiscountPercent")
+                        .HasColumnType("numeric");
+
                     b.Property<long>("ItemId")
                         .HasColumnType("bigint");
 
                     b.Property<long>("OrderId")
                         .HasColumnType("bigint");
 
-                    b.Property<decimal>("Price_w_vat")
-                        .HasColumnType("numeric");
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
 
-                    b.Property<decimal>("Price_wo_vat")
+                    b.Property<decimal>("VatRate")
                         .HasColumnType("numeric");
 
                     b.HasKey("Nid");
@@ -282,12 +311,60 @@ namespace Server.Migrations
                     b.Property<long>("IngredientId")
                         .HasColumnType("bigint");
 
-                    b.Property<decimal>("Price_wo_vat")
+                    b.Property<decimal>("PriceWoVat")
                         .HasColumnType("numeric");
 
                     b.HasKey("Nid");
 
                     b.ToTable("OrderDetailAddOns");
+                });
+
+            modelBuilder.Entity("backend.Server.Models.DatabaseObjects.Payment", b =>
+                {
+                    b.Property<long>("Nid")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Nid"));
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
+
+                    b.Property<string>("CustomerEmail")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<long>("OrderId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("PaymentMethod")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("ProcessedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TransactionId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Nid");
+
+                    b.ToTable("Payments");
                 });
 
             modelBuilder.Entity("backend.Server.Models.DatabaseObjects.Plan", b =>
@@ -310,6 +387,51 @@ namespace Server.Migrations
                     b.ToTable("Plans");
                 });
 
+            modelBuilder.Entity("backend.Server.Models.DatabaseObjects.Receipt", b =>
+                {
+                    b.Property<long>("Nid")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Nid"));
+
+                    b.Property<long>("BusinessId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
+
+                    b.Property<string>("DetailedContent")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("IssuedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("OrderId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("PaymentId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ReceiptNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("StripeReceiptUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<decimal>("Total")
+                        .HasColumnType("numeric");
+
+                    b.HasKey("Nid");
+
+                    b.ToTable("Receipts");
+                });
+
             modelBuilder.Entity("backend.Server.Models.DatabaseObjects.Service", b =>
                 {
                     b.Property<long>("Nid")
@@ -318,10 +440,13 @@ namespace Server.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Nid"));
 
-                    b.Property<int>("BusinessId")
-                        .HasColumnType("integer");
+                    b.Property<long>("BusinessId")
+                        .HasColumnType("bigint");
 
-                    b.Property<decimal>("Discount")
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("Discount")
                         .HasColumnType("numeric");
 
                     b.Property<DateTime?>("DiscountTime")
@@ -410,8 +535,8 @@ namespace Server.Migrations
                     b.Property<string>("Telephone")
                         .HasColumnType("text");
 
-                    b.Property<long>("UserType")
-                        .HasColumnType("bigint");
+                    b.Property<int>("UserType")
+                        .HasColumnType("integer");
 
                     b.HasKey("Nid");
 
@@ -450,7 +575,7 @@ namespace Server.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<float>("Percentage")
+                    b.Property<float?>("Percentage")
                         .HasColumnType("real");
 
                     b.HasKey("Nid");

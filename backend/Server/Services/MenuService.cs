@@ -134,6 +134,39 @@ public class MenuService(ApplicationDbContext context, IMenuAddonsService menuAd
                 throw new ApiException(400, "Nid must be a positive number");
             }
             var menuItem = await _context.MenuItems.FindAsync(nid) ?? throw new ApiException(404, $"Menu item {nid} not found.");
+            
+            // Check if this menu item is used in any orders
+            var usedInOrders = await _context.OrderDetails
+                .AnyAsync(od => od.ItemId == nid);
+            
+            if (usedInOrders)
+            {
+                throw new ApiException(400, "Cannot delete menu item because it is used in existing orders. Consider marking it as unavailable instead.");
+            }
+            
+            // Get all addon groups for this menu item
+            var groups = await _context.MenuItemIngredientGroups
+                .Where(g => g.MenuItemId == nid)
+                .ToListAsync();
+            
+            // For each group, delete its addons
+            var groupIds = groups.Select(g => g.Nid).ToList();
+            if (groupIds.Any())
+            {
+                var addons = await _context.MenuItemIngredients
+                    .Where(a => a.GroupId != null && groupIds.Contains(a.GroupId.Value))
+                    .ToListAsync();
+                
+                if (addons.Any())
+                {
+                    _context.MenuItemIngredients.RemoveRange(addons);
+                }
+                
+                // Delete the groups
+                _context.MenuItemIngredientGroups.RemoveRange(groups);
+            }
+            
+            // Finally delete the menu item
             _context.MenuItems.Remove(menuItem);
 
             await Helper.SaveChangesOrThrowAsync(_context, "Failed to delete menu item.");

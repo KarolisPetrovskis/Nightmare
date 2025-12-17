@@ -5,6 +5,7 @@ using backend.Server.Interfaces;
 using backend.Server.Models;
 using backend.Server.Models.DatabaseObjects;
 using backend.Server.Models.DTOs.Order;
+using backend.Server.Models.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace backend.Server.Services
@@ -65,7 +66,7 @@ namespace backend.Server.Services
             {
                 Code = request.Code,
                 VatId = request.VatId,
-                StatusId = request.StatusId,
+                Status = OrderStatus.InProgress,
                 Total = request.Total,
                 DateCreated = DateTime.UtcNow,
                 BusinessId = request.BusinessId,
@@ -89,7 +90,7 @@ namespace backend.Server.Services
                         {
                             DetailId = orderDetails.First(od => od.ItemId == detailRequest.ItemId && od.OrderId == order.Nid).Nid,
                             IngredientId = addonRequest.IngredientId,
-                            Price_wo_vat = addonRequest.PriceWoVat
+                            PriceWoVat = addonRequest.PriceWoVat
                         };
                         orderDetailAddOns.Add(orderAddOn);
                     }
@@ -123,8 +124,10 @@ namespace backend.Server.Services
                 {
                     OrderId = orderNid,
                     ItemId = detailRequest.ItemId,
-                    Price_wo_vat = detailRequest.PriceWoVat,
-                    Price_w_vat = detailRequest.PriceWtVat
+                    BasePrice = detailRequest.BasePrice,
+                    VatRate = detailRequest.VatRate,
+                    Quantity = detailRequest.Quantity,
+                    DiscountPercent = detailRequest.DiscountPercent
                 };
                 orderDetails.Add(orderDetail);
             }
@@ -207,7 +210,7 @@ namespace backend.Server.Services
             }
             var order = await _context.Orders.FindAsync(nid) ?? throw new ApiException(404, $"Order {nid} not found");
 
-            if (request.StatusId.HasValue) order.StatusId = request.StatusId.Value;
+            if (request.StatusId.HasValue) order.Status = (OrderStatus)request.StatusId.Value;
             if (request.Total.HasValue) order.Total = request.Total.Value;
 
             _context.Orders.Update(order);
@@ -224,9 +227,414 @@ namespace backend.Server.Services
 
             var order = await _context.Orders.FindAsync(nid) ?? throw new ApiException(404, $"Order {nid} not found");
 
+            // Get all order details for this order
+            var orderDetails = await _context.OrderDetails
+                .Where(od => od.OrderId == nid)
+                .ToListAsync();
+
+            // Get all detail NIDs to find related addons
+            var detailNids = orderDetails.Select(od => od.Nid).ToList();
+
+            // Delete all addons associated with these order details
+            if (detailNids.Any())
+            {
+                var addons = await _context.OrderDetailAddOns
+                    .Where(addon => detailNids.Contains(addon.DetailId))
+                    .ToListAsync();
+
+                if (addons.Any())
+                {
+                    _context.OrderDetailAddOns.RemoveRange(addons);
+                }
+            }
+
+            // Delete all order details
+            if (orderDetails.Any())
+            {
+                _context.OrderDetails.RemoveRange(orderDetails);
+            }
+
+            // Finally, delete the order itself
             _context.Orders.Remove(order);
 
             await Helper.SaveChangesOrThrowAsync(_context, $"Failed to delete order {nid}.");
+        }
+
+        public async Task<OrderDetail> AddOrderDetailAsync(long orderNid, OrderDetailRequest request)
+        {
+            if (orderNid <= 0)
+            {
+                throw new ApiException(400, "Order Nid must be a positive number");
+            }
+
+            // Verify order exists
+            var order = await _context.Orders.FindAsync(orderNid) ?? throw new ApiException(404, $"Order {orderNid} not found");
+
+            // Create order detail
+            var orderDetail = new OrderDetail
+            {
+                OrderId = orderNid,
+                ItemId = request.ItemId,
+                BasePrice = request.BasePrice,
+                VatRate = request.VatRate,
+                DiscountPercent = request.DiscountPercent,
+                Quantity = request.Quantity
+            };
+
+            _context.OrderDetails.Add(orderDetail);
+            await Helper.SaveChangesOrThrowAsync(_context, $"Failed to add item to order {orderNid}.");
+
+            // Add addons if provided
+            if (request.Addons != null && request.Addons.Count > 0)
+            {
+                var addOns = request.Addons.Select(addon => new OrderDetailAddOn
+                {
+                    DetailId = orderDetail.Nid,
+                    IngredientId = addon.IngredientId,
+                    PriceWoVat = addon.PriceWoVat
+                }).ToList();
+
+                await CreateOrderDetailAddOnsAsync(addOns);
+            }
+
+            // Update order total
+            var allDetails = await _context.OrderDetails.Where(d => d.OrderId == orderNid).ToListAsync();
+            var detailIds = allDetails.Select(d => d.Nid).ToList();
+            var allDetailsAddOns = await _context.OrderDetailAddOns
+                .Where(a => detailIds.Contains(a.DetailId))
+                .ToListAsync();
+
+            // Group add-ons by DetailId for efficient lookup
+            var addOnsByDetail = allDetailsAddOns
+                .GroupBy(a => a.DetailId)
+                .ToDictionary(g => g.Key, g => g.Sum(a => a.PriceWoVat));
+
+            order.Total = allDetails.Sum(d =>
+            {
+                var addOnsTotal = addOnsByDetail.TryGetValue(d.Nid, out var sum) ? sum : 0m;
+                var basePriceWithAddons = d.BasePrice + addOnsTotal;
+                var priceWithVat = basePriceWithAddons * (1 + d.VatRate);
+                if (d.DiscountPercent.HasValue && d.DiscountPercent.Value > 0)
+                    priceWithVat *= (1 - d.DiscountPercent.Value / 100);
+                return priceWithVat * d.Quantity;
+            });
+            _context.Orders.Update(order);
+            await Helper.SaveChangesOrThrowAsync(_context, $"Failed to update order total.", expectChanges: false);
+
+            return orderDetail;
+        }
+
+        public async Task DeleteOrderDetailAsync(long orderNid, long detailNid)
+        {
+            if (orderNid <= 0)
+            {
+                throw new ApiException(400, "Order Nid must be a positive number");
+            }
+            if (detailNid <= 0)
+            {
+                throw new ApiException(400, "Detail Nid must be a positive number");
+            }
+
+            // Verify order exists
+            var order = await _context.Orders.FindAsync(orderNid) ?? throw new ApiException(404, $"Order {orderNid} not found");
+
+            // Find and delete order detail
+            var orderDetail = await _context.OrderDetails.FindAsync(detailNid) ?? throw new ApiException(404, $"Order detail {detailNid} not found");
+
+            if (orderDetail.OrderId != orderNid)
+            {
+                throw new ApiException(400, $"Order detail {detailNid} does not belong to order {orderNid}");
+            }
+
+            // Delete associated addons first
+            var addons = await _context.OrderDetailAddOns
+                .Where(addon => addon.DetailId == detailNid)
+                .ToListAsync();
+            
+            if (addons.Any())
+            {
+                _context.OrderDetailAddOns.RemoveRange(addons);
+            }
+
+            // Now delete the order detail
+            _context.OrderDetails.Remove(orderDetail);
+            await Helper.SaveChangesOrThrowAsync(_context, $"Failed to remove item from order {orderNid}.");
+
+            // Update order total
+            var allDetails = await _context.OrderDetails.Where(d => d.OrderId == orderNid).ToListAsync();
+            order.Total = allDetails.Sum(d => 
+            {
+                var priceWithVat = d.BasePrice * (1 + d.VatRate);
+                if (d.DiscountPercent.HasValue && d.DiscountPercent.Value > 0)
+                    priceWithVat *= (1 - d.DiscountPercent.Value / 100);
+                return priceWithVat * d.Quantity;
+            });
+            _context.Orders.Update(order);
+            await Helper.SaveChangesOrThrowAsync(_context, $"Failed to update order total.", expectChanges: false);
+        }
+
+        public async Task UpdateOrderDetailAsync(long orderNid, long detailNid, OrderDetailUpdateDTO request)
+        {
+            if (orderNid <= 0)
+            {
+                throw new ApiException(400, "Order Nid must be a positive number");
+            }
+            if (detailNid <= 0)
+            {
+                throw new ApiException(400, "Detail Nid must be a positive number");
+            }
+
+            // Verify order exists
+            var order = await _context.Orders.FindAsync(orderNid) ?? throw new ApiException(404, $"Order {orderNid} not found");
+
+            // Find order detail
+            var orderDetail = await _context.OrderDetails.FindAsync(detailNid) ?? throw new ApiException(404, $"Order detail {detailNid} not found");
+
+            if (orderDetail.OrderId != orderNid)
+            {
+                throw new ApiException(400, $"Order detail {detailNid} does not belong to order {orderNid}");
+            }
+
+            // Update fields if provided
+            if (request.BasePrice.HasValue) orderDetail.BasePrice = request.BasePrice.Value;
+            if (request.VatRate.HasValue) orderDetail.VatRate = request.VatRate.Value;
+            if (request.DiscountPercent.HasValue) orderDetail.DiscountPercent = request.DiscountPercent.Value;
+            if (request.Quantity.HasValue) orderDetail.Quantity = request.Quantity.Value;
+
+            _context.OrderDetails.Update(orderDetail);
+            await Helper.SaveChangesOrThrowAsync(_context, $"Failed to update order detail {detailNid}.", expectChanges: false);
+
+            // Update order total
+            var allDetails = await _context.OrderDetails.Where(d => d.OrderId == orderNid).ToListAsync();
+            order.Total = allDetails.Sum(d => 
+            {
+                var priceWithVat = d.BasePrice * (1 + d.VatRate);
+                if (d.DiscountPercent.HasValue && d.DiscountPercent.Value > 0)
+                    priceWithVat *= (1 - d.DiscountPercent.Value / 100);
+                return priceWithVat * d.Quantity;
+            });
+            _context.Orders.Update(order);
+            await Helper.SaveChangesOrThrowAsync(_context, $"Failed to update order total.", expectChanges: false);
+        }
+
+        public async Task UpdateOrderDetailAddOnsAsync(long orderNid, long detailNid, List<OrderAddOnsDTO> addons)
+        {
+            if (orderNid <= 0)
+            {
+                throw new ApiException(400, "Order Nid must be a positive number");
+            }
+            if (detailNid <= 0)
+            {
+                throw new ApiException(400, "Detail Nid must be a positive number");
+            }
+
+            // Verify order exists
+            var order = await _context.Orders.FindAsync(orderNid) ?? throw new ApiException(404, $"Order {orderNid} not found");
+
+            // Find order detail
+            var orderDetail = await _context.OrderDetails.FindAsync(detailNid) ?? throw new ApiException(404, $"Order detail {detailNid} not found");
+
+            if (orderDetail.OrderId != orderNid)
+            {
+                throw new ApiException(400, $"Order detail {detailNid} does not belong to order {orderNid}");
+            }
+
+            // Delete existing addons
+            var existingAddons = await _context.OrderDetailAddOns.Where(a => a.DetailId == detailNid).ToListAsync();
+            _context.OrderDetailAddOns.RemoveRange(existingAddons);
+            await Helper.SaveChangesOrThrowAsync(_context, $"Failed to delete old addons for detail {detailNid}.", expectChanges: false);
+
+            // Add new addons if provided
+            if (addons != null && addons.Count > 0)
+            {
+                var newAddOns = addons.Select(addon => new OrderDetailAddOn
+                {
+                    DetailId = detailNid,
+                    IngredientId = addon.IngredientId,
+                    PriceWoVat = addon.PriceWoVat
+                }).ToList();
+
+                _context.OrderDetailAddOns.AddRange(newAddOns);
+                await Helper.SaveChangesOrThrowAsync(_context, $"Failed to add new addons for detail {detailNid}.");
+            }
+
+            // Recalculate detail base price with new addons
+            var addonTotal = addons?.Sum(a => a.PriceWoVat) ?? 0;
+            var menuItem = await _context.MenuItems.FindAsync(orderDetail.ItemId);
+            if (menuItem != null)
+            {
+                orderDetail.BasePrice = menuItem.Price + addonTotal;
+                // VatRate and DiscountPercent remain unchanged
+                
+                _context.OrderDetails.Update(orderDetail);
+                await Helper.SaveChangesOrThrowAsync(_context, $"Failed to update detail prices.", expectChanges: false);
+            }
+
+            // Update order total
+            var allDetails = await _context.OrderDetails.Where(d => d.OrderId == orderNid).ToListAsync();
+            order.Total = allDetails.Sum(d => 
+            {
+                var priceWithVat = d.BasePrice * (1 + d.VatRate);
+                if (d.DiscountPercent.HasValue && d.DiscountPercent.Value > 0)
+                    priceWithVat *= (1 - d.DiscountPercent.Value / 100);
+                return priceWithVat * d.Quantity;
+            });
+            _context.Orders.Update(order);
+            await Helper.SaveChangesOrThrowAsync(_context, $"Failed to update order total.", expectChanges: false);
+        }
+
+        public async Task UpdateOrderStatusAsync(long orderNid, OrderStatus status)
+        {
+            var order = await _context.Orders.FindAsync(orderNid) ?? throw new ApiException(404, $"Order with ID {orderNid} not found");
+
+            if (!Enum.IsDefined(typeof(OrderStatus), status))
+            {
+                throw new ApiException(400, $"Invalid status value: {status}");
+            }
+
+            order.Status = status;
+            _context.Orders.Update(order);
+            await Helper.SaveChangesOrThrowAsync(_context, $"Failed to update order status.");
+        }
+        
+        public async Task<decimal> CalculateCost(long orderNid, decimal tip)
+        {
+            if (orderNid <= 0)
+            {
+                throw new ApiException(400, "Order Nid must be a positive number");
+            }
+
+            var order = await _context.Orders.FindAsync(orderNid) ?? throw new ApiException(404, "Order not found");
+
+            var details = await _context.OrderDetails
+                .AsNoTracking()
+                .Where(d => d.OrderId == orderNid)
+                .ToListAsync();
+
+            var detailIds = details.Select(d => d.Nid).ToList();
+
+            var detailAddOns = await _context.OrderDetailAddOns
+                .AsNoTracking()
+                .Where(a => detailIds.Contains(a.DetailId))
+                .ToListAsync();
+
+            decimal total = 0m;
+            foreach (var item in details)
+            {
+                var totalWithAddons = item.BasePrice + detailAddOns
+                    .Where(a => a.DetailId == item.Nid)
+                    .Sum(a => a.PriceWoVat);
+                var priceWithVat = totalWithAddons * (1 + item.VatRate);
+
+                if (item.DiscountPercent.HasValue && item.DiscountPercent.Value > 0)
+                    priceWithVat *= 1 - item.DiscountPercent.Value / 100;
+                total += priceWithVat * item.Quantity;
+
+                /*foreach (var addon in detailAddOns.Where(a => a.DetailId == item.Nid))
+                {
+                    var addonPriceWithVat = addon.PriceWoVat * (1 + item.VatRate);
+                    total += addonPriceWithVat * item.Quantity;
+                }*/
+            }
+                
+            total += tip;
+            decimal roundedTotal = decimal.Round(total, 2, MidpointRounding.AwayFromZero);
+            return roundedTotal;
+        }
+
+        public async Task<OrderWithItemsDTO> GetOrderWithItemsAsync(long orderNid)
+        {
+            var order = await _context.Orders.FindAsync(orderNid);
+            if (order == null)
+            {
+                throw new ApiException(404, "Order not found");
+            }
+
+            var orderDetails = await _context.OrderDetails
+                .Where(od => od.OrderId == orderNid)
+                .ToListAsync();
+
+            var itemIds = orderDetails.Select(od => od.ItemId).ToList();
+            var menuItems = await _context.MenuItems
+                .Where(mi => itemIds.Contains(mi.Nid))
+                .ToDictionaryAsync(mi => mi.Nid, mi => mi);
+
+            // Fetch all addons for these order details
+            var detailIds = orderDetails.Select(od => od.Nid).ToList();
+            var allAddons = await _context.OrderDetailAddOns
+                .Where(oda => detailIds.Contains(oda.DetailId))
+                .ToListAsync();
+
+            // Fetch ingredient names
+            var ingredientIds = allAddons.Select(a => a.IngredientId).Distinct().ToList();
+            var ingredients = await _context.MenuItemIngredients
+                .Where(i => ingredientIds.Contains(i.Nid))
+                .ToDictionaryAsync(i => i.Nid, i => i);
+
+            var items = new List<OrderItemDetailDTO>();
+            foreach (var detail in orderDetails)
+            {
+                var menuItem = menuItems.ContainsKey(detail.ItemId) ? menuItems[detail.ItemId] : null;
+                
+                // Get addons for this detail
+                var detailAddons = allAddons
+                    .Where(a => a.DetailId == detail.Nid)
+                    .Select(a => new OrderItemAddonDTO
+                    {
+                        IngredientId = a.IngredientId,
+                        IngredientName = ingredients.ContainsKey(a.IngredientId) ? ingredients[a.IngredientId].Name : $"Addon #{a.IngredientId}",
+                        Price = a.PriceWoVat
+                    })
+                    .ToList();
+                
+                // Calculate price with VAT from base price
+                var basePriceWithAddons = detail.BasePrice + detailAddons.Sum(a => a.Price);
+                var priceWithVat = basePriceWithAddons * (1 + detail.VatRate);
+                var vatAmount = basePriceWithAddons * detail.VatRate;
+
+                // Store price before discount
+                decimal priceBeforeDiscount = priceWithVat;
+                
+                // Apply discount if exists
+                decimal? discountPercent = detail.DiscountPercent;
+                decimal? discountAmount = null;
+                
+                if (detail.DiscountPercent.HasValue && detail.DiscountPercent.Value > 0)
+                {
+                    discountAmount = priceWithVat * (detail.DiscountPercent.Value / 100);
+                    priceWithVat = priceWithVat * (1 - detail.DiscountPercent.Value / 100);
+                }
+                
+                var subtotal = priceWithVat * detail.Quantity;
+
+                items.Add(new OrderItemDetailDTO
+                {
+                    ItemId = detail.ItemId,
+                    ItemName = menuItem?.Name ?? $"Item #{detail.ItemId}",
+                    Quantity = detail.Quantity,
+                    BasePrice = detail.BasePrice,
+                    BasePriceWithAddons = basePriceWithAddons,
+                    VatRate = detail.VatRate,
+                    VatAmount = vatAmount,
+                    PriceBeforeDiscount = priceBeforeDiscount,
+                    ItemDiscountPercent = discountPercent,
+                    ItemDiscountAmount = discountAmount,
+                    PricePerItem = priceWithVat,
+                    Subtotal = subtotal,
+                    Addons = detailAddons
+                });
+            }
+
+            return new OrderWithItemsDTO
+            {
+                OrderId = order.Nid,
+                OrderCode = order.Code,
+                DateCreated = order.DateCreated,
+                Subtotal = order.Total,
+                OrderDiscount = order.Discount,
+                Total = order.Total - order.Discount,
+                Items = items
+            };
         }
     }
 }

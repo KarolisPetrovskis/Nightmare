@@ -1,41 +1,104 @@
 import "./BusinessView.css";
 import "../../Management.css";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
+import SnackbarNotification from "../../../components/SnackBar/SnackNotification";
+import { useAuth } from "../../../context/AuthContext";
 
-// TODO: In the wireframe there is no option for create business, only edit existing ones.
-// Need to confirm with team whether we should add this.
 interface Business {
-  id: number;
-  address: string;
+  nid: number;
   name: string;
-  phone: string;
-  email: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  type?: number;
+  ownerId?: number;
+  workStart?: string;
+  workEnd?: string;
 }
 
-// Sample data
-const sampleBusinesses: Business[] = [
-  { id: 17138369, address: "123 Main St", name: "Papa's cafeteria", phone: "123-456-7890", email: "Papa.caf@gmail.com" },
-  { id: 15384654, address: "456 Elm St", name: "John's pizzeria", phone: "987-654-3210", email: "Johnny.Cage@gmail.com" },
-  { id: 12374632, address: "789 Oak St", name: "KFC", phone: "555-555-5555", email: "kfc@gmail.com" },
-];
+interface FormData {
+  name: string;
+  address: string;
+  phone: string;
+  email: string;
+  type: number;
+  ownerId: number;
+  workStart: string;
+  workEnd: string;
+}
 
-const emptyBusiness = {
-  address: "",
+// Mock owner ID - in production, get this from user context/auth
+const MOCK_OWNER_ID = 1;
+const MOCK_TYPE = 1; // Either need to add this to the form, or set every type to 1 by default.
+
+const emptyBusiness: FormData = {
   name: "",
+  address: "",
   phone: "",
   email: "",
+  type: MOCK_TYPE,
+  ownerId: MOCK_OWNER_ID,
+  workStart: "09:00",
+  workEnd: "17:00",
 };
 
 export default function BusinessView() {
-  const [businesses, setBusinesses] = useState<Business[]>(sampleBusinesses);
+  const navigate = useNavigate();
+  const { userId } = useAuth();
+  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [formData, setFormData] = useState(emptyBusiness);
+  const [formData, setFormData] = useState<FormData>(emptyBusiness);
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+  }>({
+    open: false,
+    message: '',
+    type: 'success',
+  });
+
+  // Fetch businesses from API on component mount
+  useEffect(() => {
+    const fetchBusinesses = async () => {
+      setLoading(true);
+      try {
+        console.log('Fetching all businesses...');
+        
+        const response = await fetch('/api/business/all', {
+          credentials: 'include',
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Failed to fetch businesses:', errorText);
+          throw new Error('Failed to fetch businesses');
+        }
+        
+        const businesses = await response.json();
+        console.log('Fetched businesses:', businesses);
+        setBusinesses(businesses);
+      } catch (error) {
+        console.error('Error fetching businesses:', error);
+        setSnackbar({
+          open: true,
+          message: 'Failed to load businesses',
+          type: 'error',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBusinesses();
+  }, []);
 
   const handleOpenCreateModal = () => {
     setIsEditMode(false);
@@ -44,13 +107,28 @@ export default function BusinessView() {
   };
 
   const handleOpenEditModal = (business: Business) => {
+    // Extract HH:mm from workStart/workEnd if they contain full datetime
+    const extractTimeFromTimestamp = (timestamp?: string): string => {
+      if (!timestamp) return "09:00";
+      // Try to match HH:mm format
+      const timeMatch = timestamp.match(/(\d{2}):(\d{2})/);
+      if (timeMatch) {
+        return `${timeMatch[1]}:${timeMatch[2]}`;
+      }
+      return "09:00";
+    };
+
     setIsEditMode(true);
-    setEditingId(business.id);
+    setEditingId(business.nid);
     setFormData({
-      address: business.address,
       name: business.name,
-      phone: business.phone,
-      email: business.email,
+      address: business.address || "",
+      phone: business.phone || "",
+      email: business.email || "",
+      type: business.type || MOCK_TYPE,
+      ownerId: business.ownerId || MOCK_OWNER_ID,
+      workStart: extractTimeFromTimestamp(business.workStart),
+      workEnd: extractTimeFromTimestamp(business.workEnd),
     });
     setIsModalOpen(true);
   };
@@ -61,45 +139,116 @@ export default function BusinessView() {
     setEditingId(null);
   };
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: keyof FormData, value: string | number) => {
+    console.log(`Field: ${field}, Value: ${value}, Type: ${typeof value}`);
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSave = () => {
-    if (isEditMode && editingId) {
-      // Update existing business
-      setBusinesses((prev) =>
-        prev.map((b) =>
-          b.id === editingId
-            ? { ...b, ...formData }
-            : b
-        )
-      );
-      // TODO: add PUT call
-    } else {
-      // Create new business
-      const newBusiness: Business = {
-        id: Date.now(),
-        ...formData,
-      };
-      setBusinesses((prev) => [...prev, newBusiness]);
-      // TODO: add POST call
+  const handleSave = async () => {
+    console.log('Saving with formData:', formData);
+    try {
+      if (isEditMode && editingId) {
+        // Update existing business
+        // Convert time strings to ISO datetime (using today's date)
+        const today = new Date().toISOString().split('T')[0];
+        const workStartDateTime = `${today}T${formData.workStart}:00Z`;
+        const workEndDateTime = `${today}T${formData.workEnd}:00Z`;
+
+        const response = await fetch(`/api/business/${editingId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: formData.name,
+            address: formData.address,
+            phone: formData.phone,
+            email: formData.email,
+            type: formData.type,
+            ownerId: formData.ownerId,
+            workStart: workStartDateTime,
+            workEnd: workEndDateTime,
+          }),
+        });
+        if (!response.ok) throw new Error('Failed to update business');
+        setBusinesses((prev) =>
+          prev.map((b) =>
+            b.nid === editingId
+              ? { ...b, ...formData }
+              : b
+          )
+        );
+        setSnackbar({
+          open: true,
+          message: 'Business updated successfully!',
+          type: 'success',
+        });
+      } else {
+        // Create new business
+        // Convert time strings to ISO datetime (using today's date)
+        const today = new Date().toISOString().split('T')[0];
+        const workStartDateTime = `${today}T${formData.workStart}:00Z`;
+        const workEndDateTime = `${today}T${formData.workEnd}:00Z`;
+
+        const response = await fetch('/api/business', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: formData.name,
+            address: formData.address,
+            phone: formData.phone,
+            email: formData.email,
+            type: formData.type,
+            ownerId: formData.ownerId,
+            workStart: workStartDateTime,
+            workEnd: workEndDateTime,
+          }),
+        });
+        if (!response.ok) throw new Error('Failed to create business');
+        const newBusiness = await response.json();
+        setBusinesses((prev) => [...prev, newBusiness]);
+        setSnackbar({
+          open: true,
+          message: 'Business created successfully!',
+          type: 'success',
+        });
+      }
+      handleCloseModal();
+    } catch (error) {
+      console.error('Error saving business:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to save business',
+        type: 'error',
+      });
     }
-    handleCloseModal();
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: number) => {
     if (confirm("Are you sure you want to delete this business?")) {
-      setBusinesses((prev) => prev.filter((b) => b.id !== id));
-      // TODO: add DELETE call
+      try {
+        const response = await fetch(`/api/business/${id}`, { method: 'DELETE' });
+        if (!response.ok) throw new Error('Failed to delete business');
+        setBusinesses((prev) => prev.filter((b) => b.nid !== id));
+        setSnackbar({
+          open: true,
+          message: 'Business deleted successfully!',
+          type: 'success',
+        });
+      } catch (error) {
+        console.error('Error deleting business:', error);
+        setSnackbar({
+          open: true,
+          message: 'Failed to delete business',
+          type: 'error',
+        });
+      }
     }
   };
 
-  const isFormValid = formData.name && formData.email;
+  const isFormValid = formData.name && formData.email && formData.ownerId > 0;
 
   // Filter businesses by search query (ID or name)
   const filteredBusinesses = businesses.filter((b) =>
-    b.id.toString().includes(searchQuery) ||
+    b.nid.toString().includes(searchQuery) ||
     b.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -113,6 +262,9 @@ export default function BusinessView() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
+        <Button className="item-action-button new-item" onClick={handleOpenCreateModal}>
+          Create Business
+        </Button>
       </div>
 
       <div className="business-list">
@@ -121,29 +273,54 @@ export default function BusinessView() {
             <tr>
               <th>Business ID</th>
               <th>Business Name</th>
+              <th>Owner ID</th>
               <th>Email</th>
+              <th>Phone</th>
+              <th>Work Start</th>
+              <th>Work End</th>
+              <th style={{ minWidth: 180 }}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {filteredBusinesses.map((business) => (
-              <tr key={business.id}>
-                <td>{business.id}</td>
-                <td>{business.name}</td>
-                <td>{business.email}</td>
-                <td className="actions-cell">
-                  <Button
-                    className="item-action-button new-item"
-                    onClick={() => handleOpenEditModal(business)}
-                  >
-                    Edit
-                  </Button>
-                </td>
+            {loading ? (
+              <tr>
+                <td colSpan={4} style={{ textAlign: 'center', opacity: 0.5 }}>Loading...</td>
               </tr>
-            ))}
+            ) : (
+              filteredBusinesses.map((business) => (
+                <tr key={business.nid}>
+                  <td>{business.nid}</td>
+                  <td>{business.name}</td>
+                  <td>{business.ownerId ?? ''}</td>
+                  <td>{business.email}</td>
+                  <td>{business.phone ?? ''}</td>
+                  <td>{business.workStart ? (business.workStart.length > 5 ? business.workStart.slice(11, 16) : business.workStart) : ''}</td>
+                  <td>{business.workEnd ? (business.workEnd.length > 5 ? business.workEnd.slice(11, 16) : business.workEnd) : ''}</td>
+                  <td className="actions-cell">
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center', padding: 0 }}>
+                      <Button
+                        className="item-action-button new-item"
+                        style={{ minWidth: 80, padding: '6px 18px', fontWeight: 500 }}
+                        onClick={() => handleOpenEditModal(business)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        className="item-action-button delete-item"
+                        style={{ minWidth: 80, padding: '6px 18px', fontWeight: 500 }}
+                        onClick={() => handleDelete(business.nid)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
 
-        {businesses.length === 0 && (
+        {!loading && businesses.length === 0 && (
           <div className="no-data">No businesses found.</div>
         )}
       </div>
@@ -170,7 +347,7 @@ export default function BusinessView() {
           </div>
 
           <div className="info-box">
-            <label>Address *</label>
+            <label>Address</label>
             <input
               type="text"
               placeholder="Enter address"
@@ -180,7 +357,7 @@ export default function BusinessView() {
           </div>
 
           <div className="info-box">
-            <label>Phone *</label>
+            <label>Phone</label>
             <input
               type="text"
               placeholder="Enter phone number"
@@ -198,7 +375,44 @@ export default function BusinessView() {
               onChange={(e) => handleInputChange("email", e.target.value)}
             />
           </div>
-          
+
+          <div className="info-box">
+            <label>Owner ID *</label>
+            <input
+              type="number"
+              placeholder="Enter owner user ID"
+              value={formData.ownerId}
+              onChange={(e) => handleInputChange("ownerId", parseInt(e.target.value, 10) || 0)}
+            />
+          </div>
+
+          <div className="info-box">
+            <label>Business Type</label>
+            <input
+              type="number"
+              placeholder="Enter business type"
+              value={formData.type}
+              onChange={(e) => handleInputChange("type", parseInt(e.target.value, 10) || 1)}
+            />
+          </div>
+
+          <div className="info-box">
+            <label>Work Starts</label>
+            <input
+              type="time"
+              value={formData.workStart}
+              onChange={(e) => handleInputChange("workStart", e.target.value)}
+            />
+          </div>
+
+          <div className="info-box">
+            <label>Work Ends</label>
+            <input
+              type="time"
+              value={formData.workEnd}
+              onChange={(e) => handleInputChange("workEnd", e.target.value)}
+            />
+          </div>
 
           <div className="modal-actions">
             <Button className="item-action-button delete-item" onClick={handleCloseModal}>
@@ -214,6 +428,13 @@ export default function BusinessView() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <SnackbarNotification
+        open={snackbar.open}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        message={snackbar.message}
+        type={snackbar.type}
+      />
     </div>
   );
 }

@@ -43,11 +43,13 @@
 .time-labels {
   display: flex;
   flex-direction: column;
-  margin-top: 8px;
+  margin-top: 0;
+  padding-top: 20px;
 }
 
 .time-label-header-spacer {
-  height: 100px; /* Match worker header height (avatar 60px + name + padding) */
+  flex-shrink: 0;
+  height: 0;
 }
 
 .schedule-main {
@@ -86,12 +88,11 @@
   height: 50px;
   display: flex;
   align-items: flex-start;
-  padding-top: 0;
+  padding-top: 2px;
   padding-right: 12px;
   justify-content: flex-end;
   font-size: 0.85rem;
   color: rgba(255, 255, 255, 0.6);
-  transform: translateY(-8px);
 }
 
 .time-label.full-hour {
@@ -151,7 +152,7 @@
   background-color: #3a3a3a;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 4px;
-  padding: 8px;
+  padding: 4px 6px;
   overflow: hidden;
   cursor: pointer;
   transition: background-color 0.2s, border-color 0.2s;
