@@ -2,18 +2,18 @@
   display: flex;
   width: 100%;
   align-items: center;
-  gap: 12px;
+  gap: 8px; /* Reduced from 12px */
   min-width: 0;
 }
 
-.fixed-name{  
+.fixed-name {
   flex: 0 0 140px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.option-row input[type="text"]:first-of-type {
+.option-row input[type='text']:first-of-type {
   background-color: #1f1f1f;
   padding: 8px;
   border-radius: 6px;
@@ -22,14 +22,26 @@
   font-size: 1rem;
 }
 
-.option-row input[type="text"]:not(:first-of-type) {
-  flex: 0 0 auto;
+.quantity-input {
+  background-color: '#1f1f1f';
+  padding: '3px 6px';
+  color: 'white';
+  font-size: '1rem';
+  text-align: 'center';
+  font-weight: 600;
+}
+
+.option-row input[type='text']:not(:first-of-type) {
+  /* Remove flex: 0 0 auto; and add specific width for price field */
+  width: 120px; /* Increased from default to give more space */
   background-color: #1f1f1f;
   padding: 8px;
   border-radius: 6px;
   border: none;
   color: white;
   font-size: 1rem;
+  text-align: right; /* Align price to right */
+  font-weight: 600; /* Make price bolder */
 }
 
 .details-button {
@@ -50,24 +62,26 @@
   background-color: #3e44b3 !important;
 }
 
-.quantity-box {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background-color: #1f1f1f;
-  padding: 6px;
-  border-radius: 6px;
-  flex: 0 0 auto;
-}
-
 .quantity-box input {
-  width: 50px;
+  width: 800px;
   background-color: #1f1f1f;
   padding: 4px;
   border: none;
   color: white;
   text-align: center;
   font-size: 1rem;
+}
+
+.option-row input[type='text']:not(:first-of-type) {
+  width: 140px !important; /* Increased from 120px to 140px */
+  background-color: #1f1f1f;
+  padding: 8px 12px !important; /* More horizontal padding */
+  border-radius: 6px;
+  border: none;
+  color: white;
+  font-size: 1rem;
+  text-align: right;
+  font-weight: 600;
 }
 
 .quantity-box button {
@@ -79,6 +93,7 @@
   cursor: pointer;
   font-weight: bold;
   transition: background-color 0.2s;
+  min-width: 28px; /* Ensure consistent button size */
 }
 
 .quantity-box button:hover {
@@ -91,6 +106,7 @@
   font-size: 18px;
   flex-shrink: 0;
   transition: color 0.2s;
+  margin-left: auto; /* Push X to the far right */
 }
 
 .delete-dish:hover {
@@ -100,7 +116,6 @@
 .management .info-container {
   flex-grow: 2;
 }
-
 
 /* in OrderManagement.css */
 .quantity-box {
@@ -125,4 +140,16 @@
   cursor: pointer;
   background: #2d2d2d;
   color: white;
+}
+
+/* Hide spinner arrows for all number inputs */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* For Firefox */
+input[type='number'] {
+  -moz-appearance: textfield;
 }
