@@ -107,16 +107,18 @@ export default function OrderManagement() {
   const processedStateRef = useRef<string | null>(null);
 
   // Filter to show only active orders (not cancelled) and unsaved orders
-  // Filter to show only in-progress orders (and unsaved orders)
-  const activeOrders = orders.filter((order) =>
-    !order.backendNid || order.status === OrderStatus.InProgress
+// ORDERIUOSE PALIEKAM TIK AKTYVIUS (NEATŠAUKTUS) IR IŠSAUGOTUS UŽSAKYMUS
+  const activeOrders = orders.filter(
+    (order) => !order.backendNid || order.status === OrderStatus.InProgress 
   );
 
   const start = (page - 1) * itemsPerPage;
   const end = start + itemsPerPage;
   const paginatedOrders = activeOrders.slice(start, end);
 
-  const [staffList, setStaffList] = useState<Array<{ nid: number; name: string; surname: string }>>([]);
+  const [staffList, setStaffList] = useState<
+    Array<{ nid: number; name: string; surname: string }>
+  >([]);
 
   const toggleCancelMode = () => {
     setCancelMode((prev) => !prev);
@@ -158,7 +160,9 @@ export default function OrderManagement() {
   // Fetch staff (employees) from database
   const fetchStaff = async (businessId: number) => {
     try {
-      const response = await fetch(`/api/employees/business?businessId=${businessId}&page=0&perPage=999`);
+      const response = await fetch(
+        `/api/employees/business?businessId=${businessId}&page=0&perPage=999`
+      );
       if (!response.ok) throw new Error('Failed to fetch staff');
       const data = await response.json();
       setStaffList(data);
@@ -179,7 +183,7 @@ export default function OrderManagement() {
         setLoading(true);
         const id = await fetchBusinessId();
         updateBusinessId(id);
-        
+
         // Fetch orders for this business
         const response = await fetch(`/api/orders/business/${id}`);
         if (!response.ok) throw new Error('Failed to fetch orders');
@@ -190,14 +194,18 @@ export default function OrderManagement() {
           backendOrders.map(async (backendOrder: any) => {
             try {
               // Fetch order details
-              const detailsRes = await fetch(`/api/orders/${backendOrder.nid}/details`);
+              const detailsRes = await fetch(
+                `/api/orders/${backendOrder.nid}/details`
+              );
               if (!detailsRes.ok) throw new Error('Failed to fetch details');
               const details = await detailsRes.json();
-              
+
               // Fetch addons for all details
               const allAddons: any[] = [];
               for (const detail of details) {
-                const addonsRes = await fetch(`/api/orders/details/${detail.nid}/addons`);
+                const addonsRes = await fetch(
+                  `/api/orders/details/${detail.nid}/addons`
+                );
                 if (addonsRes.ok) {
                   const detailAddons = await addonsRes.json();
                   allAddons.push(...detailAddons);
@@ -211,20 +219,28 @@ export default function OrderManagement() {
                     // Fetch menu item
                     const itemRes = await fetch(`/api/menu/${detail.itemId}`);
                     if (!itemRes.ok) {
-                      console.warn(`Menu item ${detail.itemId} not found, skipping detail ${detail.nid}`);
+                      console.warn(
+                        `Menu item ${detail.itemId} not found, skipping detail ${detail.nid}`
+                      );
                       return null;
                     }
                     const menuItem = await itemRes.json();
 
                     // Fetch addon groups for this menu item
-                    const groupsRes = await fetch(`/api/menu/addon-groups/by-menu-item/${menuItem.nid}`);
-                    if (!groupsRes.ok) throw new Error('Failed to fetch groups');
+                    const groupsRes = await fetch(
+                      `/api/menu/addon-groups/by-menu-item/${menuItem.nid}`
+                    );
+                    if (!groupsRes.ok)
+                      throw new Error('Failed to fetch groups');
                     const groups = await groupsRes.json();
-                    
+
                     const addonGroups = await Promise.all(
                       groups.map(async (group: any) => {
-                        const addonsRes = await fetch(`/api/menu/addons/by-group/${group.nid}`);
-                        if (!addonsRes.ok) throw new Error('Failed to fetch addons');
+                        const addonsRes = await fetch(
+                          `/api/menu/addons/by-group/${group.nid}`
+                        );
+                        if (!addonsRes.ok)
+                          throw new Error('Failed to fetch addons');
                         const groupAddons = await addonsRes.json();
                         return {
                           nid: group.nid,
@@ -396,15 +412,20 @@ export default function OrderManagement() {
         });
       } else {
         // For saved orders, update status to Cancelled
-        const response = await fetch(`/api/orders/${orderToDelete.backendNid}/status/${OrderStatus.Cancelled}`, { 
-          method: 'PUT' 
-        });
+        const response = await fetch(
+          `/api/orders/${orderToDelete.backendNid}/status/${OrderStatus.Cancelled}`,
+          {
+            method: 'PUT',
+          }
+        );
         if (!response.ok) throw new Error('Failed to cancel order');
 
         // Update local state with cancelled status
         setOrders((prev) =>
           prev.map((o) =>
-            o.nid === orderToDelete.nid ? { ...o, status: OrderStatus.Cancelled } : o
+            o.nid === orderToDelete.nid
+              ? { ...o, status: OrderStatus.Cancelled }
+              : o
           )
         );
         if (selectedOrder?.nid === orderToDelete.nid) {
@@ -478,23 +499,27 @@ export default function OrderManagement() {
     try {
       // Fetch VAT rates for all items
       const vatRates: { [key: number]: number } = {};
-      const uniqueVatIds = [...new Set(selectedOrder.items.map(item => item.menuItem.vatId))];
-      
-      await Promise.all(uniqueVatIds.map(async (vatId) => {
-        try {
-          const response = await fetch(`/api/vat/${vatId}`);
-          if (response.ok) {
-            const vatData = await response.json();
-            // Store as decimal (e.g., 24% = 0.24)
-            vatRates[vatId] = (vatData.percentage || 0) / 100;
-          } else {
+      const uniqueVatIds = [
+        ...new Set(selectedOrder.items.map((item) => item.menuItem.vatId)),
+      ];
+
+      await Promise.all(
+        uniqueVatIds.map(async (vatId) => {
+          try {
+            const response = await fetch(`/api/vat/${vatId}`);
+            if (response.ok) {
+              const vatData = await response.json();
+              // Store as decimal (e.g., 24% = 0.24)
+              vatRates[vatId] = (vatData.percentage || 0) / 100;
+            } else {
+              vatRates[vatId] = 0.24; // Default 24%
+            }
+          } catch (error) {
+            console.error(`Failed to fetch VAT rate for ID ${vatId}:`, error);
             vatRates[vatId] = 0.24; // Default 24%
           }
-        } catch (error) {
-          console.error(`Failed to fetch VAT rate for ID ${vatId}:`, error);
-          vatRates[vatId] = 0.24; // Default 24%
-        }
-      }));
+        })
+      );
 
       // If order doesn't exist in backend yet, create it
       if (!selectedOrder.backendNid) {
@@ -530,19 +555,19 @@ export default function OrderManagement() {
 
             // Calculate base price with addons
             const totalBasePrice = basePrice + addonsPriceWoVat;
-            
+
             // Get VAT rate for this specific item
             const vatRateDecimal = vatRates[menuItem.vatId] || 0.24;
-            
+
             // Calculate final price with VAT and discount
             let priceWithVat = totalBasePrice * (1 + vatRateDecimal);
             let discountPercent = null;
-            
+
             if (menuItem.discount && menuItem.discount > 0) {
               discountPercent = menuItem.discount;
               priceWithVat = priceWithVat * (1 - menuItem.discount / 100);
             }
-            
+
             // Total for this line item
             const lineTotalWtVat = priceWithVat * item.quantity;
             total += lineTotalWtVat;
@@ -585,7 +610,9 @@ export default function OrderManagement() {
         console.log('Order created:', createdOrder);
 
         // Update the order with backend ID and backend detail IDs
-        const detailsRes = await fetch(`/api/orders/${createdOrder.nid}/details`);
+        const detailsRes = await fetch(
+          `/api/orders/${createdOrder.nid}/details`
+        );
         if (!detailsRes.ok) {
           const errorText = await detailsRes.text();
           console.error('Fetch details error:', errorText);
@@ -610,7 +637,7 @@ export default function OrderManagement() {
         }
         const details = await detailsRes.json();
         console.log('Order details:', details);
-        
+
         const updatedItems = selectedOrder.items.map((item, index) => ({
           ...item,
           backendDetailNid: details[index]?.nid,
@@ -649,7 +676,12 @@ export default function OrderManagement() {
           );
 
           for (const item of deletedItems) {
-            const deleteRes = await fetch(`/api/orders/${selectedOrder.backendNid}/details/${(item as any).backendDetailNid}`, { method: 'DELETE' });
+            const deleteRes = await fetch(
+              `/api/orders/${selectedOrder.backendNid}/details/${
+                (item as any).backendDetailNid
+              }`,
+              { method: 'DELETE' }
+            );
             if (!deleteRes.ok) throw new Error('Failed to delete order item');
           }
         }
@@ -661,11 +693,16 @@ export default function OrderManagement() {
         );
 
         for (const item of modifiedQuantityItems) {
-          const updateRes = await fetch(`/api/orders/${selectedOrder.backendNid}/details/${(item as any).backendDetailNid}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ quantity: item.quantity }),
-          });
+          const updateRes = await fetch(
+            `/api/orders/${selectedOrder.backendNid}/details/${
+              (item as any).backendDetailNid
+            }`,
+            {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ quantity: item.quantity }),
+            }
+          );
           if (!updateRes.ok) throw new Error('Failed to update quantity');
           delete (item as any).quantityModified;
         }
@@ -680,16 +717,23 @@ export default function OrderManagement() {
           const addons = (item.menuItem.addonGroups || []).flatMap((group) => {
             const selectedOptionId = item.selectedOptions?.[group.nid];
             if (!selectedOptionId) return [];
-            const option = group.options.find((opt) => opt.nid === selectedOptionId);
+            const option = group.options.find(
+              (opt) => opt.nid === selectedOptionId
+            );
             if (!option) return [];
             return [{ ingredientId: option.nid, priceWoVat: option.price }];
           });
 
-          const addonsRes = await fetch(`/api/orders/${selectedOrder.backendNid}/details/${(item as any).backendDetailNid}/addons`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(addons),
-          });
+          const addonsRes = await fetch(
+            `/api/orders/${selectedOrder.backendNid}/details/${
+              (item as any).backendDetailNid
+            }/addons`,
+            {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(addons),
+            }
+          );
           if (!addonsRes.ok) throw new Error('Failed to update addons');
           delete (item as any).addonsModified;
         }
@@ -705,7 +749,9 @@ export default function OrderManagement() {
           const addons = (item.menuItem.addonGroups || []).flatMap((group) => {
             const selectedOptionId = item.selectedOptions?.[group.nid];
             if (!selectedOptionId) return [];
-            const option = group.options.find((opt) => opt.nid === selectedOptionId);
+            const option = group.options.find(
+              (opt) => opt.nid === selectedOptionId
+            );
             if (!option) return [];
             addonsPriceWoVat += option.price;
             return [{ ingredientId: option.nid, priceWoVat: option.price }];
@@ -713,10 +759,10 @@ export default function OrderManagement() {
 
           // Calculate base price with addons
           const totalBasePrice = basePrice + addonsPriceWoVat;
-          
+
           // Get VAT rate for this specific item
           const vatRateDecimal = vatRates[item.menuItem.vatId] || 0.24;
-          
+
           // Get discount percent if exists
           let discountPercent = null;
           if (item.menuItem.discount && item.menuItem.discount > 0) {
@@ -732,11 +778,14 @@ export default function OrderManagement() {
             discountPercent: discountPercent,
           };
 
-          const addRes = await fetch(`/api/orders/${selectedOrder.backendNid}/details`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(itemRequest),
-          });
+          const addRes = await fetch(
+            `/api/orders/${selectedOrder.backendNid}/details`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(itemRequest),
+            }
+          );
           if (!addRes.ok) throw new Error('Failed to add item to order');
           const createdDetail = await addRes.json();
           (item as any).backendDetailNid = createdDetail.nid;
@@ -758,7 +807,8 @@ export default function OrderManagement() {
       }
     } catch (error) {
       console.error('Failed to save order:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       console.error('Full error:', error);
       setSnackbar({
         open: true,
@@ -864,15 +914,18 @@ export default function OrderManagement() {
 
       const targetOrderId = anyState.orderId;
 
-
       // Auto-save the new dish to the database
       const autoSaveDish = async () => {
         try {
           // Always get the latest order state (after possible backend creation)
           let orderToUpdate = orders.find((o) => o.nid === targetOrderId);
           // If not found by nid, try by backendNid (in case state was replaced)
-          if (!orderToUpdate && orders.length > 0 && orders[orders.length-1].backendNid === targetOrderId) {
-            orderToUpdate = orders[orders.length-1];
+          if (
+            !orderToUpdate &&
+            orders.length > 0 &&
+            orders[orders.length - 1].backendNid === targetOrderId
+          ) {
+            orderToUpdate = orders[orders.length - 1];
           }
           if (!orderToUpdate) {
             console.warn('Order not found:', targetOrderId);
@@ -899,7 +952,9 @@ export default function OrderManagement() {
           const addons = (menuItem.addonGroups || []).flatMap((group) => {
             const selectedOptionId = payload.selectedOptions?.[group.nid];
             if (!selectedOptionId) return [];
-            const option = group.options.find((opt) => opt.nid === selectedOptionId);
+            const option = group.options.find(
+              (opt) => opt.nid === selectedOptionId
+            );
             if (!option) return [];
             addonsPriceWoVat += option.price;
             return [{ ingredientId: option.nid, priceWoVat: option.price }];
@@ -948,9 +1003,7 @@ export default function OrderManagement() {
             const createdOrder = await createdOrderRes.json();
 
             // Fetch the complete order with all details from backend
-            const fullOrderRes = await fetch(
-              `/api/orders/${createdOrder.nid}`
-            );
+            const fullOrderRes = await fetch(`/api/orders/${createdOrder.nid}`);
             if (!fullOrderRes.ok) {
               throw new Error('Failed to fetch created order');
             }
@@ -1019,13 +1072,18 @@ export default function OrderManagement() {
                     backendDetailNid: detail.nid,
                   };
                 } catch (error) {
-                  console.error(`Failed to process detail ${detail.nid}:`, error);
+                  console.error(
+                    `Failed to process detail ${detail.nid}:`,
+                    error
+                  );
                   return null;
                 }
               })
             );
 
-            const validItems = items.filter((item): item is OrderDish => item !== null);
+            const validItems = items.filter(
+              (item): item is OrderDish => item !== null
+            );
 
             // Create complete order object
             const fullOrder: Order = {
@@ -1038,9 +1096,7 @@ export default function OrderManagement() {
 
             // Update orders state with the complete order
             setOrders((prevOrders) =>
-              prevOrders.map((o) =>
-                o.nid === targetOrderId ? fullOrder : o
-              )
+              prevOrders.map((o) => (o.nid === targetOrderId ? fullOrder : o))
             );
 
             // Select the order
@@ -1090,7 +1146,9 @@ export default function OrderManagement() {
             );
 
             // Always select the order that just had a dish added
-            const updatedOrder = orders.find((o) => o.nid === orderToUpdate!.nid);
+            const updatedOrder = orders.find(
+              (o) => o.nid === orderToUpdate!.nid
+            );
             if (updatedOrder) {
               const orderWithNewItem = {
                 ...updatedOrder,
@@ -1121,7 +1179,14 @@ export default function OrderManagement() {
       // Don't clear navigation state - it causes context to reset
       // The processedStateRef + sessionStorage prevents duplicate processing
     }
-  }, [location.state, navigate, location.pathname, setOrders, orders, businessId]);
+  }, [
+    location.state,
+    navigate,
+    location.pathname,
+    setOrders,
+    orders,
+    businessId,
+  ]);
 
   const totalPrice = selectedOrder
     ? selectedOrder.items.reduce((sum, it) => {
@@ -1182,7 +1247,13 @@ export default function OrderManagement() {
                       : 'New Order (unsaved)'}
                   </div>
                   {order.status !== undefined && (
-                    <div style={{ fontSize: '0.85rem', color: '#999', marginTop: '4px' }}>
+                    <div
+                      style={{
+                        fontSize: '0.85rem',
+                        color: '#999',
+                        marginTop: '4px',
+                      }}
+                    >
                       Status: {getOrderStatusLabel(order.status)}
                     </div>
                   )}
@@ -1236,7 +1307,9 @@ export default function OrderManagement() {
                       value={selectedOrder.staff}
                       onChange={(e) => updateStaff(e.target.value)}
                     >
-                      <option value="" disabled>Select staff</option>
+                      <option value="" disabled>
+                        Select staff
+                      </option>
                       {staffList.map((s) => (
                         <option key={s.nid} value={`${s.name} ${s.surname}`}>
                           {s.name} {s.surname}
@@ -1246,7 +1319,9 @@ export default function OrderManagement() {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                <div
+                  style={{ display: 'flex', gap: '10px', marginTop: '20px' }}
+                >
                   <Button
                     className={`save-button ${orderDirty ? 'active' : ''}`}
                     disabled={!orderDirty}
@@ -1254,12 +1329,14 @@ export default function OrderManagement() {
                   >
                     Save
                   </Button>
-                  
+
                   {selectedOrder.backendNid && (
                     <Button
                       variant="contained"
                       color="success"
-                      onClick={() => navigate(`/payment/${selectedOrder.backendNid}`)}
+                      onClick={() =>
+                        navigate(`/payment/${selectedOrder.backendNid}`)
+                      }
                     >
                       Process Payment
                     </Button>
@@ -1326,6 +1403,7 @@ export default function OrderManagement() {
                                 −
                               </button>
                               <input
+                                className="quantity-input"
                                 type="number"
                                 value={it.quantity}
                                 onChange={(e) =>
@@ -1435,7 +1513,12 @@ export default function OrderManagement() {
                   <input value={modalItem.menuItem.name} readOnly />
                   <button
                     className="delete-tree modal-close"
-                    onClick={closeModal}
+                    onClick={() => {
+                      // Remove the dish from order
+                      removeDishFromOrder(modalItem.nid);
+                      // Close the modal
+                      closeModal();
+                    }}
                   >
                     ✖
                   </button>
@@ -1531,8 +1614,10 @@ export default function OrderManagement() {
                     ? `Order #${orderToDelete.backendNid}`
                     : 'this unsaved order'}
                   ?
-                  {orderToDelete.backendNid && ' The order status will be changed to Cancelled.'}
-                  {!orderToDelete.backendNid && ' This unsaved order will be removed.'}
+                  {orderToDelete.backendNid &&
+                    ' The order status will be changed to Cancelled.'}
+                  {!orderToDelete.backendNid &&
+                    ' This unsaved order will be removed.'}
                 </p>
 
                 <div className="modal-actions">
