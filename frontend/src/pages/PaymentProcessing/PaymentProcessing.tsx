@@ -54,6 +54,7 @@ type OrderItem = {
   itemName: string;
   quantity: number;
   basePrice: number;
+  basePriceWithAddons: number;
   vatRate: number;
   vatAmount: number;
   priceBeforeDiscount: number;
@@ -503,21 +504,35 @@ export default function PaymentProcessingWithTip() {
                     </span>
                   </div>
                   
-                  {item.addons && item.addons.length > 0 && (
-                    <div style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.6)', paddingLeft: '15px', lineHeight: '1.7' }}>
-                      {item.addons.map((addon, addonIdx) => (
-                        <div key={addonIdx} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px', fontStyle: 'italic', color: 'rgba(255, 255, 255, 0.5)' }}>
-                          <span> + {addon.ingredientName}</span>
-                          <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>+{currency} {addon.price.toFixed(2)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  
                   
                   <div style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.6)', paddingLeft: '15px', lineHeight: '1.7' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
-                      <span>Base price:</span>
+                      <span>{item.itemName}</span>
                       <span>{currency} {item.basePrice.toFixed(2)}</span>
+                    </div>
+                    {item.addons && item.addons.length > 0 && (
+                      <div style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.6)', paddingLeft: '10px', lineHeight: '1.7' }}>
+                        {item.addons.map((addon, addonIdx) => (
+                          <div key={addonIdx} style={{ display: 'flex', justifyContent: 'space-between', fontStyle: 'italic', color: 'rgba(255, 255, 255, 0.5)' }}>
+                            <span> + {addon.ingredientName}</span>
+                            <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>+{currency} {addon.price.toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div style={{ marginTop: '3px', borderBottom: '1px solid #3a3a3a' }}>
+                      {item.addons && item.addons.length > 0 ? (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                          <span>Base Price with Add-ons:</span>
+                          <span>{currency} {item.basePriceWithAddons.toFixed(2)}</span>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                          <span>Base Price:</span>
+                          <span>{currency} {item.basePrice.toFixed(2)}</span>
+                        </div>
+                      )}
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
                       <span>VAT ({(item.vatRate * 100).toFixed(0)}%):</span>

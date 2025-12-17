@@ -299,9 +299,21 @@ namespace backend.Server.Services
 
             // Update order total
             var allDetails = await _context.OrderDetails.Where(d => d.OrderId == orderNid).ToListAsync();
-            order.Total = allDetails.Sum(d => 
+            var detailIds = allDetails.Select(d => d.Nid).ToList();
+            var allDetailsAddOns = await _context.OrderDetailAddOns
+                .Where(a => detailIds.Contains(a.DetailId))
+                .ToListAsync();
+
+            // Group add-ons by DetailId for efficient lookup
+            var addOnsByDetail = allDetailsAddOns
+                .GroupBy(a => a.DetailId)
+                .ToDictionary(g => g.Key, g => g.Sum(a => a.PriceWoVat));
+
+            order.Total = allDetails.Sum(d =>
             {
-                var priceWithVat = d.BasePrice * (1 + d.VatRate);
+                var addOnsTotal = addOnsByDetail.TryGetValue(d.Nid, out var sum) ? sum : 0m;
+                var basePriceWithAddons = d.BasePrice + addOnsTotal;
+                var priceWithVat = basePriceWithAddons * (1 + d.VatRate);
                 if (d.DiscountPercent.HasValue && d.DiscountPercent.Value > 0)
                     priceWithVat *= (1 - d.DiscountPercent.Value / 100);
                 return priceWithVat * d.Quantity;
@@ -499,13 +511,30 @@ namespace backend.Server.Services
                 .Where(d => d.OrderId == orderNid)
                 .ToListAsync();
 
+            var detailIds = details.Select(d => d.Nid).ToList();
+
+            var detailAddOns = await _context.OrderDetailAddOns
+                .AsNoTracking()
+                .Where(a => detailIds.Contains(a.DetailId))
+                .ToListAsync();
+
             decimal total = 0m;
             foreach (var item in details)
             {
-                var priceWithVat = item.BasePrice * (1 + item.VatRate);
+                var totalWithAddons = item.BasePrice + detailAddOns
+                    .Where(a => a.DetailId == item.Nid)
+                    .Sum(a => a.PriceWoVat);
+                var priceWithVat = totalWithAddons * (1 + item.VatRate);
+
                 if (item.DiscountPercent.HasValue && item.DiscountPercent.Value > 0)
-                    priceWithVat *= (1 - item.DiscountPercent.Value / 100);
+                    priceWithVat *= 1 - item.DiscountPercent.Value / 100;
                 total += priceWithVat * item.Quantity;
+
+                /*foreach (var addon in detailAddOns.Where(a => a.DetailId == item.Nid))
+                {
+                    var addonPriceWithVat = addon.PriceWoVat * (1 + item.VatRate);
+                    total += addonPriceWithVat * item.Quantity;
+                }*/
             }
                 
             total += tip;
@@ -559,9 +588,10 @@ namespace backend.Server.Services
                     .ToList();
                 
                 // Calculate price with VAT from base price
-                var priceWithVat = detail.BasePrice * (1 + detail.VatRate);
-                var vatAmount = detail.BasePrice * detail.VatRate;
-                
+                var basePriceWithAddons = detail.BasePrice + detailAddons.Sum(a => a.Price);
+                var priceWithVat = basePriceWithAddons * (1 + detail.VatRate);
+                var vatAmount = basePriceWithAddons * detail.VatRate;
+
                 // Store price before discount
                 decimal priceBeforeDiscount = priceWithVat;
                 
@@ -583,6 +613,7 @@ namespace backend.Server.Services
                     ItemName = menuItem?.Name ?? $"Item #{detail.ItemId}",
                     Quantity = detail.Quantity,
                     BasePrice = detail.BasePrice,
+                    BasePriceWithAddons = basePriceWithAddons,
                     VatRate = detail.VatRate,
                     VatAmount = vatAmount,
                     PriceBeforeDiscount = priceBeforeDiscount,
