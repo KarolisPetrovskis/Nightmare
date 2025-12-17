@@ -28,4 +28,5 @@ public class ProcessPaymentDTO
     [EmailAddress(ErrorMessage = "Invalid email format")]
     [StringLength(100)]
     public string? CustomerEmail { get; set; }
+    public decimal? Tip { get; set; }
 }

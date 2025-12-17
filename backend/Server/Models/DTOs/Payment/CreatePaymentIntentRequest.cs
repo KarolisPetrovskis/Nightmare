@@ -15,4 +15,6 @@ public class CreatePaymentIntentRequest
     [Required(ErrorMessage = "Currency is required")]
     [StringLength(3, MinimumLength = 3, ErrorMessage = "Currency must be a 3-letter code (e.g., USD, EUR)")]
     public required string Currency { get; set; }
+
+    public decimal? Tip { get; set; }
 }

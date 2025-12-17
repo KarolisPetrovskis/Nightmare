@@ -703,6 +703,7 @@ export default function PaymentProcessingWithTip() {
                   customerEmail={customerEmail}
                   onSuccess={handleStripeSuccess}
                   onError={handleStripeError}
+                  tip={tip}
                 />
               </Elements>
             )}

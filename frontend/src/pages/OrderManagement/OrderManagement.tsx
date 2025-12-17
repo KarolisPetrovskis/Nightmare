@@ -107,8 +107,9 @@ export default function OrderManagement() {
   const processedStateRef = useRef<string | null>(null);
 
   // Filter to show only active orders (not cancelled) and unsaved orders
-  const activeOrders = orders.filter((order) => 
-    !order.backendNid || order.status !== OrderStatus.Cancelled
+  // Filter to show only in-progress orders (and unsaved orders)
+  const activeOrders = orders.filter((order) =>
+    !order.backendNid || order.status === OrderStatus.InProgress
   );
 
   const start = (page - 1) * itemsPerPage;

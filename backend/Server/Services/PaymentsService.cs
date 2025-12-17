@@ -33,6 +33,8 @@ namespace backend.Server.Services
                 throw new ApiException(404, "Order not found");
             }
 
+            Console.WriteLine($"Processing payment for Order ID: {request.OrderId}, Amount: {request.Amount}, Method: {request.PaymentMethod}, Tip: {request.Tip}");
+
             // Create payment record
             var payment = new Payment
             {
@@ -112,7 +114,7 @@ namespace backend.Server.Services
                     // Automatically generate receipt for completed payment with detailed content
                     try
                     {
-                        var detailedContent = await GenerateReceiptContentAsync(request.OrderId, request.Amount, request.Currency);
+                        var detailedContent = await GenerateReceiptContentAsync(request.OrderId, request.Amount, request.Currency, request.Tip);
                         await _receiptsService.CreateReceiptAsync(request.OrderId, payment.Nid, detailedContent);
                     }
                     catch (Exception ex)
@@ -148,7 +150,7 @@ namespace backend.Server.Services
             }
         }
 
-        public async Task<string> CreatePaymentIntentAsync(long orderId, decimal amount, string currency)
+        public async Task<string> CreatePaymentIntentAsync(long orderId, decimal amount, string currency, decimal? tip)
         {
             var order = await _context.Orders.FindAsync(orderId);
             if (order == null)
@@ -237,9 +239,32 @@ namespace backend.Server.Services
                     descriptionLines.Add($"Subtotal: {currency.ToUpper()} {order.Total:F2}");
                     descriptionLines.Add($"Order Discount: -{currency.ToUpper()} {order.Discount:F2}");
                 }
+                if (tip.HasValue && tip.Value > 0)
+                {
+                    descriptionLines.Add($"Tip: {currency.ToUpper()} {tip.Value:F2}");
+                }
                 descriptionLines.Add($"TOTAL: {currency.ToUpper()} {amount:F2}");
                 
                 var description = string.Join("\n", descriptionLines);
+                
+                // Add detailed line items with full breakdown
+                // Calculate and add only essential metadata
+                decimal totalBase = orderDetails.Sum(d => d.BasePrice * d.Quantity);
+                decimal totalAddons = orderDetailAddons.Sum(a => a.PriceWoVat);
+                decimal totalBaseWithAddons = totalBase + totalAddons;
+                decimal totalVat = orderDetails.Sum(d => {
+                    var addons = orderDetailAddons.Where(a => a.DetailId == d.Nid).Sum(a => a.PriceWoVat);
+                    var baseWithAddons = d.BasePrice + addons;
+                    return baseWithAddons * d.VatRate * d.Quantity;
+                });
+                decimal totalDiscount = orderDetails.Sum(d => {
+                    var addons = orderDetailAddons.Where(a => a.DetailId == d.Nid).Sum(a => a.PriceWoVat);
+                    var baseWithAddons = d.BasePrice + addons;
+                    var priceWithVat = baseWithAddons * (1 + d.VatRate);
+                    return d.DiscountPercent.HasValue && d.DiscountPercent.Value > 0
+                        ? priceWithVat * (d.DiscountPercent.Value / 100) * d.Quantity
+                        : 0m;
+                });
 
                 var options = new PaymentIntentCreateOptions
                 {
@@ -261,74 +286,12 @@ namespace backend.Server.Services
                         { "orderSubtotal", order.Total.ToString("F2") },
                         { "orderDiscount", order.Discount.ToString("F2") },
                         { "finalTotal", amount.ToString("F2") },
+                        { "totalBasePrice", totalBaseWithAddons.ToString("F2") },
+                        { "totalVatAmount", totalVat.ToString("F2") },
+                        { "totalDiscountAmount", totalDiscount.ToString("F2") },
                         { "currency", currency }
                     }
                 };
-                
-                // Add detailed line items with full breakdown
-                int metadataIndex = 1;
-                foreach (var detail in orderDetails.Take(15)) // Limit for metadata constraints
-                {
-                    var item = menuItems.ContainsKey(detail.ItemId) ? menuItems[detail.ItemId] : null;
-                    var itemName = item?.Name ?? $"Item #{detail.ItemId}";
-                    
-                    // Get addons for this item
-                    var itemAddons = orderDetailAddons.Where(oda => oda.DetailId == detail.Nid).ToList();
-                    
-                    // Item header
-                    options.Metadata.Add($"item_{metadataIndex}_name", $"{detail.Quantity}x {itemName}");
-                    
-                    // Base price (includes item at order creation time)
-                    options.Metadata.Add($"item_{metadataIndex}_base", $"Base: {currency} {detail.BasePrice:F2}");
-                    
-                    var totalBasePriceWithAddons = detail.BasePrice;
-                    // Addons (if any)
-                    if (itemAddons.Any())
-                    {
-                        var addonNames = itemAddons
-                            .Select(oda => {
-                                var name = ingredients.ContainsKey(oda.IngredientId) ? ingredients[oda.IngredientId] : "Unknown";
-                                return $"+ {name} ({currency} {oda.PriceWoVat:F2})";
-                            })
-                            .ToList();
-                        options.Metadata.Add($"item_{metadataIndex}_addons", string.Join(", ", addonNames));
-                        totalBasePriceWithAddons += itemAddons.Sum(a => a.PriceWoVat);
-                        options.Metadata.Add($"item_{metadataIndex}_total_base_with_addons", $"Total Base with Add-ons: {currency} {totalBasePriceWithAddons:F2}");
-                    
-                    }
-                    
-                    // VAT breakdown
-                    var vatAmount = totalBasePriceWithAddons * detail.VatRate;
-                    var priceWithVat = totalBasePriceWithAddons * (1 + detail.VatRate);
-                    options.Metadata.Add($"item_{metadataIndex}_vat", $"VAT ({detail.VatRate * 100:F0}%): +{currency} {vatAmount:F2}");
-                    options.Metadata.Add($"item_{metadataIndex}_with_vat", $"With VAT: {currency} {priceWithVat:F2}");
-                    
-                    // Discount (if applicable)
-                    decimal finalPricePerItem = priceWithVat;
-                    if (detail.DiscountPercent.HasValue && detail.DiscountPercent.Value > 0)
-                    {
-                        var discountAmount = priceWithVat * (detail.DiscountPercent.Value / 100);
-                        finalPricePerItem = priceWithVat - discountAmount;
-                        options.Metadata.Add($"item_{metadataIndex}_discount", $"Discount ({detail.DiscountPercent.Value:F0}%): -{currency} {discountAmount:F2}");
-                        options.Metadata.Add($"item_{metadataIndex}_final", $"Final per item: {currency} {finalPricePerItem:F2}");
-                    }
-                    else
-                    {
-                        options.Metadata.Add($"item_{metadataIndex}_final", $"Price per item: {currency} {finalPricePerItem:F2}");
-                    }
-                    
-                    // Subtotal for this item
-                    var itemSubtotal = detail.Quantity * finalPricePerItem;
-                    options.Metadata.Add($"item_{metadataIndex}_subtotal", $"Subtotal: {currency} {itemSubtotal:F2}");
-                    
-                    metadataIndex++;
-                }
-                
-                // Add order-level discount if present
-                if (order.Discount > 0)
-                {
-                    options.Metadata.Add("order_discount_total", $"Order Discount: -{currency} {order.Discount:F2}");
-                }
 
                 var service = new PaymentIntentService();
                 var paymentIntent = await service.CreateAsync(options);
@@ -483,7 +446,7 @@ namespace backend.Server.Services
             };
         }
 
-        private async Task<string> GenerateReceiptContentAsync(long orderId, decimal amount, string currency)
+        private async Task<string> GenerateReceiptContentAsync(long orderId, decimal amount, string currency, decimal? tip)
         {
             var order = await _context.Orders.FindAsync(orderId);
             if (order == null) return string.Empty;
@@ -555,6 +518,11 @@ namespace backend.Server.Services
             {
                 descriptionLines.Add($"Subtotal: {currency.ToUpper()} {order.Total:F2}");
                 descriptionLines.Add($"Order Discount: -{currency.ToUpper()} {order.Discount:F2}");
+            }
+            
+            if (tip.HasValue && tip.Value > 0)
+            {
+                descriptionLines.Add($"Tip: {currency.ToUpper()} {tip.Value:F2}");
             }
             descriptionLines.Add($"TOTAL: {currency.ToUpper()} {amount:F2}");
             

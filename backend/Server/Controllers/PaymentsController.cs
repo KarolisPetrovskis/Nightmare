@@ -26,7 +26,8 @@ namespace backend.Server.Controllers
             var clientSecret = await _paymentsService.CreatePaymentIntentAsync(
                 request.OrderId, 
                 request.Amount, 
-                request.Currency
+                request.Currency,
+                request.Tip
             );
             
             return Ok(new 

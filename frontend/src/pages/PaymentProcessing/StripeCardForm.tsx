@@ -11,6 +11,7 @@ type StripeCardFormProps = {
   currency: string;
   orderId: string;
   customerEmail: string;
+  tip?: string;
   onSuccess: (transactionId: string) => void;
   onError: (message: string) => void;
 };
@@ -20,6 +21,7 @@ export default function StripeCardForm({
   currency,
   orderId,
   customerEmail,
+  tip,
   onSuccess,
   onError,
 }: StripeCardFormProps) {
@@ -53,9 +55,11 @@ export default function StripeCardForm({
             orderId: parseInt(orderId),
             amount: parseFloat(amount),
             currency: currency,
+            tip: tip ? parseFloat(tip) : undefined,
           }),
         }
       );
+      console.log('Create Intent Response:', tip, parseFloat(tip ?? '0'));
 
       if (!createIntentResponse.ok) {
         throw new Error('Failed to create payment intent');
@@ -98,6 +102,7 @@ export default function StripeCardForm({
             paymentMethod: 0, // Card
             customerEmail: customerEmail || undefined,
             paymentIntentId: paymentIntent.id,
+            tip: tip ? parseFloat(tip) : undefined,
           }),
         });
 
